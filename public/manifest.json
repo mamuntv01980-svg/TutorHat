@@ -1,0 +1,27 @@
+{
+  "id": "/",
+  "name": "TutorHat – Tutor Marketplace Bangladesh",
+  "short_name": "TutorHat",
+  "description": "TutorHat connects students and guardians with verified tutors for school, college, university, Quran, Arabic and more across Bangladesh.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#1e3a8a",
+  "background_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": ["education", "productivity"]
+}

@@ -1,0 +1,6 @@
+{
+  "name": "TutorHat",
+  "description": "TutorHat - Bangladesh's leading tutor marketplace and tuition management platform. Connect with verified tutors and tuition opportunities nationwide.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
