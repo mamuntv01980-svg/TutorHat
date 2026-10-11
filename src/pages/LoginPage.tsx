@@ -144,12 +144,11 @@ export const LoginPage: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                loginAs('admin');
                 navigateTo('admin-dashboard');
               }}
-              className="py-1.5 px-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-medium hover:border-blue-600 hover:text-blue-900 text-center text-[11px]"
+              className="py-1.5 px-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-medium hover:border-blue-600 hover:text-blue-900 text-center text-[11px] flex items-center justify-center gap-1"
             >
-              Admin Panel
+              <span>🔒 Admin Console</span>
             </button>
           </div>
         </div>

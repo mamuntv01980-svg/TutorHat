@@ -16,10 +16,17 @@ export const NoticeBanner: React.FC = () => {
             <span>Notice</span>
           </span>
         </div>
-        <div className="overflow-hidden relative flex-1">
-          <p className="truncate text-slate-200 font-medium">
-            {settings.noticeMarquee}
-          </p>
+        <div className="overflow-hidden relative flex-1 w-full">
+          <div className="inline-block whitespace-nowrap animate-marquee hover:pause select-none">
+            <span className="text-amber-300 font-bold mr-3">📢 নোটিশ:</span>
+            <span className="text-slate-100 font-medium mr-16">
+              {settings.noticeMarquee}
+            </span>
+            <span className="text-amber-300 font-bold mr-3">📢 নোটিশ:</span>
+            <span className="text-slate-100 font-medium mr-16">
+              {settings.noticeMarquee}
+            </span>
+          </div>
         </div>
         <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-300 shrink-0">
           <span>হেল্পলাইন:</span>

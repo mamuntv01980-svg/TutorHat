@@ -19,8 +19,13 @@ import {
   CLASS_LEVELS, 
   SUBJECTS_LIST, 
   MEDIUMS, 
-  UNIVERSITIES_LIST 
+  UNIVERSITIES_LIST,
+  MADRASA_BOARDS,
+  MADRASA_SANADS_QAWMI,
+  MADRASA_DEGREES_ALIA,
+  MADRASA_DIVISIONS
 } from '../constants/bangladeshData';
+import { TutorCategoryType } from '../types';
 
 export const RegisterPage: React.FC = () => {
   const { navigateTo, language, loginAs } = useApp();
@@ -34,7 +39,8 @@ export const RegisterPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Step 2: Personal Info
+  // Step 2: Personal Info & Category Stream
+  const [tutorCategory, setTutorCategory] = useState<TutorCategoryType>('general');
   const [fullName, setFullName] = useState('');
   const [gender, setGender] = useState<'male' | 'female'>('male');
   const [dateOfBirth, setDateOfBirth] = useState('');
@@ -42,7 +48,7 @@ export const RegisterPage: React.FC = () => {
   const [area, setArea] = useState('Dhanmondi');
   const [aboutMe, setAboutMe] = useState('');
 
-  // Step 3: Education
+  // Step 3: Education (General & Madrasa)
   const [university, setUniversity] = useState('');
   const [department, setDepartment] = useState('');
   const [programDegree, setProgramDegree] = useState('B.Sc. / B.A.');
@@ -50,6 +56,16 @@ export const RegisterPage: React.FC = () => {
   const [hscGpa, setHscGpa] = useState('5.00');
   const [sscSchool, setSscSchool] = useState('');
   const [sscGpa, setSscGpa] = useState('5.00');
+
+  // Specialized Madrasa details (Alia & Qawmi)
+  const [madrasaBoard, setMadrasaBoard] = useState(MADRASA_BOARDS[0]);
+  const [highestSanadOrDegree, setHighestSanadOrDegree] = useState('দাওরায়ে হাদিস / তাকমিল (মাস্টার্স সমমান)');
+  const [sanadDivisionOrGpa, setSanadDivisionOrGpa] = useState('মুমতাজ (Star Marks / Distinction)');
+  const [sanadPassingYear, setSanadPassingYear] = useState('2022');
+  const [isHafiz, setIsHafiz] = useState(false);
+  const [qiratTajweedCertificate, setQiratTajweedCertificate] = useState('');
+  const [specializationDept, setSpecializationDept] = useState('');
+  const [currentKhidmatOrInstitution, setCurrentKhidmatOrInstitution] = useState('');
 
   // Step 4: Teaching Experience
   const [experienceYears, setExperienceYears] = useState(1);
@@ -109,9 +125,16 @@ export const RegisterPage: React.FC = () => {
         return false;
       }
     } else if (step === 3) {
-      if (!university.trim() || !department.trim()) {
-        setError('Please provide your university name and department.');
-        return false;
+      if (tutorCategory === 'qawmi_madrasa') {
+        if (!currentKhidmatOrInstitution.trim() && !university.trim()) {
+          setError('অনুগ্রহ করে আপনার প্রধান মাদরাসা / জামিয়ার নাম উল্লেখ করুন।');
+          return false;
+        }
+      } else {
+        if (!university.trim() || !department.trim()) {
+          setError('Please provide your university/institution name and department.');
+          return false;
+        }
       }
     }
     return true;
@@ -158,11 +181,23 @@ export const RegisterPage: React.FC = () => {
           area,
           preferredAreas,
           aboutMe,
-          university,
-          department,
-          programDegree,
-          hsc: { schoolOrCollege: hscCollege || 'College', board: 'Dhaka', gpa: hscGpa, passingYear: '2020' },
-          ssc: { schoolOrCollege: sscSchool || 'School', board: 'Dhaka', gpa: sscGpa, passingYear: '2018' },
+          tutorCategory,
+          madrasaDetails: {
+            category: tutorCategory,
+            isHafiz,
+            qiratTajweedCertificate,
+            madrasaBoard,
+            highestSanadOrDegree,
+            sanadPassingYear,
+            sanadDivisionOrGpa,
+            specializationDept,
+            currentKhidmatOrInstitution: currentKhidmatOrInstitution || university
+          },
+          university: tutorCategory === 'qawmi_madrasa' ? (currentKhidmatOrInstitution || university || 'আল-জামিয়াতুল আহলিয়া') : university,
+          department: tutorCategory === 'qawmi_madrasa' ? (specializationDept || highestSanadOrDegree || 'দাওরায়ে হাদিস') : department,
+          programDegree: tutorCategory === 'qawmi_madrasa' ? highestSanadOrDegree : programDegree,
+          hsc: { schoolOrCollege: hscCollege || 'College / Alim Madrasah', board: 'Dhaka', gpa: hscGpa, passingYear: '2020' },
+          ssc: { schoolOrCollege: sscSchool || 'School / Dakhil Madrasah', board: 'Dhaka', gpa: sscGpa, passingYear: '2018' },
           teachingExperienceYears: Number(experienceYears),
           teachingMethod,
           preferredClasses,
@@ -319,7 +354,63 @@ export const RegisterPage: React.FC = () => {
             {/* Step 2: Personal Information */}
             {currentStep === 2 && (
               <div className="space-y-4">
-                <h3 className="font-bold text-sm text-blue-950 border-b pb-2">Step 2: Personal Information</h3>
+                <div className="flex items-center justify-between border-b pb-2">
+                  <h3 className="font-bold text-sm text-blue-950">Step 2: Personal Info & Tutor Category</h3>
+                  <span className="text-[11px] font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
+                    সকল শ্রেণির টিউটরদের জন্য
+                  </span>
+                </div>
+
+                {/* Category Selection Tabs */}
+                <div>
+                  <label className="font-semibold block mb-1 text-slate-800">
+                    আপনার টিউটরিং ক্যাটাগরি নির্বাচন করুন *
+                  </label>
+                  <p className="text-[11px] text-slate-500 mb-2">
+                    জেনারেল, আলিয়া মাদ্রাসা ও কওমি মাদ্রাসা — যেকোনো ক্যাটাগরিতে আবেদন করতে পারেন।
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setTutorCategory('general')}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        tutorCategory === 'general'
+                          ? 'bg-blue-50/80 border-blue-600 text-blue-950 ring-2 ring-blue-600/20'
+                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="font-bold text-xs">🎓 জেনারেল টিউটর</div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">স্কুল, কলেজ ও বিশ্ববিদ্যালয় (বাংলা/ইংরেজি মাধ্যম)</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setTutorCategory('alia_madrasa')}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        tutorCategory === 'alia_madrasa'
+                          ? 'bg-emerald-50/80 border-emerald-600 text-emerald-950 ring-2 ring-emerald-600/20'
+                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="font-bold text-xs">🕌 আলিয়া মাদ্রাসা টিউটর</div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">দাখিল, আলিম, ফাজিল ও কামিল (আরবি ও সাধারণ)</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setTutorCategory('qawmi_madrasa')}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        tutorCategory === 'qawmi_madrasa'
+                          ? 'bg-amber-50/85 border-amber-600 text-amber-950 ring-2 ring-amber-600/20'
+                          : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="font-bold text-xs">📖 কওমি মাদ্রাসা টিউটর</div>
+                      <div className="text-[10px] text-slate-500 mt-0.5">হিফজ, দাওরায়ে হাদিস, মুফতি, বেফাক/হাইয়াতুল উলয়া</div>
+                    </button>
+                  </div>
+                </div>
+
                 <div>
                   <label className="font-semibold block mb-1">Full Name (পুরো নাম) *</label>
                   <input
@@ -327,7 +418,11 @@ export const RegisterPage: React.FC = () => {
                     required
                     value={fullName}
                     onChange={e => setFullName(e.target.value)}
-                    placeholder="e.g. Rahim Chowdhury"
+                    placeholder={
+                      tutorCategory === 'qawmi_madrasa' 
+                        ? 'e.g. Hafez Maulana Abdullah / মুফতি আব্দুর রহমান' 
+                        : 'e.g. Rahim Chowdhury'
+                    }
                     className="w-full p-2.5 bg-slate-50 border rounded-xl"
                   />
                 </div>
@@ -339,8 +434,8 @@ export const RegisterPage: React.FC = () => {
                       onChange={e => setGender(e.target.value as any)}
                       className="w-full p-2.5 bg-slate-50 border rounded-xl"
                     >
-                      <option value="male">Male</option>
-                      <option value="female">Female</option>
+                      <option value="male">Male (পুরুষ)</option>
+                      <option value="female">Female (মহিলা)</option>
                     </select>
                   </div>
                   <div>
@@ -350,29 +445,41 @@ export const RegisterPage: React.FC = () => {
                       value={dateOfBirth}
                       onChange={e => setDateOfBirth(e.target.value)}
                       className="w-full p-2.5 bg-slate-50 border rounded-xl"
-                    />
+                    >
+                    </input>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label className="font-semibold block mb-1">District *</label>
+                    <label className="font-semibold block mb-1 text-slate-900">
+                      District (জেলা - A to Z) *
+                    </label>
                     <select
                       value={district}
                       onChange={e => setDistrict(e.target.value)}
-                      className="w-full p-2.5 bg-slate-50 border rounded-xl"
+                      className="w-full p-2.5 bg-slate-50 border rounded-xl text-xs sm:text-sm font-medium"
                     >
                       {BD_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
                     </select>
+                    <span className="text-[11px] text-slate-500 mt-1 block">
+                      বাংলাদেশের ৬৪টি জেলা বর্ণানুক্রমে (A-Z) সাজানো
+                    </span>
                   </div>
                   <div>
-                    <label className="font-semibold block mb-1">Living Area *</label>
-                    <select
+                    <label className="font-semibold block mb-1 text-slate-900">
+                      Present Address (বর্তমান ঠিকানা) *
+                    </label>
+                    <input
+                      type="text"
+                      required
                       value={area}
                       onChange={e => setArea(e.target.value)}
-                      className="w-full p-2.5 bg-slate-50 border rounded-xl"
-                    >
-                      {DHAKA_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
-                    </select>
+                      placeholder="বাড়ি/রোড নম্বর, এলাকা, থানা/উপজেলা লিখুন (যেমন: ধানমন্ডি-৩২ / আগ্রাবাদ / জিন্দাবাজার)"
+                      className="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white text-xs sm:text-sm"
+                    />
+                    <span className="text-[11px] text-slate-500 mt-1 block">
+                      আপনার বর্তমান সঠিক ঠিকানা লিখুন (যেকোনো এলাকা/উপজেলা)
+                    </span>
                   </div>
                 </div>
                 <div>
@@ -381,7 +488,13 @@ export const RegisterPage: React.FC = () => {
                     rows={2}
                     value={aboutMe}
                     onChange={e => setAboutMe(e.target.value)}
-                    placeholder="Brief introduction about your passion for tutoring..."
+                    placeholder={
+                      tutorCategory === 'qawmi_madrasa'
+                        ? 'কওমি মাদ্রাসার শিক্ষাগত সনদ, হিফজ/দাওরায়ে হাদিস অভিজ্ঞতা এবং তাজবীদসহ পাঠদানের নিয়ম সম্পর্কে লিখুন...'
+                        : tutorCategory === 'alia_madrasa'
+                        ? 'আলিয়া মাদ্রাসা ও ইসলামিক শিক্ষা ব্যাকগ্রাউন্ড এবং পাঠদান দক্ষতা সম্পর্কে লিখুন...'
+                        : 'Brief introduction about your passion for tutoring...'
+                    }
                     className="w-full p-2.5 bg-slate-50 border rounded-xl"
                   />
                 </div>
@@ -391,80 +504,310 @@ export const RegisterPage: React.FC = () => {
             {/* Step 3: Education */}
             {currentStep === 3 && (
               <div className="space-y-4">
-                <h3 className="font-bold text-sm text-blue-950 border-b pb-2">Step 3: Academic Background</h3>
-                <div>
-                  <label className="font-semibold block mb-1">University Name *</label>
-                  <input
-                    type="text"
-                    required
-                    list="univ-options"
-                    value={university}
-                    onChange={e => setUniversity(e.target.value)}
-                    placeholder="e.g. University of Dhaka / BUET"
-                    className="w-full p-2.5 bg-slate-50 border rounded-xl"
-                  />
-                  <datalist id="univ-options">
-                    {UNIVERSITIES_LIST.map(u => <option key={u} value={u} />)}
-                  </datalist>
+                <div className="flex items-center justify-between border-b pb-2">
+                  <h3 className="font-bold text-sm text-blue-950">
+                    Step 3: Academic Background ({
+                      tutorCategory === 'general' ? 'জেনারেল শিক্ষা' :
+                      tutorCategory === 'alia_madrasa' ? 'আলিয়া মাদ্রাসা শিক্ষা' : 'কওমি মাদ্রাসা ও দ্বীনি শিক্ষা'
+                    })
+                  </h3>
+                  <span className="text-xs font-semibold text-slate-500">
+                    Category: {tutorCategory.replace('_', ' ').toUpperCase()}
+                  </span>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="font-semibold block mb-1">Department / Subject *</label>
-                    <input
-                      type="text"
-                      required
-                      value={department}
-                      onChange={e => setDepartment(e.target.value)}
-                      placeholder="e.g. Physics / EEE"
-                      className="w-full p-2.5 bg-slate-50 border rounded-xl"
-                    />
+
+                {/* QAWMI MADRASA STREAM FORM */}
+                {tutorCategory === 'qawmi_madrasa' && (
+                  <div className="space-y-4 bg-amber-50/40 p-4 rounded-2xl border border-amber-200/70">
+                    <div>
+                      <label className="font-semibold block mb-1 text-amber-950">
+                        প্রধান মাদরাসা / জামিয়ার নাম *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={currentKhidmatOrInstitution}
+                        onChange={e => setCurrentKhidmatOrInstitution(e.target.value)}
+                        placeholder="যেমন: আল-জামিয়াতুল আহলিয়া দারুল উলুম মুঈনুল ইসলাম (হাটহাজারী) / জামিয়া নূরিয়া / জামিয়া ইমদাদিয়া"
+                        className="w-full p-2.5 bg-white border border-amber-300 rounded-xl text-xs"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-semibold block mb-1 text-slate-800">
+                          মাদরাসা শিক্ষাবোর্ড *
+                        </label>
+                        <select
+                          value={madrasaBoard}
+                          onChange={e => setMadrasaBoard(e.target.value)}
+                          className="w-full p-2.5 bg-white border rounded-xl text-xs"
+                        >
+                          {MADRASA_BOARDS.map(b => <option key={b} value={b}>{b}</option>)}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="font-semibold block mb-1 text-slate-800">
+                          সর্বোচ্চ শিক্ষাগত সনদ / ডিগ্রি *
+                        </label>
+                        <select
+                          value={highestSanadOrDegree}
+                          onChange={e => setHighestSanadOrDegree(e.target.value)}
+                          className="w-full p-2.5 bg-white border rounded-xl text-xs"
+                        >
+                          {MADRASA_SANADS_QAWMI.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-semibold block mb-1 text-slate-800">
+                          সনদ পাসের বিভাগ / ফলাফল
+                        </label>
+                        <select
+                          value={sanadDivisionOrGpa}
+                          onChange={e => setSanadDivisionOrGpa(e.target.value)}
+                          className="w-full p-2.5 bg-white border rounded-xl text-xs"
+                        >
+                          {MADRASA_DIVISIONS.map(d => <option key={d} value={d}>{d}</option>)}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="font-semibold block mb-1 text-slate-800">সনদ পাসের সন</label>
+                        <input
+                          type="text"
+                          value={sanadPassingYear}
+                          onChange={e => setSanadPassingYear(e.target.value)}
+                          placeholder="e.g. 2022 / 2023"
+                          className="w-full p-2.5 bg-white border rounded-xl text-xs font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="font-semibold block mb-1 text-slate-800">
+                          বিশেষ বিভাগ / তাকাহ্হুস (যদি থাকে)
+                        </label>
+                        <input
+                          type="text"
+                          value={specializationDept}
+                          onChange={e => setSpecializationDept(e.target.value)}
+                          placeholder="ইফতা (মুফতি), আদব (সাহিত্য), উলুমুল কুরআন"
+                          className="w-full p-2.5 bg-white border rounded-xl text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-semibold block mb-1 text-slate-800">
+                          ক্বিরাআত / তাজবীদ বিশেষ সনদ
+                        </label>
+                        <input
+                          type="text"
+                          value={qiratTajweedCertificate}
+                          onChange={e => setQiratTajweedCertificate(e.target.value)}
+                          placeholder="যেমন: ইজাযাহ / কারী সনদপত্র"
+                          className="w-full p-2.5 bg-white border rounded-xl text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <label className="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-amber-200">
+                        <input
+                          type="checkbox"
+                          checked={isHafiz}
+                          onChange={e => setIsHafiz(e.target.checked)}
+                          className="w-4 h-4 accent-amber-600 rounded"
+                        />
+                        <span className="font-bold text-xs text-amber-950">
+                          ✓ আমি একজন হাফেজ-এ-কুরআন (সম্পূর্ণ ৩০ পারা হিফজ সম্পন্ন)
+                        </span>
+                      </label>
+                    </div>
                   </div>
-                  <div>
-                    <label className="font-semibold block mb-1">Degree</label>
-                    <input
-                      type="text"
-                      value={programDegree}
-                      onChange={e => setProgramDegree(e.target.value)}
-                      className="w-full p-2.5 bg-slate-50 border rounded-xl"
-                    />
+                )}
+
+                {/* ALIA MADRASA STREAM FORM */}
+                {tutorCategory === 'alia_madrasa' && (
+                  <div className="space-y-4 bg-emerald-50/40 p-4 rounded-2xl border border-emerald-200/70">
+                    <div>
+                      <label className="font-semibold block mb-1 text-emerald-950">
+                        মাদ্রাসা / ইসলামি আরবি বিশ্ববিদ্যালয়ের নাম *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={university}
+                        onChange={e => setUniversity(e.target.value)}
+                        placeholder="যেমন: ঢাকা সরকারি মাদ্রাসা-ই-আলিয়া / দারুন্নাজাত সিদ্দিকিয়া কামিল মাদ্রাসা / ইসলামিক আরবি বিশ্ববিদ্যালয়"
+                        className="w-full p-2.5 bg-white border border-emerald-300 rounded-xl text-xs"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-semibold block mb-1 text-slate-800">
+                          বিভাগ / সাবজেক্ট *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={department}
+                          onChange={e => setDepartment(e.target.value)}
+                          placeholder="যেমন: আল-হাদিস / তাফসির / আল-ফিকহ / আরবি"
+                          className="w-full p-2.5 bg-white border rounded-xl text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-semibold block mb-1 text-slate-800">ডিগ্রি / শ্রেণি</label>
+                        <select
+                          value={programDegree}
+                          onChange={e => setProgramDegree(e.target.value)}
+                          className="w-full p-2.5 bg-white border rounded-xl text-xs"
+                        >
+                          {MADRASA_DEGREES_ALIA.map(deg => <option key={deg} value={deg}>{deg}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <label className="font-semibold block mb-1 text-slate-800">আলিম (Alim) মাদ্রাসা ও GPA</label>
+                        <input
+                          type="text"
+                          value={hscCollege}
+                          onChange={e => setHscCollege(e.target.value)}
+                          placeholder="মাদ্রাসার নাম"
+                          className="w-full p-2 bg-white border rounded-xl mb-1 text-xs"
+                        />
+                        <input
+                          type="text"
+                          value={hscGpa}
+                          onChange={e => setHscGpa(e.target.value)}
+                          placeholder="GPA 5.00"
+                          className="w-full p-2 bg-white border rounded-xl font-mono text-xs"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="font-semibold block mb-1 text-slate-800">দাখিল (Dakhil) মাদ্রাসা ও GPA</label>
+                        <input
+                          type="text"
+                          value={sscSchool}
+                          onChange={e => setSscSchool(e.target.value)}
+                          placeholder="মাদ্রাসার নাম"
+                          className="w-full p-2 bg-white border rounded-xl mb-1 text-xs"
+                        />
+                        <input
+                          type="text"
+                          value={sscGpa}
+                          onChange={e => setSscGpa(e.target.value)}
+                          placeholder="GPA 5.00"
+                          className="w-full p-2 bg-white border rounded-xl font-mono text-xs"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="pt-2">
+                      <label className="flex items-center gap-2 cursor-pointer bg-white p-3 rounded-xl border border-emerald-200">
+                        <input
+                          type="checkbox"
+                          checked={isHafiz}
+                          onChange={e => setIsHafiz(e.target.checked)}
+                          className="w-4 h-4 accent-emerald-600 rounded"
+                        />
+                        <span className="font-bold text-xs text-emerald-950">
+                          ✓ আমি একজন হাফেজ-এ-কুরআন (হিফজুল কুরআন সনদধারী)
+                        </span>
+                      </label>
+                    </div>
                   </div>
-                </div>
-                <div className="grid grid-cols-2 gap-3 pt-2">
-                  <div>
-                    <label className="font-semibold block mb-1">HSC College & GPA</label>
-                    <input
-                      type="text"
-                      value={hscCollege}
-                      onChange={e => setHscCollege(e.target.value)}
-                      placeholder="College Name"
-                      className="w-full p-2 bg-slate-50 border rounded-xl mb-1"
-                    />
-                    <input
-                      type="text"
-                      value={hscGpa}
-                      onChange={e => setHscGpa(e.target.value)}
-                      placeholder="GPA 5.00"
-                      className="w-full p-2 bg-slate-50 border rounded-xl font-mono"
-                    />
+                )}
+
+                {/* GENERAL UNIVERSITY STREAM FORM */}
+                {tutorCategory === 'general' && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="font-semibold block mb-1">University Name (বিশ্ববিদ্যালয়) *</label>
+                      <input
+                        type="text"
+                        required
+                        list="univ-options"
+                        value={university}
+                        onChange={e => setUniversity(e.target.value)}
+                        placeholder="e.g. University of Dhaka / BUET / NSU"
+                        className="w-full p-2.5 bg-slate-50 border rounded-xl"
+                      />
+                      <datalist id="univ-options">
+                        {UNIVERSITIES_LIST.map(u => <option key={u} value={u} />)}
+                      </datalist>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-semibold block mb-1">Department / Subject *</label>
+                        <input
+                          type="text"
+                          required
+                          value={department}
+                          onChange={e => setDepartment(e.target.value)}
+                          placeholder="e.g. Physics / EEE / English"
+                          className="w-full p-2.5 bg-slate-50 border rounded-xl"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-semibold block mb-1">Degree</label>
+                        <input
+                          type="text"
+                          value={programDegree}
+                          onChange={e => setProgramDegree(e.target.value)}
+                          placeholder="e.g. B.Sc. Honours / BBA"
+                          className="w-full p-2.5 bg-slate-50 border rounded-xl"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      <div>
+                        <label className="font-semibold block mb-1">HSC College & GPA</label>
+                        <input
+                          type="text"
+                          value={hscCollege}
+                          onChange={e => setHscCollege(e.target.value)}
+                          placeholder="College Name"
+                          className="w-full p-2 bg-slate-50 border rounded-xl mb-1"
+                        />
+                        <input
+                          type="text"
+                          value={hscGpa}
+                          onChange={e => setHscGpa(e.target.value)}
+                          placeholder="GPA 5.00"
+                          className="w-full p-2 bg-slate-50 border rounded-xl font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-semibold block mb-1">SSC School & GPA</label>
+                        <input
+                          type="text"
+                          value={sscSchool}
+                          onChange={e => setSscSchool(e.target.value)}
+                          placeholder="School Name"
+                          className="w-full p-2 bg-slate-50 border rounded-xl mb-1"
+                        />
+                        <input
+                          type="text"
+                          value={sscGpa}
+                          onChange={e => setSscGpa(e.target.value)}
+                          placeholder="GPA 5.00"
+                          className="w-full p-2 bg-slate-50 border rounded-xl font-mono"
+                        />
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <label className="font-semibold block mb-1">SSC School & GPA</label>
-                    <input
-                      type="text"
-                      value={sscSchool}
-                      onChange={e => setSscSchool(e.target.value)}
-                      placeholder="School Name"
-                      className="w-full p-2 bg-slate-50 border rounded-xl mb-1"
-                    />
-                    <input
-                      type="text"
-                      value={sscGpa}
-                      onChange={e => setSscGpa(e.target.value)}
-                      placeholder="GPA 5.00"
-                      className="w-full p-2 bg-slate-50 border rounded-xl font-mono"
-                    />
-                  </div>
-                </div>
+                )}
               </div>
             )}
 
@@ -501,17 +844,17 @@ export const RegisterPage: React.FC = () => {
               <div className="space-y-4">
                 <h3 className="font-bold text-sm text-blue-950 border-b pb-2">Step 5: Classes & Subjects</h3>
                 <div>
-                  <label className="font-semibold block mb-1.5">Select Preferred Classes *</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {CLASS_LEVELS.slice(0, 10).map(c => {
+                  <label className="font-semibold block mb-1.5">Select Preferred Classes / Student Levels *</label>
+                  <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-200">
+                    {CLASS_LEVELS.map(c => {
                       const sel = preferredClasses.includes(c);
                       return (
                         <button
                           key={c}
                           type="button"
                           onClick={() => toggleItem(preferredClasses, setPreferredClasses, c)}
-                          className={`px-2.5 py-1 rounded-lg border font-medium ${
-                            sel ? 'bg-blue-900 text-white border-blue-900' : 'bg-slate-50 text-slate-700'
+                          className={`px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+                            sel ? 'bg-blue-900 text-white border-blue-900 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                           }`}
                         >
                           {sel ? '✓ ' : '+ '}{c}
@@ -522,17 +865,17 @@ export const RegisterPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="font-semibold block mb-1.5">Select Preferred Subjects *</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {SUBJECTS_LIST.slice(0, 8).map(s => {
+                  <label className="font-semibold block mb-1.5">Select Preferred Subjects (সকল সাধারণ ও ইসলামি বিষয়) *</label>
+                  <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-200">
+                    {SUBJECTS_LIST.map(s => {
                       const sel = preferredSubjects.includes(s);
                       return (
                         <button
                           key={s}
                           type="button"
                           onClick={() => toggleItem(preferredSubjects, setPreferredSubjects, s)}
-                          className={`px-2.5 py-1 rounded-lg border font-medium ${
-                            sel ? 'bg-blue-900 text-white border-blue-900' : 'bg-slate-50 text-slate-700'
+                          className={`px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+                            sel ? 'bg-blue-900 text-white border-blue-900 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                           }`}
                         >
                           {sel ? '✓ ' : '+ '}{s}
@@ -628,7 +971,7 @@ export const RegisterPage: React.FC = () => {
                   <p><strong>Name:</strong> {fullName} ({gender})</p>
                   <p><strong>Phone:</strong> {mobileNumber} · <strong>Email:</strong> {email}</p>
                   <p><strong>University:</strong> {university} ({department})</p>
-                  <p><strong>Living Area:</strong> {area}, {district}</p>
+                  <p><strong>Present Address (বর্তমান ঠিকানা):</strong> {area}, {district}</p>
                   <p><strong>Expected Fee:</strong> ৳{expectedSalary}/month</p>
                   <p><strong>Preferred Subjects:</strong> {preferredSubjects.join(', ')}</p>
                 </div>
@@ -752,26 +1095,27 @@ export const RegisterPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="font-semibold block mb-1">District</label>
+                <label className="font-semibold block mb-1 text-slate-900">District (জেলা - A to Z)</label>
                 <select
                   value={district}
                   onChange={e => setDistrict(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border rounded-xl"
+                  className="w-full p-2.5 bg-slate-50 border rounded-xl text-xs sm:text-sm font-medium"
                 >
                   {BD_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
+                <span className="text-[11px] text-slate-500 mt-1 block">বাংলাদেশের ৬৪টি জেলা (A-Z)</span>
               </div>
               <div>
-                <label className="font-semibold block mb-1">Area</label>
-                <select
+                <label className="font-semibold block mb-1 text-slate-900">Present Address (বর্তমান ঠিকানা / এলাকা)</label>
+                <input
+                  type="text"
                   value={area}
                   onChange={e => setArea(e.target.value)}
-                  className="w-full p-2.5 bg-slate-50 border rounded-xl"
-                >
-                  {DHAKA_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
+                  placeholder="বাড়ি/রোড নম্বর, এলাকা বা থানা লিখুন"
+                  className="w-full p-2.5 bg-slate-50 border rounded-xl focus:bg-white text-xs sm:text-sm"
+                />
               </div>
             </div>
 

@@ -118,13 +118,15 @@ export const TuitionJobsPage: React.FC = () => {
       </div>
 
       <div>
-        <label className="font-semibold text-slate-900 block mb-1">{language === 'bn' ? 'জেলা' : 'District'}</label>
+        <label className="font-semibold text-slate-900 block mb-1">
+          {language === 'bn' ? 'জেলা (A to Z - ৬৪ জেলা)' : 'District (A-Z - All 64)'}
+        </label>
         <select
           value={selectedDistrict}
           onChange={(e) => setSelectedDistrict(e.target.value)}
-          className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+          className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium"
         >
-          <option value="All">All Districts</option>
+          <option value="All">All Districts (সকল জেলা)</option>
           {BD_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
         </select>
       </div>

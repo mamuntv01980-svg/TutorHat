@@ -1,16 +1,69 @@
+// All 64 Districts of Bangladesh sorted strictly alphabetically (A to Z)
 export const BD_DISTRICTS = [
-  'Dhaka',
-  'Chattogram',
-  'Sylhet',
-  'Rajshahi',
-  'Khulna',
+  'Bagerhat',
+  'Bandarban',
+  'Barguna',
   'Barishal',
-  'Rangpur',
-  'Mymensingh',
+  'Bhola',
+  'Bogura',
+  'Brahmanbaria',
+  'Chandpur',
+  'Chapainawabganj',
+  'Chattogram',
+  'Chuadanga',
+  'Cox\'s Bazar',
   'Cumilla',
+  'Dhaka',
+  'Dinajpur',
+  'Faridpur',
+  'Feni',
+  'Gaibandha',
   'Gazipur',
+  'Gopalganj',
+  'Habiganj',
+  'Jamalpur',
+  'Jashore',
+  'Jhalokathi',
+  'Jhenaidah',
+  'Joypurhat',
+  'Khagrachhari',
+  'Khulna',
+  'Kishoreganj',
+  'Kurigram',
+  'Kushtia',
+  'Lakshmipur',
+  'Lalmonirhat',
+  'Madaripur',
+  'Magura',
+  'Manikganj',
+  'Meherpur',
+  'Moulvibazar',
+  'Munshiganj',
+  'Mymensingh',
+  'Naogaon',
+  'Narail',
   'Narayanganj',
-  'Bogura'
+  'Narsingdi',
+  'Natore',
+  'Netrokona',
+  'Nilphamari',
+  'Noakhali',
+  'Pabna',
+  'Panchagarh',
+  'Patuakhali',
+  'Pirojpur',
+  'Rajbari',
+  'Rajshahi',
+  'Rangamati',
+  'Rangpur',
+  'Satkhira',
+  'Shariatpur',
+  'Sherpur',
+  'Sirajganj',
+  'Sunamganj',
+  'Sylhet',
+  'Tangail',
+  'Thakurgaon'
 ];
 
 export const DHAKA_AREAS = [
@@ -81,6 +134,46 @@ export const CLASS_LEVELS = [
   'Adult / Noorani Quran Learner'
 ];
 
+export const MADRASA_BOARDS = [
+  'বেফাকুল মাদারিসিল আরাবিয়া বাংলাদেশ (Befaqul Madaris)',
+  'আল-হাইয়াতুল উলয়া লিল জামিআতিল কওমিয়া (Al-Haiatul Ulya)',
+  'বাংলাদেশ মাদরাসা শিক্ষা বোর্ড (Alia Madrasa Board)',
+  'ইসলামী আরবি বিশ্ববিদ্যালয় (Islamic Arabic University)',
+  'তানযীমুল মাদারিসিল কওমিয়া',
+  'ইত্তেহাদুল মাদারিসিল কওমিয়া',
+  'বেফাকুল মাদারিসিদ দ্বীনিয়া বাংলাদেশ'
+];
+
+export const MADRASA_SANADS_QAWMI = [
+  'দাওরায়ে হাদিস / তাকমিল (মাস্টার্স সমমান)',
+  'ফযিলত (ডিগ্রি সমমান)',
+  'সানাবিয়া উলইয়া (এইচএসসি সমমান)',
+  'মুতাওয়াসসিতাহ (এসএসসি সমমান)',
+  'ইবতেদাইয়্যাহ (প্রাইমারি সমমান)',
+  'হিফজুল কুরআন (পূর্ণ ৩০ পারা সম্পন্ন)',
+  'তাজবীদ ও ক্বিরাআত বিশেষ সনদ',
+  'ইফতা ও ফিকহ (মুফতি ডিগ্রি)',
+  'আদব ও আরবি সাহিত্য (আদিব)'
+];
+
+export const MADRASA_DEGREES_ALIA = [
+  'কামিল / Kamil (Masters Equivalent)',
+  'ফাজিল / Fazil (Honours / Degree Equivalent)',
+  'আলিম / Alim (HSC Equivalent)',
+  'দাখিল / Dakhil (SSC Equivalent)',
+  'হিফজুল কুরআন (হাফেজ)',
+  'ক্বিরাআত ও তাজবীদ ডিপ্লোমা'
+];
+
+export const MADRASA_DIVISIONS = [
+  'মুমতাজ (Star Marks / Distinction)',
+  'জাইয়্যিদ জিদ্দান (1st Division)',
+  'জাইয়্যিদ (2nd Division)',
+  'মাকবুল (Pass Division)',
+  'GPA 5.00 (Golden A+)',
+  'GPA 4.00 - 4.99 (A / A-)'
+];
+
 export const SUBJECTS_LIST = [
   'Mathematics',
   'General Science',
@@ -96,8 +189,14 @@ export const SUBJECTS_LIST = [
   'Business Studies',
   'Social Science / BGS',
   'Holy Quran & Tajweed',
-  'Arabic Grammar & Spoken',
-  'Islamic Studies',
+  'Noorani Quran (সহজ কুরআন শিক্ষা)',
+  'Hifz Revision (হিফজ দৌড়/ইয়াদ)',
+  'Arabic Grammar (নাহু ও সরফ)',
+  'Arabic Spoken & Literature (আদব)',
+  'Hadith & Usul-ul-Hadith',
+  'Fiqh & Islamic Jurisprudence (ফিকহ)',
+  'Tafsir & Usul-ut-Tafsir',
+  'Islamic Studies / আকাইদ ও ফিকাহ',
   'General English Spoken'
 ];
 

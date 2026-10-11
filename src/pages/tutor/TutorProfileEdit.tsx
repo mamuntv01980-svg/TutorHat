@@ -19,8 +19,13 @@ import {
   CATEGORIES, 
   CLASS_LEVELS, 
   SUBJECTS_LIST, 
-  UNIVERSITIES_LIST 
+  UNIVERSITIES_LIST,
+  MADRASA_BOARDS,
+  MADRASA_SANADS_QAWMI,
+  MADRASA_DEGREES_ALIA,
+  MADRASA_DIVISIONS
 } from '../../constants/bangladeshData';
+import { TutorCategoryType } from '../../types';
 
 export const TutorProfileEdit: React.FC = () => {
   const { activeTutorProfile, storeState, navigateTo, language } = useApp();
@@ -38,7 +43,21 @@ export const TutorProfileEdit: React.FC = () => {
   const [district, setDistrict] = useState(tutor.district || 'Dhaka');
   const [area, setArea] = useState(tutor.area || 'Dhanmondi');
   const [preferredAreas, setPreferredAreas] = useState<string[]>(tutor.preferredAreas || []);
+  const [newPreferredArea, setNewPreferredArea] = useState('');
   const [aboutMe, setAboutMe] = useState(tutor.aboutMe || '');
+
+  // Category Stream
+  const [tutorCategory, setTutorCategory] = useState<TutorCategoryType>(tutor.tutorCategory || 'general');
+
+  // Madrasa Education State (Alia & Qawmi)
+  const [madrasaBoard, setMadrasaBoard] = useState(tutor.madrasaDetails?.madrasaBoard || MADRASA_BOARDS[0]);
+  const [highestSanadOrDegree, setHighestSanadOrDegree] = useState(tutor.madrasaDetails?.highestSanadOrDegree || 'দাওরায়ে হাদিস / তাকমিল (মাস্টার্স সমমান)');
+  const [sanadDivisionOrGpa, setSanadDivisionOrGpa] = useState(tutor.madrasaDetails?.sanadDivisionOrGpa || 'মুমতাজ (Star Marks / Distinction)');
+  const [sanadPassingYear, setSanadPassingYear] = useState(tutor.madrasaDetails?.sanadPassingYear || '2022');
+  const [isHafiz, setIsHafiz] = useState(tutor.madrasaDetails?.isHafiz || false);
+  const [qiratTajweedCertificate, setQiratTajweedCertificate] = useState(tutor.madrasaDetails?.qiratTajweedCertificate || '');
+  const [specializationDept, setSpecializationDept] = useState(tutor.madrasaDetails?.specializationDept || '');
+  const [currentKhidmatOrInstitution, setCurrentKhidmatOrInstitution] = useState(tutor.madrasaDetails?.currentKhidmatOrInstitution || '');
 
   // Education
   const [university, setUniversity] = useState(tutor.university || '');
@@ -84,6 +103,18 @@ export const TutorProfileEdit: React.FC = () => {
     phone,
     area,
     aboutMe,
+    tutorCategory,
+    madrasaDetails: {
+      category: tutorCategory,
+      isHafiz,
+      qiratTajweedCertificate,
+      madrasaBoard,
+      highestSanadOrDegree,
+      sanadPassingYear,
+      sanadDivisionOrGpa,
+      specializationDept,
+      currentKhidmatOrInstitution
+    },
     university,
     department,
     ssc: { schoolOrCollege: sscSchool, gpa: sscGpa, passingYear: sscYear, board: sscBoard },
@@ -121,9 +152,21 @@ export const TutorProfileEdit: React.FC = () => {
       area,
       preferredAreas,
       aboutMe,
-      university,
-      department,
-      programDegree,
+      tutorCategory,
+      madrasaDetails: {
+        category: tutorCategory,
+        isHafiz,
+        qiratTajweedCertificate,
+        madrasaBoard,
+        highestSanadOrDegree,
+        sanadPassingYear,
+        sanadDivisionOrGpa,
+        specializationDept,
+        currentKhidmatOrInstitution: currentKhidmatOrInstitution || university
+      },
+      university: tutorCategory === 'qawmi_madrasa' ? (currentKhidmatOrInstitution || university) : university,
+      department: tutorCategory === 'qawmi_madrasa' ? (specializationDept || highestSanadOrDegree) : department,
+      programDegree: tutorCategory === 'qawmi_madrasa' ? highestSanadOrDegree : programDegree,
       admissionYear,
       currentYearSemester,
       ssc: { schoolOrCollege: sscSchool, board: sscBoard, gpa: sscGpa, passingYear: sscYear },
@@ -264,25 +307,31 @@ export const TutorProfileEdit: React.FC = () => {
             </div>
 
             <div>
-              <label className="font-semibold text-slate-900 block mb-1">District *</label>
+              <label className="font-semibold text-slate-900 block mb-1">District (জেলা - A to Z) *</label>
               <select
                 value={district}
                 onChange={(e) => setDistrict(e.target.value)}
-                className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs"
+                className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-medium"
               >
                 {BD_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
               </select>
+              <span className="text-[11px] text-slate-400 mt-0.5 block">বাংলাদেশের ৬৪টি জেলা বর্ণানুক্রমে সাজানো</span>
             </div>
 
             <div>
-              <label className="font-semibold text-slate-900 block mb-1">Current Living Area *</label>
-              <select
+              <label className="font-semibold text-slate-900 block mb-1">Present Address (বর্তমান ঠিকানা) *</label>
+              <input
+                type="text"
+                required
                 value={area}
-                onChange={(e) => setArea(e.target.value)}
+                onChange={(e) => {
+                  setArea(e.target.value);
+                  setCurrentAddress(e.target.value);
+                }}
+                placeholder="বাড়ি/রোড নম্বর, এলাকা, থানা/উপজেলা লিখুন (যেমন: ধানমন্ডি-৩২ / আগ্রাবাদ / জিন্দাবাজার)"
                 className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs"
-              >
-                {DHAKA_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
-              </select>
+              />
+              <span className="text-[11px] text-slate-400 mt-0.5 block">আপনার বর্তমান সঠিক ঠিকানা লিখুন (যেকোনো এলাকা/উপজেলা)</span>
             </div>
           </div>
 
@@ -559,23 +608,85 @@ export const TutorProfileEdit: React.FC = () => {
 
           {/* Preferred Areas */}
           <div>
-            <label className="font-semibold text-slate-900 block mb-2">Preferred Tutoring Areas in Dhaka *</label>
-            <div className="flex flex-wrap gap-1.5">
-              {DHAKA_AREAS.map((a) => {
-                const selected = preferredAreas.includes(a);
-                return (
+            <label className="font-semibold text-slate-900 block mb-2">
+              পছন্দের টিউশন এলাকা (Preferred Tutoring Areas) *
+            </label>
+            
+            {/* Active Selected Areas */}
+            <div className="flex flex-wrap gap-1.5 mb-3 min-h-[32px] p-2 bg-slate-50 border border-slate-200 rounded-xl">
+              {preferredAreas.map((a) => (
+                <span
+                  key={a}
+                  className="inline-flex items-center gap-1.5 bg-blue-900 text-white px-2.5 py-1 rounded-lg text-xs font-semibold shadow-xs"
+                >
+                  <span>{a}</span>
                   <button
-                    key={a}
                     type="button"
-                    onClick={() => toggleArrayItem(preferredAreas, setPreferredAreas, a)}
-                    className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
-                      selected ? 'bg-amber-600 text-white border-amber-600' : 'bg-slate-50 text-slate-700 border-slate-200'
-                    }`}
+                    onClick={() => setPreferredAreas(preferredAreas.filter(x => x !== a))}
+                    className="hover:text-rose-200 font-bold ml-0.5"
+                    title="Remove"
                   >
-                    {selected ? '✓ ' : '+ '}{a}
+                    ×
                   </button>
-                );
-              })}
+                </span>
+              ))}
+              {preferredAreas.length === 0 && (
+                <span className="text-xs text-slate-400 italic self-center">কোনো পছন্দের এলাকা যুক্ত করা হয়নি</span>
+              )}
+            </div>
+
+            {/* Add Custom Area Input for Any District/Area */}
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={newPreferredArea}
+                onChange={(e) => setNewPreferredArea(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (newPreferredArea.trim() && !preferredAreas.includes(newPreferredArea.trim())) {
+                      setPreferredAreas([...preferredAreas, newPreferredArea.trim()]);
+                      setNewPreferredArea('');
+                    }
+                  }
+                }}
+                placeholder="যেকোনো জেলা/এলাকা বা থানার নাম লিখুন (যেমন: আগ্রাবাদ, উপশহর, বাড্ডা, চকবাজার)..."
+                className="flex-1 py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (newPreferredArea.trim() && !preferredAreas.includes(newPreferredArea.trim())) {
+                    setPreferredAreas([...preferredAreas, newPreferredArea.trim()]);
+                    setNewPreferredArea('');
+                  }
+                }}
+                className="px-3.5 py-2 bg-blue-900 text-white rounded-xl text-xs font-semibold hover:bg-blue-800 transition-colors"
+              >
+                + যোগ করুন
+              </button>
+            </div>
+
+            {/* Quick Suggestions */}
+            <div>
+              <span className="text-[11px] text-slate-400 block mb-1.5 font-medium">কুইক সাজেশন (ক্লিক করে যোগ/বাদ দিন):</span>
+              <div className="flex flex-wrap gap-1">
+                {DHAKA_AREAS.slice(0, 16).map((a) => {
+                  const selected = preferredAreas.includes(a);
+                  return (
+                    <button
+                      key={a}
+                      type="button"
+                      onClick={() => toggleArrayItem(preferredAreas, setPreferredAreas, a)}
+                      className={`px-2.5 py-1 rounded-lg border text-[11px] font-medium transition-all ${
+                        selected ? 'bg-amber-100 text-amber-900 border-amber-300 font-semibold' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      {selected ? '✓ ' : '+ '}{a}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
 

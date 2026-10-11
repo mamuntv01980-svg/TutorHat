@@ -187,25 +187,27 @@ export const RequestTutorPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-semibold text-slate-900 block mb-1">{language === 'bn' ? 'জেলা' : 'District'}</label>
+                <label className="font-semibold text-slate-900 block mb-1">{language === 'bn' ? 'জেলা (A to Z)' : 'District (A-Z)'}</label>
                 <select
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs"
+                  className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-medium"
                 >
                   {BD_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
                 </select>
+                <span className="text-[10px] text-slate-400 mt-0.5 block">বাংলাদেশের ৬৪টি জেলা (A-Z)</span>
               </div>
 
               <div>
-                <label className="font-semibold text-slate-900 block mb-1">{language === 'bn' ? 'এলাকা (ঢাকা)' : 'Area / Neighborhood'}</label>
-                <select
+                <label className="font-semibold text-slate-900 block mb-1">{language === 'bn' ? 'বর্তমান ঠিকানা / এলাকা' : 'Present Address / Area'}</label>
+                <input
+                  type="text"
+                  required
                   value={area}
                   onChange={(e) => setArea(e.target.value)}
+                  placeholder={language === 'bn' ? 'বাড়ি, রোড, এলাকা বা থানা লিখুন' : 'e.g. Dhanmondi, Agrabad, Uttara...'}
                   className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs"
-                >
-                  {DHAKA_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
-                </select>
+                />
               </div>
             </div>
           </div>

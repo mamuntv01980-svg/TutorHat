@@ -30,6 +30,7 @@ export const FindTutorPage: React.FC = () => {
 
   // Filters State
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<'all' | 'general' | 'alia_madrasa' | 'qawmi_madrasa'>('all');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('All');
   const [selectedArea, setSelectedArea] = useState<string>('All');
   const [selectedMedium, setSelectedMedium] = useState<string>('All');
@@ -59,6 +60,11 @@ export const FindTutorPage: React.FC = () => {
         const matchSub = tutor.preferredSubjects.some(s => s.toLowerCase().includes(term));
         const matchArea = tutor.area.toLowerCase().includes(term) || tutor.preferredAreas.some(a => a.toLowerCase().includes(term));
         if (!matchName && !matchUni && !matchSub && !matchArea) return false;
+      }
+
+      // Category filter (General, Alia Madrasa, Qawmi Madrasa)
+      if (selectedCategory !== 'all' && (tutor.tutorCategory || 'general') !== selectedCategory) {
+        return false;
       }
 
       // District
@@ -135,6 +141,7 @@ export const FindTutorPage: React.FC = () => {
 
   const clearFilters = () => {
     setSearchTerm('');
+    setSelectedCategory('all');
     setSelectedDistrict('All');
     setSelectedArea('All');
     setSelectedMedium('All');
@@ -168,14 +175,14 @@ export const FindTutorPage: React.FC = () => {
       {/* District & Area */}
       <div>
         <label className="font-semibold text-slate-900 block mb-1.5">
-          {language === 'bn' ? 'জেলা' : 'District'}
+          {language === 'bn' ? 'জেলা (A to Z - ৬৪ জেলা)' : 'District (A-Z - All 64)'}
         </label>
         <select
           value={selectedDistrict}
           onChange={(e) => setSelectedDistrict(e.target.value)}
-          className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none text-xs"
+          className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none text-xs font-medium"
         >
-          <option value="All">All Districts</option>
+          <option value="All">All Districts (সকল জেলা)</option>
           {BD_DISTRICTS.map((d) => (
             <option key={d} value={d}>{d}</option>
           ))}
@@ -353,6 +360,55 @@ export const FindTutorPage: React.FC = () => {
 
         {/* Tutors Grid */}
         <div className="lg:col-span-3 space-y-6">
+          
+          {/* Quick Stream / Category Filter Tabs */}
+          <div className="bg-white p-2 rounded-2xl border border-slate-200 shadow-xs flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('all')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                selectedCategory === 'all'
+                  ? 'bg-blue-900 text-white shadow-xs'
+                  : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              🌟 {language === 'bn' ? 'সকল টিউটর' : 'All Tutors'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('general')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                selectedCategory === 'general'
+                  ? 'bg-blue-800 text-white shadow-xs'
+                  : 'bg-blue-50/60 text-blue-950 hover:bg-blue-100/70'
+              }`}
+            >
+              🎓 {language === 'bn' ? 'জেনারেল টিউটর' : 'General Tutors'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('alia_madrasa')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                selectedCategory === 'alia_madrasa'
+                  ? 'bg-emerald-700 text-white shadow-xs'
+                  : 'bg-emerald-50/70 text-emerald-950 hover:bg-emerald-100'
+              }`}
+            >
+              🕌 {language === 'bn' ? 'আলিয়া মাদ্রাসা' : 'Alia Madrasah'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('qawmi_madrasa')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
+                selectedCategory === 'qawmi_madrasa'
+                  ? 'bg-amber-700 text-white shadow-xs'
+                  : 'bg-amber-50/70 text-amber-950 hover:bg-amber-100'
+              }`}
+            >
+              📖 {language === 'bn' ? 'কওমি মাদ্রাসা' : 'Qawmi Madrasah'}
+            </button>
+          </div>
+
           {filteredTutors.length === 0 ? (
             <div className="bg-white rounded-2xl p-12 text-center border border-slate-200">
               <GraduationCap className="w-12 h-12 text-slate-300 mx-auto mb-3" />
@@ -399,19 +455,42 @@ export const FindTutorPage: React.FC = () => {
                             )}
                           </div>
                           <div>
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 flex-wrap">
                               <h3 className="text-base font-bold text-blue-950 leading-tight">
                                 {tutor.fullName}
                               </h3>
                             </div>
                             
-                            {/* Verification badge */}
-                            {tutor.verificationStatus === 'verified' && (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 mt-0.5">
-                                <ShieldCheck className="w-3.5 h-3.5" />
-                                <span>{t.verifiedTutor}</span>
-                              </span>
-                            )}
+                            {/* Category Pill */}
+                            <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                              {tutor.tutorCategory === 'qawmi_madrasa' ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                                  📖 কওমি মাদ্রাসা
+                                </span>
+                              ) : tutor.tutorCategory === 'alia_madrasa' ? (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                  🕌 আলিয়া মাদ্রাসা
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-200">
+                                  🎓 জেনারেল টিউটর
+                                </span>
+                              )}
+
+                              {tutor.madrasaDetails?.isHafiz && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-900 border border-teal-200">
+                                  ✨ হাফেজ
+                                </span>
+                              )}
+
+                              {/* Verification badge */}
+                              {tutor.verificationStatus === 'verified' && (
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                                  <ShieldCheck className="w-3 h-3" />
+                                  <span>{t.verifiedTutor}</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
 
@@ -437,9 +516,9 @@ export const FindTutorPage: React.FC = () => {
                           <GraduationCap className="w-3.5 h-3.5 text-blue-700 shrink-0 mt-0.5" />
                           <span className="line-clamp-1">{tutor.university} ({tutor.department})</span>
                         </div>
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5" title={`বর্তমান ঠিকানা: ${tutor.currentAddress || tutor.area}, ${tutor.district}`}>
                           <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                          <span className="truncate">{tutor.area}, {tutor.district}</span>
+                          <span className="truncate">{tutor.currentAddress || tutor.area}, {tutor.district}</span>
                         </div>
                       </div>
 

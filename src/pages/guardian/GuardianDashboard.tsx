@@ -270,6 +270,18 @@ export const GuardianDashboard: React.FC = () => {
                         <h4 className="font-bold text-slate-900 text-sm">{conf.tutorName}</h4>
                         <p className="text-slate-600">Student: {conf.studentName} · Monthly Fee: ৳{conf.monthlyFee.toLocaleString()}</p>
                         <p className="text-[11px] text-slate-500">Routine: {conf.scheduleTime} ({conf.daysPerWeek} days/wk)</p>
+                        
+                        <div className="mt-2 p-2.5 bg-white rounded-lg border border-emerald-300 text-[11px] space-y-1">
+                          <span className="font-bold text-slate-800 flex items-center gap-1">
+                            💳 টিউশন ফি পরিশোধ মেথড (bKash & Nagad):
+                          </span>
+                          <p className="text-slate-600">
+                            বিকাশ / নগদ (Personal): <strong className="font-mono text-pink-700 font-bold">{settings.paymentAccounts?.bkashNumber || '01610582917'}</strong>
+                          </p>
+                          <p className="text-[10px] text-slate-500">
+                            {settings.paymentAccounts?.paymentInstructionsBn || 'Send Money করে রেফারেন্সে আপনার কনফার্মেশন আইডি দিন।'}
+                          </p>
+                        </div>
                       </div>
 
                       <button

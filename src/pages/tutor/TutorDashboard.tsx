@@ -465,6 +465,21 @@ export const TutorDashboard: React.FC = () => {
               {language === 'bn' ? 'সম্মানী ও পেমেন্ট হিস্ট্রি' : 'Tuition Remuneration & Payments'}
             </h3>
 
+            {/* Platform Official Payment Accounts Card */}
+            <div className="p-4 bg-gradient-to-r from-pink-50 via-amber-50 to-emerald-50 rounded-xl border border-pink-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div>
+                <span className="font-bold text-slate-900 flex items-center gap-1.5">
+                  💳 প্ল্যাটফর্ম অফিসিয়াল বিকাশ ও নগদ নম্বর:
+                </span>
+                <p className="text-[11px] text-slate-600 mt-0.5">
+                  বিকাশ (Personal): <strong className="font-mono text-pink-700 font-bold">{settings.paymentAccounts?.bkashNumber || '01610582917'}</strong> · নগদ (Personal): <strong className="font-mono text-amber-700 font-bold">{settings.paymentAccounts?.nagadNumber || '01610582917'}</strong>
+                </p>
+                <p className="text-[10px] text-slate-500">
+                  {settings.paymentAccounts?.paymentInstructionsBn || 'Send Money করে ট্রানজেকশন আইডি রেফারেন্সে রাখুন।'}
+                </p>
+              </div>
+            </div>
+
             {tutorPayments.length === 0 ? (
               <p className="text-xs text-slate-500 py-6 text-center">No payment records yet.</p>
             ) : (

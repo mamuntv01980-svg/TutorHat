@@ -29,24 +29,37 @@ export { heroImg, tutorProfileImg, guardianStudyImg };
 const DEFAULT_SETTINGS: SystemSettings = {
   appName: 'TutorHat',
   publicPhone: '+8809638284290',
-  whatsAppRaw: '01752617360',
-  whatsAppIntl: '+8801752617360',
+  whatsAppRaw: '01610582917',
+  whatsAppIntl: '+8801610582917',
   officeAddress: 'House 24, Road 10/A, Dhanmondi, Dhaka 1209, Bangladesh',
   supportEmail: 'support@tutorhat.com',
-  noticeMarquee: 'স্বাগতম TutorHat-এ! সারাদেশে বিশ্বস্ত ও ভেরিফাইড টিউটর পেতে আজই ফ্রি রিকোয়েস্ট করুন। নতুন টিউশন সার্কুলার প্রতিদিন প্রকাশিত হয়।',
+  noticeMarquee: 'স্বাগতম TutorHat-এ! সারাদেশে বিশ্বস্ত ও ভেরিফাইড জেনারেল, আলিয়া ও কওমি মাদ্রাসার টিউটর পেতে আজই ফ্রি রিকোয়েস্ট করুন। নতুন টিউশন সার্কুলার প্রতিদিন প্রকাশিত হয়।',
   requireTutorVerificationToPublish: true,
   allowDirectGuardianTutorCall: false,
   defaultCurrency: '৳',
   socialLinks: {
     facebook: 'https://facebook.com/tutorhatbd',
-    whatsapp: 'https://wa.me/8801752617360',
+    whatsapp: 'https://wa.me/8801610582917',
     youtube: 'https://youtube.com/@tutorhatbd',
     linkedin: 'https://linkedin.com/company/tutorhatbd'
   },
   referralRules: 'Earn ৳200 bonus or discount voucher on your child’s tuition after successful demo completion by a referred student or tutor.',
   referralBonusText: '৳200 Credit per verified referral',
   jobAutoApprove: false,
-  isDemoDataEnabled: true
+  isDemoDataEnabled: true,
+  paymentAccounts: {
+    bkashNumber: '01610582917',
+    bkashType: 'personal',
+    nagadNumber: '01610582917',
+    nagadType: 'personal',
+    paymentInstructionsBn: 'বিকাশ অথবা নগদ "Send Money" (সেন্ড মানি) অপশন ব্যবহার করে 01610582917 নম্বরে পেমেন্ট করুন। রেফারেন্সে আপনার নাম বা জব আইডি দিন।'
+  },
+  adminSecurity: {
+    requireStrongPassword: true,
+    adminPasswordHash: 'Admin@2026#Secure',
+    biometricPasskeyRegistered: false,
+    twoFactorEnabled: false
+  }
 };
 
 const INITIAL_USERS: User[] = [
@@ -102,6 +115,19 @@ const INITIAL_USERS: User[] = [
     createdAt: '2026-02-18T14:00:00.000Z'
   },
   {
+    id: 'user_tutor_04',
+    name: 'Mufti Hafez Mahmudur Rahman',
+    email: 'mahmud.mufti@example.com',
+    phone: '01610582917',
+    role: 'tutor',
+    gender: 'male',
+    location: 'Lalbagh, Dhaka',
+    district: 'Dhaka',
+    status: 'active',
+    referralCode: 'MAHMUD-TH40',
+    createdAt: '2026-02-22T09:00:00.000Z'
+  },
+  {
     id: 'user_guardian_01',
     name: 'Mrs. Farhana Begum',
     email: 'farhana.guardian@example.com',
@@ -132,6 +158,7 @@ const INITIAL_TUTORS: TutorProfile[] = [
     area: 'Dhanmondi',
     preferredAreas: ['Dhanmondi', 'Mirpur', 'Mohammadpur', 'Lalmatia', 'Farmgate'],
     aboutMe: 'Graduated from BUET (EEE). I have over 4 years of experience preparing students for SSC, HSC, and English Medium board exams in Mathematics and Physics. My focus is conceptual clarity and regular weekly model tests.',
+    tutorCategory: 'general',
     university: 'Bangladesh University of Engineering and Technology (BUET)',
     department: 'Electrical & Electronic Engineering (EEE)',
     programDegree: 'B.Sc. Engineering',
@@ -187,6 +214,7 @@ const INITIAL_TUTORS: TutorProfile[] = [
     area: 'Uttara',
     preferredAreas: ['Uttara', 'Nikunja', 'Bashundhara R/A', 'Banani'],
     aboutMe: 'Honours student in English at University of Dhaka. Dedicated to helping junior and high school students master English grammar, creative writing, and Cambridge IGCSE English. Very friendly and patient.',
+    tutorCategory: 'general',
     university: 'University of Dhaka (DU)',
     department: 'Department of English',
     programDegree: 'B.A. (Honours)',
@@ -242,6 +270,18 @@ const INITIAL_TUTORS: TutorProfile[] = [
     area: 'Mohammadpur',
     preferredAreas: ['Mohammadpur', 'Dhanmondi', 'Shyamoli', 'Lalmatia'],
     aboutMe: 'Hafez-e-Quran and Kamil in Hadith from Islamic Arabic University. 6 years of experience in Noorani Quran reading, Makhraj, Tajweed, Duas, and basic Arabic speaking for children and adults.',
+    tutorCategory: 'alia_madrasa',
+    madrasaDetails: {
+      category: 'alia_madrasa',
+      isHafiz: true,
+      qiratTajweedCertificate: 'ইজাযাহ সনদ (তাজবীদ ও ক্বেরাত)',
+      madrasaBoard: 'বাংলাদেশ মাদরাসা শিক্ষা বোর্ড (Alia Madrasah Board)',
+      highestSanadOrDegree: 'কামিল / মাস্টার্স (হাদিস বিভাগ)',
+      sanadPassingYear: '2021',
+      sanadDivisionOrGpa: 'প্রথম শ্রেণি (First Class)',
+      specializationDept: 'আল-হাদিস ও ইসলামিক স্টাডিজ',
+      currentKhidmatOrInstitution: 'ঢাকা সরকারি মাদ্রাসা-ই-আলিয়া'
+    },
     university: 'Islamic Arabic University',
     department: 'Department of Hadith & Islamic Studies',
     programDegree: 'Masters / Kamil',
@@ -280,6 +320,73 @@ const INITIAL_TUTORS: TutorProfile[] = [
     completionPercentage: 100,
     rating: 4.95,
     totalReviews: 19,
+    featured: true
+  },
+  {
+    id: 'tut_04',
+    userId: 'user_tutor_04',
+    fullName: 'মুফতি হাফেজ মাহমুদুর রহমান',
+    photo: '',
+    gender: 'male',
+    dateOfBirth: '1996-03-12',
+    phone: '01610582917',
+    email: 'mahmud.mufti@example.com',
+    currentAddress: 'Lalbagh Shahi Masjid Area',
+    permanentAddress: 'Brahmanbaria Sadar',
+    district: 'Dhaka',
+    area: 'Lalbagh',
+    preferredAreas: ['Lalbagh', 'Dhanmondi', 'Azimpur', 'Chawkbazar', 'New Market'],
+    aboutMe: 'মুফতি ও হাফেজ-এ-কুরআন। হাটহাজারী মাদ্রাসা থেকে দাওরায়ে হাদিস (মাস্টার্স সমমান) এবং উচ্চতর ইফতা কোর্স সম্পন্ন। শিশুদের নুরানী পদ্ধতিতে কোরআন মাজিদ শিক্ষা, তাজবীদ, মাসনুন দো‘আ এবং কওমি মাদ্রাসার নাহু-সরফ ও হাদিস পড়ানোর ৫ বছরের অভিজ্ঞতা।',
+    tutorCategory: 'qawmi_madrasa',
+    madrasaDetails: {
+      category: 'qawmi_madrasa',
+      isHafiz: true,
+      qiratTajweedCertificate: 'কারী ও তাজবীদ সনদপত্র (মুত্তাসিল সানাদ)',
+      madrasaBoard: 'আল-হাইয়াতুল উলয়া লিল জামিআতিল কওমিয়া বাংলাদেশ',
+      highestSanadOrDegree: 'দাওরায়ে হাদিস / তাকমিল (মাস্টার্স সমমান)',
+      sanadPassingYear: '2020',
+      sanadDivisionOrGpa: 'মুমতাজ (Star Marks / Distinction)',
+      specializationDept: 'ইফতা (ইসলামি আইন ও ফতোয়া গবেষণা)',
+      currentKhidmatOrInstitution: 'আল-জামিয়াতুল আহলিয়া দারুল উলুম মুঈনুল ইসলাম (হাটহাজারী)'
+    },
+    university: 'আল-জামিয়াতুল আহলিয়া দারুল উলুম মুঈনুল ইসলাম (হাটহাজারী)',
+    department: 'দাওরায়ে হাদিস ও উচ্চতর ইফতা বিভাগ',
+    programDegree: 'দাওরায়ে হাদিস (মাস্টার্স সমমান)',
+    admissionYear: '2016',
+    currentYearSemester: 'উচ্চতর সনদপ্রাপ্ত',
+    institution: 'আল-হাইয়াতুল উলয়া লিল জামিআতিল কওমিয়া',
+    ssc: {
+      schoolOrCollege: 'জামিয়া ইসলামিয়া ইউনুছিয়া',
+      board: 'বেফাকুল মাদারিসিল আরাবিয়া',
+      gpa: 'মুমতাজ (Star Marks)',
+      groupOrMajor: 'সানাবিয়া আম্মা',
+      passingYear: '2015'
+    },
+    hsc: {
+      schoolOrCollege: 'দারুল উলুম হাটহাজারী',
+      board: 'বেফাকুল মাদারিসিল আরাবিয়া',
+      gpa: 'মুমতাজ (Star Marks)',
+      groupOrMajor: 'ফযিলত',
+      passingYear: '2017'
+    },
+    teachingExperienceYears: 5,
+    teachingMethod: 'নুরানী তরিকায় বিশুদ্ধ মাখরাজ ও তাজবীদ মাশক, আমপারা ও পূর্ণ কুরআন হিফজ করান, শিশুদের আদব-শিষ্টাচার ও মাসায়েল শিক্ষা।',
+    preferredClasses: ['Play / Nursery / KG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5 (PEC)', 'কওমি মাদ্রাসা জামাত (ইবতিদায়ি-সানাবিয়া)', 'হিফজ শিক্ষার্থী'],
+    preferredSubjects: ['Holy Quran & Tajweed', 'নুরানী কুরআন শিক্ষা', 'হিফজুল কুরআন (৩০ পারা)', 'Arabic Grammar & Spoken', 'Islamic Studies', 'মাসআলা-মাসায়েল ও আদব'],
+    preferredMediums: ['Quran & Arabic Learning', 'Hifz & Tajweed', 'Madrasa / Islamic Curriculum'],
+    categories: ['Arabic & Quran', 'Hifz & Tajweed', 'Islamic Studies'],
+    onlineTeaching: true,
+    homeTuition: true,
+    coachingGroupTuition: false,
+    availableDays: ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday'],
+    availableTime: 'সকাল ৭:০০ - ৯:০০ অথবা মাগরিবের পর',
+    expectedSalary: 6000,
+    preferredStudentGender: 'any',
+    preferredClassLevel: 'সকল বয়স ও শ্রেণির শিক্ষার্থী',
+    verificationStatus: 'verified',
+    completionPercentage: 100,
+    rating: 5.0,
+    totalReviews: 24,
     featured: true
   }
 ];
@@ -760,18 +867,49 @@ export interface StoreState {
 export function calculateCvCompletion(tutor: Partial<TutorProfile>): { percent: number; missing: string[] } {
   const missing: string[] = [];
   let score = 0;
+
+  const isQawmi = tutor.tutorCategory === 'qawmi_madrasa';
+  const isAlia = tutor.tutorCategory === 'alia_madrasa';
+
   const weights = [
     { field: 'fullName', name: 'Full Name', weight: 10, check: () => !!tutor.fullName?.trim() },
     { field: 'gender', name: 'Gender', weight: 5, check: () => !!tutor.gender },
     { field: 'phone', name: 'Mobile Number', weight: 10, check: () => !!tutor.phone?.trim() },
     { field: 'area', name: 'Current Area', weight: 5, check: () => !!tutor.area?.trim() },
-    { field: 'aboutMe', name: 'About Me Bio', weight: 10, check: () => (tutor.aboutMe?.length || 0) > 30 },
-    { field: 'university', name: 'University Name', weight: 15, check: () => !!tutor.university?.trim() },
-    { field: 'department', name: 'Department / Major', weight: 10, check: () => !!tutor.department?.trim() },
-    { field: 'ssc', name: 'SSC Records', weight: 5, check: () => !!tutor.ssc?.schoolOrCollege && !!tutor.ssc?.gpa },
-    { field: 'hsc', name: 'HSC Records', weight: 5, check: () => !!tutor.hsc?.schoolOrCollege && !!tutor.hsc?.gpa },
-    { field: 'preferredClasses', name: 'Preferred Classes', weight: 5, check: () => (tutor.preferredClasses?.length || 0) > 0 },
-    { field: 'preferredSubjects', name: 'Preferred Subjects', weight: 5, check: () => (tutor.preferredSubjects?.length || 0) > 0 },
+    { field: 'aboutMe', name: 'About Me Bio', weight: 10, check: () => (tutor.aboutMe?.length || 0) > 20 },
+    
+    // Academic checks adapting to category:
+    {
+      field: 'academicInstitution',
+      name: isQawmi ? 'Madrasa / Jamiah Name' : 'University / College Name',
+      weight: 15,
+      check: () => !!tutor.university?.trim() || !!tutor.madrasaDetails?.currentKhidmatOrInstitution?.trim()
+    },
+    {
+      field: 'academicDegree',
+      name: isQawmi ? 'Sanad / Department (e.g. Dawra-e-Hadith/Ifta)' : 'Department / Discipline',
+      weight: 10,
+      check: () => !!tutor.department?.trim() || !!tutor.madrasaDetails?.highestSanadOrDegree?.trim()
+    },
+    {
+      field: 'secondaryRecords',
+      name: isQawmi ? 'Sanad / Board Details' : (isAlia ? 'Dakhil / SSC Record' : 'SSC Records'),
+      weight: 5,
+      check: () => isQawmi 
+        ? (!!tutor.madrasaDetails?.madrasaBoard || (!!tutor.ssc?.schoolOrCollege && !!tutor.ssc?.gpa))
+        : (!!tutor.ssc?.schoolOrCollege && !!tutor.ssc?.gpa)
+    },
+    {
+      field: 'higherRecords',
+      name: isQawmi ? 'Specialization (Hifz/Qirat/Adab/Sanad)' : (isAlia ? 'Alim / HSC Record' : 'HSC Records'),
+      weight: 5,
+      check: () => isQawmi
+        ? (!!tutor.madrasaDetails?.highestSanadOrDegree || !!tutor.madrasaDetails?.isHafiz || (!!tutor.hsc?.schoolOrCollege && !!tutor.hsc?.gpa))
+        : (!!tutor.hsc?.schoolOrCollege && !!tutor.hsc?.gpa)
+    },
+
+    { field: 'preferredClasses', name: 'Preferred Classes / Learner Levels', weight: 5, check: () => (tutor.preferredClasses?.length || 0) > 0 },
+    { field: 'preferredSubjects', name: 'Preferred Subjects', weight: 10, check: () => (tutor.preferredSubjects?.length || 0) > 0 },
     { field: 'preferredAreas', name: 'Preferred Teaching Areas', weight: 5, check: () => (tutor.preferredAreas?.length || 0) > 0 },
     { field: 'expectedSalary', name: 'Expected Salary', weight: 5, check: () => (tutor.expectedSalary || 0) > 0 },
     { field: 'teachingExperienceYears', name: 'Teaching Experience', weight: 5, check: () => typeof tutor.teachingExperienceYears === 'number' }
@@ -805,7 +943,18 @@ class Store {
       if (data) {
         const parsed = JSON.parse(data);
         return {
-          settings: { ...DEFAULT_SETTINGS, ...(parsed.settings || {}) },
+          settings: {
+            ...DEFAULT_SETTINGS,
+            ...(parsed.settings || {}),
+            paymentAccounts: {
+              ...DEFAULT_SETTINGS.paymentAccounts,
+              ...(parsed.settings?.paymentAccounts || {})
+            },
+            adminSecurity: {
+              ...DEFAULT_SETTINGS.adminSecurity,
+              ...(parsed.settings?.adminSecurity || {})
+            }
+          },
           users: parsed.users || INITIAL_USERS,
           tutors: parsed.tutors || INITIAL_TUTORS,
           requests: parsed.requests || INITIAL_REQUESTS,

@@ -96,6 +96,28 @@ export const TutorDetailPage: React.FC = () => {
                 <span className="font-mono text-xs text-slate-400 bg-slate-100 px-2 py-0.5 rounded">
                   ID: {tutor.id}
                 </span>
+
+                {/* Tutor Category Pill */}
+                {tutor.tutorCategory === 'qawmi_madrasa' ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                    📖 কওমি মাদ্রাসা টিউটর
+                  </span>
+                ) : tutor.tutorCategory === 'alia_madrasa' ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+                    🕌 আলিয়া মাদ্রাসা টিউটর
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-200">
+                    🎓 জেনারেল টিউটর
+                  </span>
+                )}
+
+                {/* Hafiz-e-Quran Badge if applicable */}
+                {tutor.madrasaDetails?.isHafiz && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-900 border border-teal-300">
+                    ✨ হাফেজ-এ-কুরআন
+                  </span>
+                )}
               </div>
 
               {tutor.verificationStatus === 'verified' && (
@@ -105,10 +127,16 @@ export const TutorDetailPage: React.FC = () => {
                 </div>
               )}
 
-              <p className="text-xs text-slate-600 flex items-center gap-1.5 pt-1">
-                <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                <span>{tutor.area}, {tutor.district}</span>
-              </p>
+              <div className="text-xs text-slate-600 flex flex-wrap items-center gap-x-3 gap-y-1 pt-1.5">
+                <span className="flex items-center gap-1.5 font-medium text-slate-800">
+                  <MapPin className="w-3.5 h-3.5 text-blue-700 shrink-0" />
+                  <span className="text-slate-500 font-normal">বর্তমান ঠিকানা:</span>
+                  <span className="font-semibold text-slate-900">{tutor.currentAddress || tutor.area}</span>
+                </span>
+                <span className="bg-blue-50 text-blue-900 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border border-blue-200">
+                  জেলা: {tutor.district}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -195,6 +223,49 @@ export const TutorDetailPage: React.FC = () => {
             </h3>
 
             <div className="space-y-4 text-xs text-slate-700">
+              {/* Madrasa Credentials Card (for Alia and Qawmi Madrasa tutors) */}
+              {tutor.madrasaDetails && (tutor.tutorCategory === 'qawmi_madrasa' || tutor.tutorCategory === 'alia_madrasa') && (
+                <div className={`p-4 rounded-xl border ${
+                  tutor.tutorCategory === 'qawmi_madrasa' 
+                    ? 'bg-amber-50/70 border-amber-300' 
+                    : 'bg-emerald-50/70 border-emerald-300'
+                }`}>
+                  <div className="flex items-center justify-between gap-2 border-b border-black/10 pb-2 mb-3">
+                    <span className="font-bold text-xs flex items-center gap-1.5 text-slate-900">
+                      {tutor.tutorCategory === 'qawmi_madrasa' ? '📖 কওমি মাদ্রাসা ও সানাদ বিবরণ' : '🕌 আলিয়া মাদ্রাসা ও ডিগ্রি বিবরণ'}
+                    </span>
+                    {tutor.madrasaDetails.sanadDivisionOrGpa && (
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-800">
+                        {tutor.madrasaDetails.sanadDivisionOrGpa}
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                    <div>
+                      <span className="text-[11px] text-slate-500 block">সর্বোচ্চ সনদ / ডিগ্রি:</span>
+                      <span className="font-bold text-slate-900">{tutor.madrasaDetails.highestSanadOrDegree || tutor.programDegree}</span>
+                    </div>
+                    <div>
+                      <span className="text-[11px] text-slate-500 block">মাদরাসা শিক্ষাবোর্ড:</span>
+                      <span className="font-semibold text-slate-800">{tutor.madrasaDetails.madrasaBoard || 'বেফাক / হাইয়াতুল উলয়া'}</span>
+                    </div>
+                    {tutor.madrasaDetails.specializationDept && (
+                      <div>
+                        <span className="text-[11px] text-slate-500 block">বিশেষ তাকাহ্হুস / বিভাগ:</span>
+                        <span className="font-semibold text-slate-800">{tutor.madrasaDetails.specializationDept}</span>
+                      </div>
+                    )}
+                    {tutor.madrasaDetails.qiratTajweedCertificate && (
+                      <div>
+                        <span className="text-[11px] text-slate-500 block">ক্বেরাত ও তাজবীদ সনদ:</span>
+                        <span className="font-semibold text-teal-800">{tutor.madrasaDetails.qiratTajweedCertificate}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* University */}
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
                 <div className="flex items-start justify-between">
@@ -328,6 +399,15 @@ export const TutorDetailPage: React.FC = () => {
                   </span>
                 ))}
               </div>
+            </div>
+
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200/80 space-y-1">
+              <span className="text-[11px] text-slate-500 block font-medium">
+                {language === 'bn' ? 'বর্তমান ঠিকানা (Present Address):' : 'Present Address:'}
+              </span>
+              <p className="font-semibold text-slate-900 text-xs">
+                {tutor.currentAddress || tutor.area}, {tutor.district}
+              </p>
             </div>
 
             <div>

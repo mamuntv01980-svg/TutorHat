@@ -25,6 +25,20 @@ export interface EducationEntry {
   passingYear: string;
 }
 
+export type TutorCategoryType = 'general' | 'alia_madrasa' | 'qawmi_madrasa';
+
+export interface MadrasaEducationDetails {
+  category: TutorCategoryType; // 'general', 'alia_madrasa', or 'qawmi_madrasa'
+  isHafiz?: boolean; // হাফেজ-এ-কুরআন
+  qiratTajweedCertificate?: string; // ক্বেরাত ও তাজবীদ সনদ
+  madrasaBoard?: string; // বেফাকুল মাদারিসিল আরাবিয়া (Befaq), আল-হাইয়াতুল উলয়া, বাংলাদেশ মাদরাসা শিক্ষা বোর্ড (Alia)
+  highestSanadOrDegree?: string; // দাওরায়ে হাদিস (মাস্টার্স সমমান), তাকমিল, ফযিলত, সানাবিয়া, কামিল, ফাজিল, আলিম, দাখিল
+  sanadPassingYear?: string;
+  sanadDivisionOrGpa?: string; // মুমতাজ / জাইয়্যিদ জিদ্দান / First Class
+  specializationDept?: string; // ইফতা (মুফতি), আদব (আরবি সাহিত্য), তাফসির, হাদিস, হিফজ
+  currentKhidmatOrInstitution?: string; // বর্তমান খেদমত / প্রতিষ্ঠান
+}
+
 export interface TutorProfile {
   id: string;
   userId: string;
@@ -40,6 +54,10 @@ export interface TutorProfile {
   area: string;
   preferredAreas: string[];
   aboutMe: string;
+
+  // Tutor Stream / Category (General, Alia Madrasa, Qawmi Madrasa)
+  tutorCategory?: TutorCategoryType;
+  madrasaDetails?: MadrasaEducationDetails;
 
   // Education
   university: string;
@@ -308,6 +326,23 @@ export interface SocialLinks {
   linkedin?: string;
 }
 
+export interface PaymentAccountsConfig {
+  bkashNumber: string;
+  bkashType: 'personal' | 'merchant' | 'agent';
+  nagadNumber: string;
+  nagadType: 'personal' | 'merchant' | 'agent';
+  rocketNumber?: string;
+  paymentInstructionsBn: string;
+}
+
+export interface AdminSecurityConfig {
+  requireStrongPassword: boolean;
+  adminPasswordHash?: string;
+  biometricPasskeyRegistered?: boolean;
+  biometricCredentialId?: string;
+  twoFactorEnabled?: boolean;
+}
+
 export interface SystemSettings {
   appName: string;
   publicPhone: string;
@@ -324,4 +359,6 @@ export interface SystemSettings {
   referralBonusText: string;
   jobAutoApprove: boolean;
   isDemoDataEnabled: boolean;
+  paymentAccounts?: PaymentAccountsConfig;
+  adminSecurity?: AdminSecurityConfig;
 }
