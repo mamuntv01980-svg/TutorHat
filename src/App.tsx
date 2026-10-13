@@ -10,6 +10,7 @@ import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { BottomNavigation } from './components/layout/BottomNavigation';
 import { WhatsAppButton } from './components/common/WhatsAppButton';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Pages
 import { HomePage } from './pages/HomePage';
@@ -27,6 +28,7 @@ import { PrivacyPage, TermsPage } from './pages/PolicyPages';
 import { ChooseRolePage } from './pages/ChooseRolePage';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { FeeCalculatorPage } from './pages/FeeCalculatorPage';
 import { TutorDashboard } from './pages/tutor/TutorDashboard';
 import { TutorProfileEdit } from './pages/tutor/TutorProfileEdit';
 import { GuardianDashboard } from './pages/guardian/GuardianDashboard';
@@ -65,6 +67,8 @@ const AppContent: React.FC = () => {
         return <TermsPage />;
       case 'choose-role':
         return <ChooseRolePage />;
+      case 'fee-calculator':
+        return <FeeCalculatorPage />;
       case 'login':
         return <LoginPage />;
       case 'register':
@@ -102,8 +106,10 @@ const AppContent: React.FC = () => {
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }

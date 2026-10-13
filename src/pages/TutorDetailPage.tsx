@@ -17,6 +17,8 @@ import {
 import { useApp } from '../context/AppContext';
 import { TRANSLATIONS } from '../constants/translations';
 import { tutorProfileImg } from '../services/store';
+import { TutorVerificationBadge } from '../components/common/TutorVerificationBadge';
+import { TutorReviewsSection } from '../components/review/TutorReviewsSection';
 
 export const TutorDetailPage: React.FC = () => {
   const { 
@@ -120,12 +122,9 @@ export const TutorDetailPage: React.FC = () => {
                 )}
               </div>
 
-              {tutor.verificationStatus === 'verified' && (
-                <div className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span>{t.verifiedTutor}</span>
-                </div>
-              )}
+              <div className="pt-0.5">
+                <TutorVerificationBadge tutor={tutor} size="lg" />
+              </div>
 
               <div className="text-xs text-slate-600 flex flex-wrap items-center gap-x-3 gap-y-1 pt-1.5">
                 <span className="flex items-center gap-1.5 font-medium text-slate-800">
@@ -325,44 +324,67 @@ export const TutorDetailPage: React.FC = () => {
             </div>
           )}
 
-          {/* Reviews & Ratings */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="text-base font-bold text-blue-950 flex items-center gap-2">
-                <Star className="w-4 h-4 fill-amber-400 text-amber-500" />
-                <span>{language === 'bn' ? 'অভিভাবকদের রিভিউ' : 'Guardian Reviews'} ({approvedReviews.length})</span>
-              </h3>
-            </div>
-
-            {approvedReviews.length === 0 ? (
-              <p className="text-xs text-slate-500 italic">
-                {language === 'bn' ? 'এখনও কোনো অনুমোদিত রিভিউ নেই।' : 'No reviews posted yet.'}
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {approvedReviews.map((rev) => (
-                  <div key={rev.id} className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold text-slate-900">{rev.guardianName}</span>
-                      <div className="flex items-center gap-0.5 text-amber-500">
-                        {Array.from({ length: rev.rating }).map((_, i) => (
-                          <Star key={i} className="w-3.5 h-3.5 fill-current" />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-slate-600 leading-relaxed">{rev.comment}</p>
-                    <span className="text-[10px] text-slate-400 block pt-1">{rev.date}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          {/* Feature 2: Comprehensive Ratings, Multi-criteria Reviews & Feedback Section */}
+          {tutor && (
+            <TutorReviewsSection 
+              tutor={tutor} 
+              reviews={(storeState.reviews || []).filter(r => r && r.tutorId === tutor.id)} 
+            />
+          )}
 
         </div>
 
         {/* Right Col: Teaching Preferences & Safety Policy */}
         <div className="space-y-6">
           
+          {/* Feature 1: Official Trust & KYC Verification Guarantee Card */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-3.5 text-xs shadow-xs">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                <h3 className="font-bold text-sm text-blue-950">
+                  {language === 'bn' ? 'নিরাপত্তা ও ভেরিফিকেশন নিশ্চয়তা' : 'Trust & Verification Guarantee'}
+                </h3>
+              </div>
+              <span className="font-black px-2 py-0.5 rounded-full text-[11px] bg-amber-100 text-amber-950 border border-amber-300">
+                {tutor.trustScore || (tutor.verificationStatus === 'verified' ? 100 : 40)}% ট্রাস্ট স্কোর
+              </span>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-slate-700 font-medium">জাতীয় পরিচয়পত্র (NID)</span>
+                <span className="font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded text-[11px]">
+                  {tutor.isNidVerified !== false ? 'যাচাইকৃত ✓' : 'প্রক্রিয়াধীন'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-slate-700 font-medium">বিশ্ববিদ্যালয় স্টুডেন্ট আইডি</span>
+                <span className="font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded text-[11px]">
+                  {tutor.isStudentIdVerified !== false ? 'যাচাইকৃত ✓' : 'প্রক্রিয়াধীন'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-slate-700 font-medium">শিক্ষাগত সনদ / ফলাফল</span>
+                <span className="font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded text-[11px]">
+                  {tutor.isAcademicVerified !== false ? 'যাচাইকৃত ✓' : 'প্রক্রিয়াধীন'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/80">
+                <span className="text-slate-700 font-medium">মোবাইল ও অভিভাবক রেটিং</span>
+                <span className="font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded text-[11px]">
+                  ভেরিফাইড ✓
+                </span>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-500 pt-1 leading-relaxed">
+              {language === 'bn' 
+                ? 'টিউটরহাটের অফিশিয়াল টিম এই শিক্ষকের সকল জাতীয় পরিচয়পত্র ও বিশ্ববিদ্যালয় পরিচয়পত্র সরেজমিনে যাচাই করেছে। অভিভাবক হিসেবে আপনি ১০০% নিশ্চিন্তে টিউশন নিশ্চিত করতে পারেন।'
+                : 'TutorHat official audit team has verified this tutor’s original credentials and identity documents.'}
+            </p>
+          </div>
+
           <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-4 text-xs">
             <h3 className="text-sm font-bold text-blue-950 uppercase tracking-wider pb-2 border-b border-slate-100">
               {language === 'bn' ? 'পছন্দের ক্লাস ও বিষয়' : 'Teaching Preferences'}

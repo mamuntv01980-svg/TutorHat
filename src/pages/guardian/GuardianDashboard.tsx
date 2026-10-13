@@ -81,6 +81,13 @@ export const GuardianDashboard: React.FC = () => {
       guardianId: guardianId,
       guardianName: currentUser?.name || 'Guardian',
       rating: ratingScore,
+      criteria: {
+        teachingSkill: ratingScore,
+        punctuality: ratingScore,
+        behavior: ratingScore,
+        studentImprovement: ratingScore
+      },
+      isVerifiedTuition: true,
       comment: reviewComment
     });
     setReviewSuccess(true);

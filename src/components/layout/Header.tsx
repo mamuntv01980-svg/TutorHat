@@ -38,9 +38,9 @@ export const Header: React.FC = () => {
   const navLinks: { label: string; view: AppView }[] = [
     { label: t.findTutor, view: 'find-tutor' },
     { label: t.tuitionJobs, view: 'tuition-jobs' },
+    { label: language === 'bn' ? 'ফি ক্যালকুলেটর' : 'Fee Calculator', view: 'fee-calculator' },
     { label: t.becomeTutor, view: 'become-a-tutor' },
     { label: t.howItWorks, view: 'how-it-works' },
-    { label: t.aboutUs, view: 'about' },
     { label: t.contact, view: 'contact' }
   ];
 
@@ -129,14 +129,6 @@ export const Header: React.FC = () => {
                   >
                     <span>Guardian (Farhana)</span>
                     {currentUser?.role === 'guardian' && <span className="text-blue-600">✓</span>}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => { loginAs('admin'); setRoleSwitchOpen(false); }}
-                    className="w-full text-left px-3 py-1.5 text-xs font-medium hover:bg-blue-50 text-slate-700 flex items-center justify-between"
-                  >
-                    <span>Admin Console</span>
-                    {currentUser?.role === 'admin' && <span className="text-blue-600">✓</span>}
                   </button>
                 </div>
               )}
@@ -279,7 +271,7 @@ export const Header: React.FC = () => {
             <div className="text-xs font-semibold text-slate-400 px-3 uppercase tracking-wider">
               {language === 'bn' ? 'সরাসরি ভূমিকা নির্বাচন' : 'Switch Persona'}
             </div>
-            <div className="grid grid-cols-3 gap-2 px-1">
+            <div className="grid grid-cols-2 gap-2 px-1">
               <button
                 type="button"
                 onClick={() => { loginAs('tutor'); setMobileMenuOpen(false); }}
@@ -301,17 +293,6 @@ export const Header: React.FC = () => {
                 }`}
               >
                 Guardian
-              </button>
-              <button
-                type="button"
-                onClick={() => { loginAs('admin'); setMobileMenuOpen(false); }}
-                className={`py-2 text-xs font-medium rounded-lg border text-center ${
-                  currentUser?.role === 'admin'
-                    ? 'bg-blue-900 text-white border-blue-900'
-                    : 'bg-slate-50 text-slate-700 border-slate-200'
-                }`}
-              >
-                Admin
               </button>
             </div>
 

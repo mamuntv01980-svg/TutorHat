@@ -1,4 +1,5 @@
 export type UserRole = 'tutor' | 'guardian' | 'admin';
+export type AdminRoleLevel = 'super_admin' | 'moderator' | 'manager';
 
 export interface User {
   id: string;
@@ -15,6 +16,10 @@ export interface User {
   adminNotes?: string;
   createdAt: string;
   passwordHash?: string;
+  adminRoleLevel?: AdminRoleLevel;
+  lastActiveAt?: string;
+  adminPinHash?: string;
+  adminPinSalt?: string;
 }
 
 export interface EducationEntry {
@@ -93,6 +98,22 @@ export interface TutorProfile {
   rating: number;
   totalReviews: number;
   featured?: boolean;
+
+  // KYC & Trust Verification Documents
+  nidNumber?: string;
+  nidFrontPhoto?: string;
+  nidBackPhoto?: string;
+  studentIdCardPhoto?: string;
+  certificatePhoto?: string;
+  isNidVerified?: boolean;
+  isStudentIdVerified?: boolean;
+  isAcademicVerified?: boolean;
+  verificationSubmittedDate?: string;
+  verifiedDate?: string;
+  verifiedByAdminId?: string;
+  verificationNotes?: string;
+  trustScore?: number; // e.g. 100%
+  badgeLevel?: 'none' | 'standard' | 'verified_pro' | 'golden_star';
 }
 
 export interface TuitionRequest {
@@ -246,15 +267,31 @@ export interface CertificateRecord {
   verificationCode: string;
 }
 
+export interface ReviewCriteria {
+  teachingSkill: number; // 1 to 5
+  punctuality: number; // 1 to 5
+  behavior: number; // 1 to 5
+  studentImprovement: number; // 1 to 5
+}
+
 export interface ReviewRecord {
   id: string;
   tutorId: string;
   guardianId: string;
   guardianName: string;
+  studentGradeOrSubject?: string;
   rating: number; // 1 to 5
+  criteria?: ReviewCriteria;
   comment: string;
   date: string;
   status: 'pending' | 'approved' | 'rejected';
+  isVerifiedTuition?: boolean; // Hired & Completed through TutorHat
+  helpfulCount?: number;
+  tutorReply?: {
+    replyText: string;
+    repliedAt: string;
+    tutorName?: string;
+  };
 }
 
 export interface NotificationItem {
@@ -336,11 +373,20 @@ export interface PaymentAccountsConfig {
 }
 
 export interface AdminSecurityConfig {
-  requireStrongPassword: boolean;
+  requireStrongPassword?: boolean;
   adminPasswordHash?: string;
+  adminPinHash?: string;
+  adminPinSalt?: string;
   biometricPasskeyRegistered?: boolean;
   biometricCredentialId?: string;
+  biometricCredentialName?: string;
   twoFactorEnabled?: boolean;
+  maxFailedAttempts?: number;
+  lockoutDurationMinutes?: number;
+  adminAccountConfigured?: boolean;
+  primaryAdminName?: string;
+  primaryAdminEmail?: string;
+  primaryAdminPhone?: string;
 }
 
 export interface SystemSettings {

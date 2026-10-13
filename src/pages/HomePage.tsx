@@ -381,6 +381,35 @@ export const HomePage: React.FC = () => {
         </div>
       </section>
 
+      {/* Feature 3 Spotlight: Smart Tuition Fee Calculator Teaser */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 rounded-3xl p-6 sm:p-8 text-white shadow-lg border border-blue-800 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-amber-400 text-blue-950 text-xs font-bold">
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? 'ফিচার ৩ • স্মার্ট টিউশন ফি ক্যালকুলেটর' : 'Feature 3 • Smart Fee Calculator'}</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black">
+              {language === 'bn' ? 'টিউশন ফি কত হওয়া উচিত বুঝতে পারছেন না?' : 'Unsure what tuition fees should be?'}
+            </h3>
+            <p className="text-xs sm:text-sm text-blue-200 leading-relaxed">
+              {language === 'bn'
+                ? 'শ্রেণি, মাধ্যম (বাংলা/ইংরেজি), এলাকা এবং শিক্ষকের ব্যাকগ্রাউন্ডের ভিত্তিতে বর্তমান বাংলাদেশের সঠিক বাজার রেট জেনে নিন নিমেষেই।'
+                : 'Estimate standard market rates instantly based on class, curriculum, subjects, location and tutor background.'}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => navigateTo('fee-calculator')}
+            className="px-6 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-blue-950 font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-98 shrink-0 flex items-center gap-2 cursor-pointer"
+          >
+            <span>{language === 'bn' ? 'ক্যালকুলেটরে হিসাব দেখুন' : 'Calculate Fee Now'}</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </section>
+
       {/* 5. FEATURED TUITION JOBS (Real Database Jobs) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">

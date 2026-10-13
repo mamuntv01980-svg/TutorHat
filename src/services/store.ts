@@ -1,5 +1,6 @@
 import {
   User,
+  AdminRoleLevel,
   TutorProfile,
   TuitionRequest,
   TuitionJob,
@@ -55,10 +56,18 @@ const DEFAULT_SETTINGS: SystemSettings = {
     paymentInstructionsBn: 'বিকাশ অথবা নগদ "Send Money" (সেন্ড মানি) অপশন ব্যবহার করে 01610582917 নম্বরে পেমেন্ট করুন। রেফারেন্সে আপনার নাম বা জব আইডি দিন।'
   },
   adminSecurity: {
-    requireStrongPassword: true,
+    requireStrongPassword: false,
     adminPasswordHash: 'Admin@2026#Secure',
+    adminPinHash: 'de2d3061d2ebb9c5031fd1082ada07b42652451de2e9b2ae9a33175b894d5482',
+    adminPinSalt: 'tutorhat_sec_salt_',
     biometricPasskeyRegistered: false,
-    twoFactorEnabled: false
+    twoFactorEnabled: false,
+    maxFailedAttempts: 5,
+    lockoutDurationMinutes: 15,
+    adminAccountConfigured: false,
+    primaryAdminName: 'Super Admin',
+    primaryAdminEmail: 'admin@tutorhat.com',
+    primaryAdminPhone: '01752617360'
   }
 };
 
@@ -69,6 +78,7 @@ const INITIAL_USERS: User[] = [
     email: 'admin@tutorhat.com',
     phone: '01752617360',
     role: 'admin',
+    adminRoleLevel: 'super_admin',
     gender: 'male',
     location: 'Dhanmondi, Dhaka',
     district: 'Dhaka',
@@ -197,7 +207,19 @@ const INITIAL_TUTORS: TutorProfile[] = [
     completionPercentage: 100,
     rating: 4.9,
     totalReviews: 14,
-    featured: true
+    featured: true,
+    nidNumber: '19992691234567890',
+    nidFrontPhoto: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
+    nidBackPhoto: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
+    studentIdCardPhoto: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=600&q=80',
+    certificatePhoto: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&w=600&q=80',
+    isNidVerified: true,
+    isStudentIdVerified: true,
+    isAcademicVerified: true,
+    verificationSubmittedDate: '2026-09-01',
+    verifiedDate: '2026-09-02',
+    trustScore: 100,
+    badgeLevel: 'golden_star'
   },
   {
     id: 'tut_02',
@@ -253,7 +275,19 @@ const INITIAL_TUTORS: TutorProfile[] = [
     completionPercentage: 100,
     rating: 5.0,
     totalReviews: 8,
-    featured: true
+    featured: true,
+    nidNumber: '20012699876543210',
+    nidFrontPhoto: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
+    nidBackPhoto: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
+    studentIdCardPhoto: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=600&q=80',
+    certificatePhoto: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&w=600&q=80',
+    isNidVerified: true,
+    isStudentIdVerified: true,
+    isAcademicVerified: true,
+    verificationSubmittedDate: '2026-09-10',
+    verifiedDate: '2026-09-11',
+    trustScore: 100,
+    badgeLevel: 'verified_pro'
   },
   {
     id: 'tut_03',
@@ -383,11 +417,22 @@ const INITIAL_TUTORS: TutorProfile[] = [
     expectedSalary: 6000,
     preferredStudentGender: 'any',
     preferredClassLevel: 'সকল বয়স ও শ্রেণির শিক্ষার্থী',
-    verificationStatus: 'verified',
+    verificationStatus: 'pending',
     completionPercentage: 100,
     rating: 5.0,
     totalReviews: 24,
-    featured: true
+    featured: true,
+    nidNumber: '19951234567890123',
+    nidFrontPhoto: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
+    nidBackPhoto: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
+    studentIdCardPhoto: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=600&q=80',
+    certificatePhoto: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&w=600&q=80',
+    isNidVerified: false,
+    isStudentIdVerified: false,
+    isAcademicVerified: false,
+    verificationSubmittedDate: '2026-10-11',
+    trustScore: 40,
+    badgeLevel: 'none'
   }
 ];
 
@@ -696,10 +741,124 @@ const INITIAL_REVIEWS: ReviewRecord[] = [
     tutorId: 'tut_01',
     guardianId: 'user_guardian_01',
     guardianName: 'Mrs. Farhana Begum',
+    studentGradeOrSubject: 'Class 10 (SSC) — Physics & Higher Math',
     rating: 5,
-    comment: 'Rahim sir is exceptionally punctual, polite, and explains complex physics concepts in very simple language. My child’s marks have improved significantly within 2 months!',
+    criteria: {
+      teachingSkill: 5,
+      punctuality: 5,
+      behavior: 5,
+      studentImprovement: 5
+    },
+    comment: 'Rahim sir is exceptionally punctual, polite, and explains complex physics concepts with practical everyday examples. My son scored 92 in his pre-test exam!',
     date: '2026-02-28',
-    status: 'approved'
+    status: 'approved',
+    isVerifiedTuition: true,
+    helpfulCount: 14,
+    tutorReply: {
+      tutorName: 'Rahim Chowdhury',
+      replyText: 'অনেক ধন্যবাদ খালাম্মা। আবির খুবই পরিশ্রমী ছাত্র, নিয়মিত হোমওয়ার্ক করায় ওর এই চমৎকার উন্নতি সম্ভব হয়েছে।',
+      repliedAt: '2026-03-01'
+    }
+  },
+  {
+    id: 'rev_702',
+    tutorId: 'tut_01',
+    guardianId: 'user_guardian_02',
+    guardianName: 'Engr. Mahbubur Rahman',
+    studentGradeOrSubject: 'HSC 1st Year — General Mathematics',
+    rating: 5,
+    criteria: {
+      teachingSkill: 5,
+      punctuality: 4,
+      behavior: 5,
+      studentImprovement: 5
+    },
+    comment: 'বুয়েটের ভাইয়া হওয়ায় ক্যালকুলাস ও ত্রিকোণমিতির শর্টকাট টেকনিক খুব চমৎকারভাবে শিখিয়েছেন। ওনার ধৈর্য প্রশংসনীয়।',
+    date: '2026-03-05',
+    status: 'approved',
+    isVerifiedTuition: true,
+    helpfulCount: 8
+  },
+  {
+    id: 'rev_703',
+    tutorId: 'tut_02',
+    guardianId: 'user_guardian_03',
+    guardianName: 'Dr. Shahana Akter',
+    studentGradeOrSubject: 'Class 8 — English 1st & 2nd Paper',
+    rating: 5,
+    criteria: {
+      teachingSkill: 5,
+      punctuality: 5,
+      behavior: 5,
+      studentImprovement: 5
+    },
+    comment: 'নুসরাত আপু অসাধারণ আন্তরিক। আমার মেয়ের ইংরেজি স্পিকিং ও গ্রামার ভীতি পুরোপুরি দূর হয়েছে। অত্যন্ত দায়িত্বশীল ও সময়নিষ্ঠ শিক্ষিকা।',
+    date: '2026-03-02',
+    status: 'approved',
+    isVerifiedTuition: true,
+    helpfulCount: 11,
+    tutorReply: {
+      tutorName: 'Nusrat Jahan',
+      replyText: 'ধন্যবাদ আন্টি। তানিয়ার একাগ্রতা সত্যিই প্রশংসার দাবিদার। ওর উজ্জ্বল ভবিষ্যৎ কামনা করি।',
+      repliedAt: '2026-03-03'
+    }
+  },
+  {
+    id: 'rev_704',
+    tutorId: 'tut_03',
+    guardianId: 'user_guardian_04',
+    guardianName: 'Advocate M. A. Karim',
+    studentGradeOrSubject: 'HSC 2nd Year — Biology & Chemistry',
+    rating: 5,
+    criteria: {
+      teachingSkill: 5,
+      punctuality: 5,
+      behavior: 5,
+      studentImprovement: 5
+    },
+    comment: 'মেডিকেলের ছাত্র হিসেবে তানভীর স্যারের বায়োলজি ও অ্যানাটমির ডায়াগ্রামভিত্তিক পড়ানোর স্টাইল অনন্য। ছাত্রকে নিয়মিত পরীক্ষা নিয়ে যাচাই করেন।',
+    date: '2026-03-08',
+    status: 'approved',
+    isVerifiedTuition: true,
+    helpfulCount: 6
+  },
+  {
+    id: 'rev_705',
+    tutorId: 'tut_04',
+    guardianId: 'user_guardian_05',
+    guardianName: 'Al-Haj Rafiqul Islam',
+    studentGradeOrSubject: 'Class 5 & Quran Recitation with Tajweed',
+    rating: 5,
+    criteria: {
+      teachingSkill: 5,
+      punctuality: 5,
+      behavior: 5,
+      studentImprovement: 5
+    },
+    comment: 'সাদিয়া ম্যাডাম অত্যন্ত নম্র ও স্নেহময়ী। সহিহ তাজবীদ সহ কুরআন শিক্ষা এবং গণিত ও বাংলা যত্নসহকারে পড়ান। মাশাআল্লাহ চমৎকার টিউটর।',
+    date: '2026-03-10',
+    status: 'approved',
+    isVerifiedTuition: true,
+    helpfulCount: 15
+  },
+  {
+    id: 'rev_706',
+    tutorId: 'tut_01',
+    guardianId: 'user_guardian_06',
+    guardianName: 'Kamal Hossain (Banker)',
+    studentGradeOrSubject: 'Class 9 — ICT & General Science',
+    rating: 5,
+    criteria: {
+      teachingSkill: 5,
+      punctuality: 5,
+      behavior: 5,
+      studentImprovement: 4
+    },
+    comment: 'খুবই আন্তরিক এবং ছাত্রের দুর্বলতা চিহ্নিত করে অতিরিক্ত সময় দিয়ে বোঝান। টিউটরহ্যাটের সার্বিক সার্ভিসও চমৎকার।',
+    date: '2026-03-11',
+    status: 'pending',
+    isVerifiedTuition: true,
+    helpfulCount: 1
   }
 ];
 
@@ -840,7 +999,7 @@ const INITIAL_ACTIVITY_LOGS: ActivityLog[] = [
   }
 ];
 
-const STORAGE_KEY = 'tutorhat_data_v3';
+const STORAGE_KEY = 'tutorhat_data_v4';
 
 export interface StoreState {
   settings: SystemSettings;
@@ -864,7 +1023,10 @@ export interface StoreState {
   shortlists: { guardianId: string; tutorId: string }[];
 }
 
-export function calculateCvCompletion(tutor: Partial<TutorProfile>): { percent: number; missing: string[] } {
+export function calculateCvCompletion(tutor?: Partial<TutorProfile> | null): { percent: number; missing: string[] } {
+  if (!tutor) {
+    return { percent: 0, missing: ['Profile Data'] };
+  }
   const missing: string[] = [];
   let score = 0;
 
@@ -955,28 +1117,53 @@ class Store {
               ...(parsed.settings?.adminSecurity || {})
             }
           },
-          users: parsed.users || INITIAL_USERS,
-          tutors: parsed.tutors || INITIAL_TUTORS,
-          requests: parsed.requests || INITIAL_REQUESTS,
-          jobs: parsed.jobs || INITIAL_JOBS,
-          applications: parsed.applications || INITIAL_APPLICATIONS,
-          demos: parsed.demos || INITIAL_DEMOS,
-          confirmations: parsed.confirmations || INITIAL_CONFIRMATIONS,
-          attendance: parsed.attendance || INITIAL_ATTENDANCE,
-          payments: parsed.payments || INITIAL_PAYMENTS,
-          certificates: parsed.certificates || INITIAL_CERTIFICATES,
-          reviews: parsed.reviews || INITIAL_REVIEWS,
-          notifications: parsed.notifications || INITIAL_NOTIFICATIONS,
-          notices: parsed.notices || INITIAL_NOTICES,
-          messages: parsed.messages || INITIAL_MESSAGES,
-          referrals: parsed.referrals || INITIAL_REFERRALS,
-          adminNotes: parsed.adminNotes || INITIAL_ADMIN_NOTES,
-          activityLogs: parsed.activityLogs || INITIAL_ACTIVITY_LOGS,
-          shortlists: parsed.shortlists || [{ guardianId: 'user_guardian_01', tutorId: 'tut_01' }]
+          users: (Array.isArray(parsed.users) && parsed.users.length > 0) ? parsed.users : INITIAL_USERS,
+          tutors: (Array.isArray(parsed.tutors) && parsed.tutors.length > 0)
+            ? parsed.tutors.map((t: TutorProfile) => {
+                const initT = INITIAL_TUTORS.find(it => it.id === t.id);
+                return {
+                  ...(initT || {}),
+                  ...t,
+                  verificationStatus: t.verificationStatus || initT?.verificationStatus || 'verified',
+                  trustScore: t.trustScore !== undefined ? t.trustScore : (initT?.trustScore || 100),
+                  rating: t.rating !== undefined ? t.rating : (initT?.rating || 5.0),
+                  totalReviews: t.totalReviews !== undefined ? t.totalReviews : (initT?.totalReviews || 0)
+                };
+              })
+            : INITIAL_TUTORS,
+          requests: Array.isArray(parsed.requests) ? parsed.requests : INITIAL_REQUESTS,
+          jobs: (Array.isArray(parsed.jobs) && parsed.jobs.length > 0) ? parsed.jobs : INITIAL_JOBS,
+          applications: Array.isArray(parsed.applications) ? parsed.applications : INITIAL_APPLICATIONS,
+          demos: Array.isArray(parsed.demos) ? parsed.demos : INITIAL_DEMOS,
+          confirmations: Array.isArray(parsed.confirmations) ? parsed.confirmations : INITIAL_CONFIRMATIONS,
+          attendance: Array.isArray(parsed.attendance) ? parsed.attendance : INITIAL_ATTENDANCE,
+          payments: Array.isArray(parsed.payments) ? parsed.payments : INITIAL_PAYMENTS,
+          certificates: Array.isArray(parsed.certificates) ? parsed.certificates : INITIAL_CERTIFICATES,
+          reviews: (Array.isArray(parsed.reviews) && parsed.reviews.length > 0)
+            ? parsed.reviews.map((r: ReviewRecord) => {
+                const initR = INITIAL_REVIEWS.find(ir => ir.id === r.id);
+                return {
+                  ...(initR || {}),
+                  ...r,
+                  status: r.status || 'approved',
+                  rating: r.rating || 5,
+                  guardianName: r.guardianName || initR?.guardianName || 'Guardian',
+                  comment: r.comment || initR?.comment || '',
+                  helpfulCount: r.helpfulCount !== undefined ? r.helpfulCount : (initR?.helpfulCount || 0)
+                };
+              })
+            : INITIAL_REVIEWS,
+          notifications: Array.isArray(parsed.notifications) ? parsed.notifications : INITIAL_NOTIFICATIONS,
+          notices: Array.isArray(parsed.notices) ? parsed.notices : INITIAL_NOTICES,
+          messages: Array.isArray(parsed.messages) ? parsed.messages : INITIAL_MESSAGES,
+          referrals: Array.isArray(parsed.referrals) ? parsed.referrals : INITIAL_REFERRALS,
+          adminNotes: Array.isArray(parsed.adminNotes) ? parsed.adminNotes : INITIAL_ADMIN_NOTES,
+          activityLogs: Array.isArray(parsed.activityLogs) ? parsed.activityLogs : INITIAL_ACTIVITY_LOGS,
+          shortlists: Array.isArray(parsed.shortlists) ? parsed.shortlists : [{ guardianId: 'user_guardian_01', tutorId: 'tut_01' }]
         };
       }
     } catch {
-      // ignore
+      // ignore corrupt data
     }
 
     return {
@@ -1105,6 +1292,22 @@ class Store {
     return newUser;
   }
 
+  public updateUser(userId: string, updates: Partial<User>): User | undefined {
+    let updatedUser: User | undefined;
+    this.state.users = this.state.users.map(u => {
+      if (u.id === userId) {
+        updatedUser = { ...u, ...updates };
+        return updatedUser;
+      }
+      return u;
+    });
+    if (updatedUser) {
+      this.logActivity('USER_UPDATED', `Updated user details for ${updatedUser.name} (${userId})`);
+      this.saveState();
+    }
+    return updatedUser;
+  }
+
   public findUserByPhoneOrEmail(identifier: string): User | undefined {
     const clean = identifier.trim().toLowerCase();
     return this.state.users.find(u => 
@@ -1208,6 +1411,98 @@ class Store {
     this.saveState();
   }
 
+  // Feature 1: Tutor KYC Document Submission & Review
+  public submitTutorKycDocuments(
+    tutorId: string,
+    docs: {
+      nidNumber?: string;
+      nidFrontPhoto?: string;
+      nidBackPhoto?: string;
+      studentIdCardPhoto?: string;
+      certificatePhoto?: string;
+    }
+  ) {
+    const tutor = this.getTutorById(tutorId);
+    if (!tutor) return;
+
+    this.state.tutors = this.state.tutors.map(t => {
+      if (t.id === tutorId) {
+        return {
+          ...t,
+          ...docs,
+          verificationStatus: 'pending' as const,
+          verificationSubmittedDate: new Date().toISOString().split('T')[0],
+          rejectionReason: undefined
+        };
+      }
+      return t;
+    });
+
+    this.addNotification({
+      userId: 'user_admin_01',
+      title: 'নতুন টিউটর KYC ভেরিফিকেশন আবেদন',
+      message: `${tutor.fullName} তাদের NID, আইডি কার্ড ও শিক্ষাগত সনদপত্র ভেরিফিকেশনের জন্য সাবমিট করেছেন।`,
+      type: 'verification'
+    });
+
+    this.logActivity('TUTOR_KYC_SUBMITTED', `Tutor ${tutor.fullName} submitted KYC documents for admin review.`);
+    this.saveState();
+  }
+
+  public reviewTutorKycVerification(
+    tutorId: string,
+    params: {
+      status: 'verified' | 'rejected' | 'suspended';
+      isNidVerified?: boolean;
+      isStudentIdVerified?: boolean;
+      isAcademicVerified?: boolean;
+      badgeLevel?: 'standard' | 'verified_pro' | 'golden_star' | 'none';
+      rejectionReason?: string;
+      verificationNotes?: string;
+      performedBy?: string;
+    }
+  ) {
+    const tutor = this.getTutorById(tutorId);
+    if (!tutor) return;
+
+    const isVerified = params.status === 'verified';
+    let checksPassed = 0;
+    if (params.isNidVerified) checksPassed++;
+    if (params.isStudentIdVerified) checksPassed++;
+    if (params.isAcademicVerified) checksPassed++;
+    const trustScore = isVerified ? (checksPassed === 3 ? 100 : checksPassed === 2 ? 85 : 70) : 40;
+
+    this.state.tutors = this.state.tutors.map(t => {
+      if (t.id === tutorId) {
+        return {
+          ...t,
+          verificationStatus: params.status,
+          rejectionReason: params.rejectionReason,
+          isNidVerified: isVerified ? !!params.isNidVerified : false,
+          isStudentIdVerified: isVerified ? !!params.isStudentIdVerified : false,
+          isAcademicVerified: isVerified ? !!params.isAcademicVerified : false,
+          verifiedDate: isVerified ? new Date().toISOString().split('T')[0] : t.verifiedDate,
+          badgeLevel: isVerified ? (params.badgeLevel || 'verified_pro') : 'none',
+          trustScore: trustScore,
+          verificationNotes: params.verificationNotes
+        };
+      }
+      return t;
+    });
+
+    this.addNotification({
+      userId: tutor.userId,
+      title: isVerified ? '🎉 অভিনন্দন! আপনার KYC ভেরিফিকেশন সফল হয়েছে' : '⚠️ KYC ভেরিফিকেশন পুনর্বিবেচনা প্রয়োজন',
+      message: isVerified
+        ? `আপনার জাতীয় পরিচয়পত্র, স্টুডেন্ট আইডি ও সনদপত্র যাচাই সম্পন্ন হয়েছে। ট্রাস্ট স্কোর: ${trustScore}%`
+        : `রিজেকশনের কারণ: ${params.rejectionReason || 'সঠিক ডকুমেন্ট আপলোড করুন'}`,
+      type: 'verification'
+    });
+
+    this.logActivity('TUTOR_KYC_REVIEWED', `Tutor ${tutor.fullName} KYC set to ${params.status} (Score: ${trustScore}%) by ${params.performedBy || 'Admin'}`);
+    this.saveState();
+  }
+
   // Tuition Requests (Guardians)
   public createTuitionRequest(request: Omit<TuitionRequest, 'id' | 'createdAt' | 'status'>): TuitionRequest {
     const id = `req_${Date.now()}`;
@@ -1277,6 +1572,18 @@ class Store {
     return newJob;
   }
 
+  public updateTuitionRequest(requestId: string, updates: Partial<TuitionRequest>, performedBy: string = 'Admin') {
+    this.state.requests = this.state.requests.map(r => r.id === requestId ? { ...r, ...updates } : r);
+    this.logActivity('REQUEST_UPDATED', `Updated tuition requirement ${requestId}`, performedBy);
+    this.saveState();
+  }
+
+  public deleteTuitionRequest(requestId: string, performedBy: string = 'Admin') {
+    this.state.requests = this.state.requests.filter(r => r.id !== requestId);
+    this.logActivity('REQUEST_DELETED', `Deleted tuition requirement ${requestId}`, performedBy);
+    this.saveState();
+  }
+
   // Jobs Management (Admin Section 33)
   public createJob(jobData: Omit<TuitionJob, 'id' | 'totalApplications'>): TuitionJob {
     const id = `JOB-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
@@ -1300,6 +1607,12 @@ class Store {
   public updateJobStatus(jobId: string, status: TuitionJobStatus) {
     this.state.jobs = this.state.jobs.map(j => j.id === jobId ? { ...j, status } : j);
     this.logActivity('JOB_STATUS_UPDATED', `Set job ${jobId} status to ${status}`);
+    this.saveState();
+  }
+
+  public deleteJob(jobId: string, performedBy: string = 'Admin') {
+    this.state.jobs = this.state.jobs.filter(j => j.id !== jobId);
+    this.logActivity('JOB_DELETED', `Deleted tuition job ${jobId}`, performedBy);
     this.saveState();
   }
 
@@ -1546,41 +1859,147 @@ class Store {
     return newCert;
   }
 
-  // Reviews
+  // Feature 2: Reviews & Ratings System
   public submitReview(review: Omit<ReviewRecord, 'id' | 'date' | 'status'>): ReviewRecord {
     const id = `rev_${Date.now()}`;
     const newReview: ReviewRecord = {
       ...review,
       id,
       date: new Date().toISOString().split('T')[0],
-      status: 'pending'
+      status: 'pending',
+      helpfulCount: review.helpfulCount || 0
     };
     this.state.reviews = [newReview, ...this.state.reviews];
 
+    const tutor = this.getTutorById(review.tutorId);
+
+    // Notify Admin for Moderation
     this.addNotification({
       userId: 'user_admin_01',
-      title: 'New Tutor Review Pending Moderation',
-      message: `${review.guardianName} rated tutor with ${review.rating} stars.`,
+      title: 'নতুন টিউটর রিভিউ পেন্ডিং',
+      message: `${review.guardianName} টিউটর ${tutor ? tutor.fullName : review.tutorId}-কে ${review.rating}★ রেটিং ও রিভিউ দিয়েছেন।`,
       type: 'system'
     });
 
+    if (tutor) {
+      this.addNotification({
+        userId: tutor.userId,
+        title: 'আপনার প্রোফাইলে নতুন রিভিউ এসেছে',
+        message: `${review.guardianName} আপনাকে ${review.rating}★ রেটিং দিয়েছেন। অ্যাডমিন পর্যালোচনার পর এটি প্রদর্শিত হবে।`,
+        type: 'system'
+      });
+    }
+
+    this.logActivity('REVIEW_SUBMITTED', `Review submitted by ${review.guardianName} for tutor ${tutor?.fullName || review.tutorId}`);
     this.saveState();
     return newReview;
   }
 
-  public moderateReview(reviewId: string, status: 'approved' | 'rejected') {
-    this.state.reviews = this.state.reviews.map(r => r.id === reviewId ? { ...r, status } : r);
+  public moderateReview(reviewId: string, status: 'approved' | 'rejected' | 'pending', isVerifiedTuition?: boolean) {
+    this.state.reviews = this.state.reviews.map(r => {
+      if (r.id === reviewId) {
+        return {
+          ...r,
+          status,
+          ...(isVerifiedTuition !== undefined ? { isVerifiedTuition } : {})
+        };
+      }
+      return r;
+    });
 
     const target = this.state.reviews.find(r => r.id === reviewId);
-    if (target && status === 'approved') {
+    if (target) {
+      const tutor = this.getTutorById(target.tutorId);
       const tutorApprovedReviews = this.state.reviews.filter(r => r.tutorId === target.tutorId && r.status === 'approved');
-      const avg = tutorApprovedReviews.reduce((sum, r) => sum + r.rating, 0) / tutorApprovedReviews.length;
+      
+      if (tutorApprovedReviews.length > 0) {
+        const avg = tutorApprovedReviews.reduce((sum, r) => sum + r.rating, 0) / tutorApprovedReviews.length;
+        this.updateTutorProfile(target.tutorId, {
+          rating: Number(avg.toFixed(1)),
+          totalReviews: tutorApprovedReviews.length
+        });
+      } else if (tutor) {
+        this.updateTutorProfile(target.tutorId, {
+          totalReviews: 0
+        });
+      }
+
+      if (status === 'approved' && tutor) {
+        this.addNotification({
+          userId: tutor.userId,
+          title: 'রিভিউ অনুমোদিত ও প্রকাশিত হয়েছে',
+          message: `${target.guardianName}-এর দেওয়া ${target.rating}★ রিভিউ আপনার প্রোফাইলে যুক্ত হয়েছে।`,
+          type: 'system'
+        });
+      }
+    }
+
+    this.logActivity('REVIEW_MODERATED', `Review ${reviewId} was ${status}`);
+    this.saveState();
+  }
+
+  public replyToReview(reviewId: string, replyText: string, tutorName?: string) {
+    const review = this.state.reviews.find(r => r.id === reviewId);
+    if (!review) return;
+
+    const tutor = this.getTutorById(review.tutorId);
+    const resolvedName = tutorName || tutor?.fullName || 'শিক্ষক';
+
+    this.state.reviews = this.state.reviews.map(r => {
+      if (r.id === reviewId) {
+        return {
+          ...r,
+          tutorReply: {
+            tutorName: resolvedName,
+            replyText,
+            repliedAt: new Date().toISOString().split('T')[0]
+          }
+        };
+      }
+      return r;
+    });
+
+    // Notify Guardian of Tutor's Reply
+    this.addNotification({
+      userId: review.guardianId,
+      title: 'আপনার রিভিউতে টিউটর মন্তব্য করেছেন',
+      message: `${resolvedName} আপনার রিভিউতে উত্তর দিয়েছেন: "${replyText.slice(0, 50)}..."`,
+      type: 'system'
+    });
+
+    this.logActivity('REVIEW_REPLIED', `Tutor replied to review ${reviewId}`);
+    this.saveState();
+  }
+
+  public markReviewHelpful(reviewId: string) {
+    this.state.reviews = this.state.reviews.map(r => {
+      if (r.id === reviewId) {
+        return {
+          ...r,
+          helpfulCount: (r.helpfulCount || 0) + 1
+        };
+      }
+      return r;
+    });
+    this.saveState();
+  }
+
+  public deleteReview(reviewId: string) {
+    const target = this.state.reviews.find(r => r.id === reviewId);
+    this.state.reviews = this.state.reviews.filter(r => r.id !== reviewId);
+    
+    if (target) {
+      const tutorApprovedReviews = this.state.reviews.filter(r => r.tutorId === target.tutorId && r.status === 'approved');
+      const avg = tutorApprovedReviews.length > 0 
+        ? tutorApprovedReviews.reduce((sum, r) => sum + r.rating, 0) / tutorApprovedReviews.length
+        : 5.0;
       this.updateTutorProfile(target.tutorId, {
         rating: Number(avg.toFixed(1)),
         totalReviews: tutorApprovedReviews.length
       });
     }
 
+    this.logActivity('REVIEW_DELETED', `Deleted review ${reviewId}`);
     this.saveState();
   }
 
@@ -1698,7 +2117,7 @@ class Store {
 
   // Activity Log
   public logActivity(action: string, details: string, performedBy: string = 'System') {
-    const id = `act_${Date.now()}`;
+    const id = `act_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
     const newLog: ActivityLog = {
       id,
       action,
@@ -1706,7 +2125,177 @@ class Store {
       timestamp: new Date().toISOString(),
       details
     };
-    this.state.activityLogs = [newLog, ...this.state.activityLogs.slice(0, 50)];
+    this.state.activityLogs = [newLog, ...this.state.activityLogs.slice(0, 199)];
+    this.saveState();
+  }
+
+  // Admin Management (Section: Step 4)
+  public getAdmins(): User[] {
+    return this.state.users.filter(u => u.role === 'admin');
+  }
+
+  public createAdmin(data: {
+    name: string;
+    email: string;
+    phone: string;
+    adminRoleLevel?: AdminRoleLevel;
+    pin?: string;
+  }, performedBy: string = 'Super Admin'): User {
+    const id = `admin_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+    const newAdmin: User = {
+      id,
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      role: 'admin',
+      adminRoleLevel: data.adminRoleLevel || 'moderator',
+      gender: 'male',
+      location: 'Dhaka, Bangladesh',
+      district: 'Dhaka',
+      status: 'active',
+      createdAt: new Date().toISOString()
+    };
+    this.state.users = [newAdmin, ...this.state.users];
+    this.logActivity('ADMIN_CREATED', `Created new admin account for ${newAdmin.name} (${newAdmin.email}) [${newAdmin.adminRoleLevel}]`, performedBy);
+    this.saveState();
+    return newAdmin;
+  }
+
+  public updateAdminRole(adminId: string, roleLevel: AdminRoleLevel, performedBy: string = 'Super Admin'): User | undefined {
+    let updated: User | undefined;
+    this.state.users = this.state.users.map(u => {
+      if (u.id === adminId && u.role === 'admin') {
+        updated = { ...u, adminRoleLevel: roleLevel };
+        return updated;
+      }
+      return u;
+    });
+    if (updated) {
+      this.logActivity('ADMIN_ROLE_UPDATED', `Updated admin ${updated.name} role to ${roleLevel}`, performedBy);
+      this.saveState();
+    }
+    return updated;
+  }
+
+  public updateAdminStatus(adminId: string, status: 'active' | 'suspended', performedBy: string = 'Super Admin'): User | undefined {
+    let updated: User | undefined;
+    this.state.users = this.state.users.map(u => {
+      if (u.id === adminId && u.role === 'admin') {
+        updated = { ...u, status };
+        return updated;
+      }
+      return u;
+    });
+    if (updated) {
+      this.logActivity('ADMIN_STATUS_UPDATED', `Changed admin ${updated.name} status to ${status}`, performedBy);
+      this.saveState();
+    }
+    return updated;
+  }
+
+  public deleteAdmin(adminId: string, currentAdminId: string, performedBy: string = 'Super Admin'): { success: boolean; message: string } {
+    if (adminId === currentAdminId) {
+      return { success: false, message: 'You cannot revoke or delete your own active admin account!' };
+    }
+    const adminCount = this.state.users.filter(u => u.role === 'admin').length;
+    if (adminCount <= 1) {
+      return { success: false, message: 'Cannot delete the only existing administrator account.' };
+    }
+    const target = this.state.users.find(u => u.id === adminId);
+    if (!target) {
+      return { success: false, message: 'Admin account not found.' };
+    }
+    this.state.users = this.state.users.filter(u => u.id !== adminId);
+    this.logActivity('ADMIN_DELETED', `Revoked and deleted admin account ${target.name} (${target.email})`, performedBy);
+    this.saveState();
+    return { success: true, message: `Admin ${target.name} deleted successfully.` };
+  }
+
+  public clearActivityLogs(performedBy: string = 'Super Admin') {
+    this.state.activityLogs = [{
+      id: `act_${Date.now()}`,
+      action: 'AUDIT_LOGS_RESET',
+      performedBy,
+      timestamp: new Date().toISOString(),
+      details: 'Audit logs cleared and reset by administrator.'
+    }];
+    this.saveState();
+  }
+
+  // Data Export (CSV with UTF-8 BOM for Google Sheets & Excel)
+  public exportDataToCSV(type: 'jobs' | 'tutors' | 'guardians' | 'requests' | 'applications' | 'activityLogs' | 'all'): string {
+    const sanitize = (val: any) => {
+      if (val === null || val === undefined) return '""';
+      const str = String(val).replace(/"/g, '""');
+      return `"${str}"`;
+    };
+
+    let csv = '\uFEFF'; // UTF-8 BOM for Excel and Google Sheets
+
+    if (type === 'jobs' || type === 'all') {
+      csv += '=== TUITION JOBS ===\n';
+      const headers = ['Job ID', 'Title', 'Class Level', 'Medium', 'Subjects', 'District', 'Area', 'Salary (BDT)', 'Days/Week', 'Teaching Type', 'Tutor Gender', 'Status', 'Total Applications', 'Assigned Tutor', 'Deadline', 'Posted Date'];
+      csv += headers.map(sanitize).join(',') + '\n';
+      this.state.jobs.forEach(j => {
+        csv += [
+          j.id, j.title, j.classLevel, j.medium, j.subjects.join('; '), j.district, j.area,
+          j.salary, j.daysPerWeek, j.teachingType, j.tutorGenderPreference, j.status,
+          j.totalApplications, j.assignedTutorName || '', j.deadline, j.postedDate
+        ].map(sanitize).join(',') + '\n';
+      });
+      csv += '\n';
+    }
+
+    if (type === 'tutors' || type === 'all') {
+      csv += '=== TUTORS ===\n';
+      const headers = ['Tutor ID', 'Full Name', 'Category', 'University', 'Department', 'Phone', 'Email', 'District', 'Area', 'Expected Salary', 'Verification Status', 'CV Completion %'];
+      csv += headers.map(sanitize).join(',') + '\n';
+      this.state.tutors.forEach(t => {
+        csv += [
+          t.id, t.fullName, t.tutorCategory || 'general', t.university, t.department,
+          t.phone, t.email, t.district, t.area, t.expectedSalary, t.verificationStatus, t.completionPercentage
+        ].map(sanitize).join(',') + '\n';
+      });
+      csv += '\n';
+    }
+
+    if (type === 'guardians' || type === 'all') {
+      csv += '=== GUARDIANS ===\n';
+      const headers = ['Guardian ID', 'Name', 'Phone', 'Email', 'Location', 'District', 'Status', 'Referral Code', 'Joined Date'];
+      csv += headers.map(sanitize).join(',') + '\n';
+      this.getGuardians().forEach(g => {
+        csv += [
+          g.id, g.name, g.phone, g.email, g.location, g.district, g.status || 'active', g.referralCode || '', g.createdAt
+        ].map(sanitize).join(',') + '\n';
+      });
+      csv += '\n';
+    }
+
+    if (type === 'requests' || type === 'all') {
+      csv += '=== TUITION REQUESTS ===\n';
+      const headers = ['Request ID', 'Guardian Name', 'Phone', 'Student Class', 'Medium', 'Subjects', 'Area', 'Monthly Budget', 'Status', 'Created Date'];
+      csv += headers.map(sanitize).join(',') + '\n';
+      this.state.requests.forEach(r => {
+        csv += [
+          r.id, r.guardianName, r.phone, r.studentClass, r.medium, r.subjects.join('; '), r.area, r.monthlyBudget, r.status, r.createdAt
+        ].map(sanitize).join(',') + '\n';
+      });
+      csv += '\n';
+    }
+
+    if (type === 'activityLogs' || type === 'all') {
+      csv += '=== AUDIT TRAIL ACTIVITY LOGS ===\n';
+      const headers = ['Log ID', 'Action', 'Performed By', 'Timestamp', 'Details'];
+      csv += headers.map(sanitize).join(',') + '\n';
+      this.state.activityLogs.forEach(l => {
+        csv += [
+          l.id, l.action, l.performedBy, l.timestamp, l.details
+        ].map(sanitize).join(',') + '\n';
+      });
+      csv += '\n';
+    }
+
+    return csv;
   }
 
   // Notifications

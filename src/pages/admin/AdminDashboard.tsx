@@ -41,10 +41,26 @@ import {
   EyeOff,
   Smartphone,
   CreditCard,
-  Copy
+  Copy,
+  LogOut,
+  UserPlus,
+  Download,
+  FileSpreadsheet,
+  Crown,
+  Shield,
+  Sparkles
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { store } from '../../services/store';
+import {
+  isAdminSessionValid,
+  clearAdminSession,
+  registerWebAuthnPasskey,
+  verifyAdminPin,
+  hashPin
+} from '../../services/adminAuth';
+import { AdminAuthBarrier } from '../../components/admin/AdminAuthBarrier';
+import { AdminTutorKycReviewModal } from '../../components/admin/AdminTutorKycReviewModal';
 import { 
   TutorProfile, 
   TuitionJob, 
@@ -52,6 +68,7 @@ import {
   TuitionRequest, 
   JobApplication, 
   User, 
+  AdminRoleLevel,
   NoticeItem, 
   ContactMessage, 
   ReferralRecord 
@@ -59,13 +76,13 @@ import {
 import { BD_DISTRICTS, DHAKA_AREAS, MEDIUMS, CLASS_LEVELS } from '../../constants/bangladeshData';
 
 export const AdminDashboard: React.FC = () => {
-  const { storeState, settings, currentUser, loginAs, language, navigateTo } = useApp();
+  const { storeState, settings, currentUser, loginAs, logout, language, navigateTo } = useApp();
 
   type AdminTab = 
+    | 'jobs' 
+    | 'requests' 
     | 'tutors' 
     | 'guardians'
-    | 'requests' 
-    | 'jobs' 
     | 'applications' 
     | 'demos' 
     | 'confirmations' 
@@ -76,9 +93,34 @@ export const AdminDashboard: React.FC = () => {
     | 'certificates' 
     | 'reviews' 
     | 'activity'
+    | 'admins'
     | 'settings';
 
   const [activeTab, setActiveTab] = useState<AdminTab>('jobs');
+
+  // Admin Management State (Step 4)
+  const adminUsers = useMemo(() => storeState.users.filter(u => u.role === 'admin'), [storeState.users]);
+  const [adminSearch, setAdminSearch] = useState('');
+  const [adminRoleFilter, setAdminRoleFilter] = useState<'all' | 'super_admin' | 'moderator' | 'manager'>('all');
+  const [adminModalOpen, setAdminModalOpen] = useState(false);
+  const [newAdminName, setNewAdminName] = useState('');
+  const [newAdminEmail, setNewAdminEmail] = useState('');
+  const [newAdminPhone, setNewAdminPhone] = useState('');
+  const [newAdminRoleLevel, setNewAdminRoleLevel] = useState<AdminRoleLevel>('moderator');
+  const [newAdminPin, setNewAdminPin] = useState('1234');
+  const [adminActionMsg, setAdminActionMsg] = useState('');
+  const [adminActionError, setAdminActionError] = useState('');
+
+  // Data Export Modal State
+  const [exportModalOpen, setExportModalOpen] = useState(false);
+  const [exportCategory, setExportCategory] = useState<'all' | 'jobs' | 'tutors' | 'guardians' | 'requests' | 'applications' | 'activityLogs'>('all');
+  const [copySheetsSuccess, setCopySheetsSuccess] = useState(false);
+
+  // Activity Log Search State
+  const [activitySearch, setActivitySearch] = useState('');
+
+  // Tuition Requests Search State
+  const [requestSearch, setRequestSearch] = useState('');
 
   // Job Filters and Search
   const [jobSearch, setJobSearch] = useState('');
@@ -135,6 +177,15 @@ export const AdminDashboard: React.FC = () => {
   const [targetTutorId, setTargetTutorId] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
 
+  // Tutor KYC Document Verification Review Modal (Feature 1)
+  const [kycReviewModalOpen, setKycReviewModalOpen] = useState(false);
+  const [selectedKycTutor, setSelectedKycTutor] = useState<TutorProfile | null>(null);
+  const [tutorVerificationFilter, setTutorVerificationFilter] = useState<'all' | 'pending' | 'verified' | 'rejected'>('all');
+
+  // Review Moderation State (Feature 2)
+  const [reviewFilterStatus, setReviewFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [reviewSearchQuery, setReviewSearchQuery] = useState('');
+
   // Demo Modal
   const [demoModalOpen, setDemoModalOpen] = useState(false);
   const [demoTutorId, setDemoTutorId] = useState('');
@@ -174,6 +225,13 @@ export const AdminDashboard: React.FC = () => {
   const [passwordChangeMsg, setPasswordChangeMsg] = useState('');
   const [passwordChangeError, setPasswordChangeError] = useState('');
   const [biometricEnrollMsg, setBiometricEnrollMsg] = useState('');
+
+  // 4-Digit Security PIN Management State
+  const [currentPinInput, setCurrentPinInput] = useState('');
+  const [newPinInput, setNewPinInput] = useState('');
+  const [confirmPinInput, setConfirmPinInput] = useState('');
+  const [pinChangeMsg, setPinChangeMsg] = useState('');
+  const [pinChangeError, setPinChangeError] = useState('');
   const [copiedField, setCopiedField] = useState('');
 
   // Admin Login Barrier State
@@ -191,243 +249,15 @@ export const AdminDashboard: React.FC = () => {
     setTimeout(() => setCopiedField(''), 2500);
   };
 
-  // First admin setup check
-  const adminExists = storeState.users.some(u => u.role === 'admin');
-  const [newAdminEmail, setNewAdminEmail] = useState('');
-  const [newAdminPhone, setNewAdminPhone] = useState('');
-
-  if (!adminExists) {
-    return (
-      <div className="max-w-md mx-auto px-4 py-16 space-y-6">
-        <div className="text-center space-y-2">
-          <ShieldCheck className="w-12 h-12 text-blue-900 mx-auto" />
-          <h2 className="text-2xl font-bold text-blue-950">Create First Administrator</h2>
-          <p className="text-xs text-slate-600">No administrator currently exists. Configure the primary administrator account.</p>
-        </div>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            const admin = store.createUser({
-              name: 'Master Admin',
-              email: newAdminEmail,
-              phone: newAdminPhone,
-              role: 'admin',
-              gender: 'other',
-              location: 'Dhaka',
-              district: 'Dhaka'
-            });
-            loginAs('admin', admin.id);
-          }}
-          className="bg-white p-6 rounded-2xl border border-slate-200 shadow-xs space-y-4 text-xs"
-        >
-          <div>
-            <label className="font-semibold block mb-1">Admin Email</label>
-            <input
-              type="email"
-              required
-              value={newAdminEmail}
-              onChange={e => setNewAdminEmail(e.target.value)}
-              placeholder="admin@tutorhat.com"
-              className="w-full p-2.5 bg-slate-50 border rounded-xl"
-            />
-          </div>
-          <div>
-            <label className="font-semibold block mb-1">Admin Phone</label>
-            <input
-              type="tel"
-              required
-              value={newAdminPhone}
-              onChange={e => setNewAdminPhone(e.target.value)}
-              placeholder="01610582917"
-              className="w-full p-2.5 bg-slate-50 border rounded-xl"
-            />
-          </div>
-          <button type="submit" className="w-full py-3 bg-blue-900 text-white rounded-xl font-bold hover:bg-blue-800 transition">
-            Create First Administrator
-          </button>
-        </form>
-      </div>
-    );
-  }
-
   // High-Security Admin Authentication Barrier
-  if (currentUser?.role !== 'admin') {
-    const configuredPassword = settings.adminSecurity?.adminPasswordHash || 'Admin@2026#Secure';
-
-    const handlePasswordSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      setAdminAuthError('');
-      if (adminInputPassword.trim() === configuredPassword) {
-        loginAs('admin');
-      } else {
-        setAdminAuthError('ভুল পাসওয়ার্ড! সঠিক এডমিন পাসওয়ার্ড দিন অথবা বায়োমেট্রিক ফিঙ্গারপ্রিন্ট ব্যবহার করুন। (Incorrect password!)');
-      }
-    };
-
-    const handleFingerprintScan = async () => {
-      setAdminAuthError('');
-      setAdminBiometricScanning(true);
-      try {
-        if (typeof window !== 'undefined' && window.PublicKeyCredential) {
-          try {
-            await navigator.credentials.get({
-              publicKey: {
-                challenge: new Uint8Array([12, 34, 56, 78, 90, 12, 34, 56]),
-                rpId: window.location.hostname || 'localhost',
-                userVerification: 'preferred',
-                timeout: 6000
-              }
-            });
-          } catch {
-            // Virtual touch sensor / simulator fallback
-          }
-        }
-        setAdminBiometricSuccess(true);
-        setTimeout(() => {
-          loginAs('admin');
-          setAdminBiometricScanning(false);
-          setAdminBiometricSuccess(false);
-        }, 800);
-      } catch (err: any) {
-        setAdminBiometricScanning(false);
-        setAdminAuthError('বায়োমেট্রিক স্ক্যান ব্যর্থ হয়েছে। অনুগ্রহ করে পাসওয়ার্ড ব্যবহার করুন।');
-      }
-    };
-
+  if (currentUser?.role !== 'admin' || !isAdminSessionValid()) {
     return (
-      <div className="max-w-md mx-auto px-4 py-16 space-y-6">
-        <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-blue-950 to-indigo-900 text-white flex items-center justify-center mx-auto shadow-xl border border-blue-800">
-            <Lock className="w-8 h-8 text-amber-400" />
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold text-blue-950">
-            TutorHat এডমিন নিরাপত্তা যাচাই
-          </h2>
-          <p className="text-xs text-slate-600">
-            এডমিন ছাড়া অন্য কারো প্রবেশাধিকার নেই। প্রবেশের জন্য ফিঙ্গারপ্রিন্ট অথবা স্ট্রং পাসওয়ার্ড দিন।
-          </p>
-        </div>
-
-        {/* Security Method Selector */}
-        <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-5">
-          <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl">
-            <button
-              type="button"
-              onClick={() => { setAuthMethod('fingerprint'); setAdminAuthError(''); }}
-              className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                authMethod === 'fingerprint' 
-                  ? 'bg-blue-900 text-white shadow-xs' 
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <Fingerprint className="w-4 h-4 text-emerald-400" />
-              <span>ফিঙ্গারপ্রিন্ট</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => { setAuthMethod('password'); setAdminAuthError(''); }}
-              className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                authMethod === 'password' 
-                  ? 'bg-blue-900 text-white shadow-xs' 
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <KeyRound className="w-4 h-4 text-amber-400" />
-              <span>পাসওয়ার্ড</span>
-            </button>
-          </div>
-
-          {adminAuthError && (
-            <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-              <span>{adminAuthError}</span>
-            </div>
-          )}
-
-          {/* Fingerprint / Biometric Screen */}
-          {authMethod === 'fingerprint' && (
-            <div className="text-center space-y-4 py-2">
-              <div 
-                onClick={handleFingerprintScan}
-                className={`w-28 h-28 mx-auto rounded-3xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 border-2 select-none ${
-                  adminBiometricSuccess
-                    ? 'bg-emerald-50 border-emerald-500 text-emerald-600 scale-105 shadow-emerald-500/30 shadow-lg'
-                    : adminBiometricScanning
-                    ? 'bg-blue-50 border-blue-500 text-blue-600 animate-pulse ring-8 ring-blue-500/20'
-                    : 'bg-slate-50 hover:bg-slate-100 border-slate-300 text-slate-700 hover:border-blue-700 hover:scale-105 shadow-md active:scale-95'
-                }`}
-              >
-                <Fingerprint className={`w-14 h-14 ${adminBiometricScanning ? 'animate-bounce text-blue-600' : adminBiometricSuccess ? 'text-emerald-600' : 'text-blue-900'}`} />
-                <span className="text-[10px] font-bold mt-1">
-                  {adminBiometricSuccess ? 'যাচাই সম্পন্ন!' : adminBiometricScanning ? 'স্ক্যান হচ্ছে...' : 'টাচ করুন'}
-                </span>
-              </div>
-
-              <div className="space-y-1">
-                <h4 className="font-bold text-xs text-blue-950">
-                  {adminBiometricSuccess ? '✓ বায়োমেট্রিক অথেন্টিকেশন সফল' : 'ফিঙ্গারপ্রিন্ট সেন্সরে স্পর্শ করুন'}
-                </h4>
-                <p className="text-[11px] text-slate-500">
-                  WebAuthn বায়োমেট্রিক সিকিউরিটি কী / ফিঙ্গারপ্রিন্ট স্ক্যানার সক্রিয়
-                </p>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleFingerprintScan}
-                disabled={adminBiometricScanning}
-                className="w-full py-3 bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-bold rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-              >
-                <Fingerprint className="w-4 h-4" />
-                <span>ফিঙ্গারপ্রিন্ট দিয়ে আনলক করুন</span>
-              </button>
-            </div>
-          )}
-
-          {/* Strong Password Screen */}
-          {authMethod === 'password' && (
-            <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <div>
-                <label className="font-semibold block mb-1 text-slate-800 text-xs">
-                  এডমিন স্ট্রং পাসওয়ার্ড দিন *
-                </label>
-                <div className="relative">
-                  <input
-                    type={showAdminPassword ? 'text' : 'password'}
-                    required
-                    value={adminInputPassword}
-                    onChange={e => setAdminInputPassword(e.target.value)}
-                    placeholder="পাসওয়ার্ড লিখুন..."
-                    className="w-full py-2.5 pl-3 pr-10 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowAdminPassword(!showAdminPassword)}
-                    className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 cursor-pointer"
-                  >
-                    {showAdminPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Lock className="w-4 h-4" />
-                <span>পাসওয়ার্ড যাচাই করে প্রবেশ করুন</span>
-              </button>
-
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-[11px] text-slate-500 space-y-1">
-                <span className="font-semibold text-slate-700 block">💡 নিরাপত্তা নির্দেশিকা:</span>
-                <p>ডিফল্ট পাসওয়ার্ড: <code className="bg-white px-1.5 py-0.5 rounded border font-mono text-blue-950 font-bold">{configuredPassword}</code></p>
-                <p>এডমিন প্যানেলে ঢুকে সেটিংস ট্যাব থেকে যেকোনো সময় স্ট্রং পাসওয়ার্ড পরিবর্তন ও নতুন ফিঙ্গারপ্রিন্ট রেজিস্টার করতে পারেন।</p>
-              </div>
-            </form>
-          )}
-
-        </div>
+      <div className="min-h-screen bg-slate-900/10 py-12 px-4 flex items-center justify-center">
+        <AdminAuthBarrier
+          onCancel={() => {
+            navigateTo('home');
+          }}
+        />
       </div>
     );
   }
@@ -673,42 +503,155 @@ export const AdminDashboard: React.FC = () => {
     setTimeout(() => setPasswordChangeMsg(''), 4000);
   };
 
+  // Change 4-digit Security PIN Handler
+  const handleChangeAdminPin = async () => {
+    setPinChangeMsg('');
+    setPinChangeError('');
+
+    if (currentPinInput.length !== 4 || newPinInput.length !== 4 || confirmPinInput.length !== 4) {
+      setPinChangeError('পিন অবশ্যই ৪ সংখ্যার হতে হবে (0-9)।');
+      return;
+    }
+    if (!/^\d{4}$/.test(newPinInput)) {
+      setPinChangeError('নতুন পিন শুধুমাত্র ৪টি সংখ্যা হতে হবে।');
+      return;
+    }
+    if (newPinInput !== confirmPinInput) {
+      setPinChangeError('নতুন পিন এবং কনফার্ম পিন মিলছে না!');
+      return;
+    }
+
+    const storedHash = settings.adminSecurity?.adminPinHash;
+    const salt = settings.adminSecurity?.adminPinSalt || 'tutorhat_sec_salt_';
+    const isCurrentValid = await verifyAdminPin(currentPinInput, storedHash, salt);
+    if (!isCurrentValid) {
+      setPinChangeError('বর্তমান পিন ভুল হয়েছে!');
+      return;
+    }
+
+    const newHash = await hashPin(newPinInput, salt);
+    store.updateSettings({
+      adminSecurity: {
+        ...settings.adminSecurity,
+        adminPinHash: newHash,
+        adminPinSalt: salt
+      }
+    });
+
+    setPinChangeMsg('✓ ৪-ডিজিটের এডমিন পিন সফলভাবে পরিবর্তন করা হয়েছে!');
+    setCurrentPinInput('');
+    setNewPinInput('');
+    setConfirmPinInput('');
+    setTimeout(() => setPinChangeMsg(''), 4000);
+  };
+
   // Register or re-enroll Biometric Fingerprint Passkey
   const handleRegisterBiometricPasskey = async () => {
     setBiometricEnrollMsg('');
     try {
-      if (typeof window !== 'undefined' && window.PublicKeyCredential) {
-        try {
-          await navigator.credentials.create({
-            publicKey: {
-              challenge: new Uint8Array([11, 22, 33, 44, 55, 66, 77, 88]),
-              rp: { name: 'TutorHat Admin', id: window.location.hostname || 'localhost' },
-              user: {
-                id: new Uint8Array([1, 2, 3, 4]),
-                name: 'admin@tutorhat.com',
-                displayName: 'TutorHat Platform Admin'
-              },
-              pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],
-              authenticatorSelection: { userVerification: 'required' },
-              timeout: 10000
-            }
-          });
-        } catch {
-          // Virtual touch sensor fallback
-        }
+      const res = await registerWebAuthnPasskey(currentUser.email);
+      if (res.success) {
+        store.updateSettings({
+          adminSecurity: {
+            ...settings.adminSecurity,
+            biometricPasskeyRegistered: true,
+            biometricCredentialId: res.credentialId
+          }
+        });
+        setBiometricEnrollMsg('✓ বায়োমেট্রিক ফিঙ্গারপ্রিন্ট সফলভাবে সক্রিয় ও নিবন্ধিত হয়েছে!');
+      } else {
+        setBiometricEnrollMsg(res.error || 'বায়োমেট্রিক নিবন্ধন সম্পন্ন হয়নি।');
       }
-      store.updateSettings({
-        adminSecurity: {
-          ...settings.adminSecurity,
-          requireStrongPassword: true,
-          biometricPasskeyRegistered: true
-        }
-      });
-      setBiometricEnrollMsg('✓ বায়োমেট্রিক ফিঙ্গারপ্রিন্ট সফলভাবে সক্রিয় ও নিবন্ধিত হয়েছে!');
-      setTimeout(() => setBiometricEnrollMsg(''), 4000);
+      setTimeout(() => setBiometricEnrollMsg(''), 5000);
     } catch (err: any) {
       setBiometricEnrollMsg('ফিঙ্গারপ্রিন্ট যুক্ত করা সম্পন্ন হয়েছে (সক্রিয়)।');
     }
+  };
+
+  // Export handlers (Step 3 & 4)
+  const handleDownloadCSV = (cat: 'all' | 'jobs' | 'tutors' | 'guardians' | 'requests' | 'applications' | 'activityLogs') => {
+    const csvContent = store.exportDataToCSV(cat);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `TutorHat_${cat}_export_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleCopyForGoogleSheets = (cat: 'all' | 'jobs' | 'tutors' | 'guardians' | 'requests' | 'applications' | 'activityLogs') => {
+    const csvContent = store.exportDataToCSV(cat);
+    const tsvContent = csvContent
+      .replace(/^\uFEFF/, '')
+      .split('\n')
+      .map(line => {
+        const cells = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || line.split(',');
+        return cells.map(c => c.replace(/^"|"$/g, '').replace(/""/g, '"')).join('\t');
+      })
+      .join('\n');
+
+    navigator.clipboard.writeText(tsvContent);
+    setCopySheetsSuccess(true);
+    setTimeout(() => setCopySheetsSuccess(false), 3500);
+  };
+
+  const handleDownloadJSONBackup = () => {
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(storeState, null, 2));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute('href', dataStr);
+    downloadAnchor.setAttribute('download', `TutorHat_Full_Backup_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  };
+
+  // Create Admin Submit Handler (Step 4)
+  const handleCreateAdminSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdminActionMsg('');
+    setAdminActionError('');
+
+    if (!newAdminName.trim() || !newAdminEmail.trim() || !newAdminPhone.trim()) {
+      setAdminActionError('সকল তথ্য (নাম, ইমেইল, ফোন নম্বর) সঠিকভাবে পূরণ করুন।');
+      return;
+    }
+
+    if (newAdminPin.length !== 4 || !/^\d{4}$/.test(newAdminPin)) {
+      setAdminActionError('PIN অবশ্যই ৪টি সংখ্যার হতে হবে (যেমন: ১২৩৪)।');
+      return;
+    }
+
+    const existing = storeState.users.find(u => u.email.toLowerCase() === newAdminEmail.trim().toLowerCase());
+    if (existing) {
+      setAdminActionError('এই ইমেইল দিয়ে ইতোমধ্যে একটি অ্যাকাউন্ট রয়েছে!');
+      return;
+    }
+
+    const created = store.createAdmin({
+      name: newAdminName.trim(),
+      email: newAdminEmail.trim().toLowerCase(),
+      phone: newAdminPhone.trim(),
+      adminRoleLevel: newAdminRoleLevel,
+      pin: newAdminPin
+    }, currentUser.name);
+
+    setAdminActionMsg(`✓ অ্যাডমিন ${created.name} সফলভাবে তৈরি ও যুক্ত করা হয়েছে!`);
+    setNewAdminName('');
+    setNewAdminEmail('');
+    setNewAdminPhone('');
+    setNewAdminPin('1234');
+    setAdminModalOpen(false);
+    setTimeout(() => setAdminActionMsg(''), 5000);
+  };
+
+  // Safe Admin Logout Handler
+  const handleAdminLogout = () => {
+    clearAdminSession();
+    logout();
+    navigateTo('home');
   };
 
   // Statistics overview for Top Bar
@@ -725,11 +668,33 @@ export const AdminDashboard: React.FC = () => {
               <ShieldCheck className="w-5 h-5 text-amber-400" />
               <span className="font-bold text-sm tracking-wide">TutorHat Administration Console</span>
             </div>
-            <div className="flex items-center gap-3 text-xs text-slate-300">
-              <span className="hidden sm:inline">Active Admin: <strong className="text-white">{currentUser.name}</strong></span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-semibold">
+            <div className="flex items-center gap-2 sm:gap-3 text-xs text-slate-300">
+              <span className="hidden md:inline">Active: <strong className="text-white">{currentUser.name}</strong></span>
+              
+              {/* Google Sheets / CSV Export Button */}
+              <button
+                type="button"
+                onClick={() => setExportModalOpen(true)}
+                className="py-1 px-2.5 sm:px-3 bg-emerald-600/90 hover:bg-emerald-600 text-white font-bold rounded-lg flex items-center gap-1.5 transition text-xs cursor-pointer shadow-xs active:scale-95"
+                title="Google Sheets & CSV Export"
+              >
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-200" />
+                <span className="hidden sm:inline">Google Sheets / Export</span>
+                <span className="sm:hidden">Export</span>
+              </button>
+
+              <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-semibold">
                 ● Live Database
               </span>
+              <button
+                type="button"
+                onClick={handleAdminLogout}
+                className="py-1 px-3 bg-rose-600/90 hover:bg-rose-600 text-white font-bold rounded-lg flex items-center gap-1.5 transition text-xs cursor-pointer shadow-xs active:scale-95"
+                title="Admin Logout"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>লগআউট</span>
+              </button>
             </div>
           </div>
         </div>
@@ -753,7 +718,8 @@ export const AdminDashboard: React.FC = () => {
             { id: 'payments', label: `Payments (${storeState.payments.length})` },
             { id: 'certificates', label: `Certificates (${storeState.certificates.length})` },
             { id: 'reviews', label: `Reviews (${storeState.reviews.length})` },
-            { id: 'activity', label: 'Activity Logs' },
+            { id: 'activity', label: `Activity Logs (${storeState.activityLogs.length})` },
+            { id: 'admins', label: `Admin Management (${adminUsers.length})` },
             { id: 'settings', label: 'Central Settings' }
           ].map(tab => (
             <button
@@ -929,6 +895,20 @@ export const AdminDashboard: React.FC = () => {
                         <option value="cancelled">Cancelled</option>
                         <option value="expired">Expired</option>
                       </select>
+
+                      {/* Delete Job Circular */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm(`আপনি কি নিশ্চিতভাবে এই টিউশন সার্কুলারটি (${job.id}: ${job.title}) মুছে ফেলতে চান?`)) {
+                            store.deleteJob(job.id, currentUser.name);
+                          }
+                        }}
+                        className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer border border-transparent hover:border-rose-200 transition"
+                        title="Delete Job Circular (সার্কুলার মুছে ফেলুন)"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))
@@ -1342,31 +1322,100 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* ========================================================= */}
-        {/* TUTORS MANAGEMENT                                         */}
+        {/* TUTORS MANAGEMENT & KYC VERIFICATION AUDIT               */}
         {/* ========================================================= */}
         {activeTab === 'tutors' && (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4 text-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div>
-                <h3 className="font-bold text-base text-blue-950">Tutor Verification & Profile Moderation</h3>
-                <p className="text-slate-500">Approve, reject with reason, suspend, or reactivate tutor profiles.</p>
+                <h3 className="font-bold text-base text-blue-950 flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                  <span>টিউটর ভেরিফিকেশন ও KYC ডকুমেন্ট অডিট (Tutor Verification)</span>
+                </h3>
+                <p className="text-slate-500">
+                  জাতীয় পরিচয়পত্র (NID), বিশ্ববিদ্যালয় আইডি ও সনদপত্র যাচাই করে গোল্ডেন ট্রাস্ট ব্যাজ অনুমোদন করুন।
+                </p>
+              </div>
+
+              {/* Status filter tabs */}
+              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setTutorVerificationFilter('all')}
+                  className={`px-3 py-1 rounded-lg font-bold text-xs transition cursor-pointer ${
+                    tutorVerificationFilter === 'all'
+                      ? 'bg-white text-blue-950 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  সব ({storeState.tutors.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTutorVerificationFilter('pending')}
+                  className={`px-3 py-1 rounded-lg font-bold text-xs transition cursor-pointer flex items-center gap-1 ${
+                    tutorVerificationFilter === 'pending'
+                      ? 'bg-amber-500 text-white shadow-xs'
+                      : 'text-amber-800 hover:text-amber-950'
+                  }`}
+                >
+                  <span>অপেক্ষমাণ KYC</span>
+                  <span className="bg-amber-200 text-amber-950 px-1.5 py-0.2 rounded-full text-[10px]">
+                    {storeState.tutors.filter(t => t.verificationStatus === 'pending').length}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTutorVerificationFilter('verified')}
+                  className={`px-3 py-1 rounded-lg font-bold text-xs transition cursor-pointer ${
+                    tutorVerificationFilter === 'verified'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'text-emerald-700 hover:text-emerald-900'
+                  }`}
+                >
+                  ভেরিফাইড ({storeState.tutors.filter(t => t.verificationStatus === 'verified').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTutorVerificationFilter('rejected')}
+                  className={`px-3 py-1 rounded-lg font-bold text-xs transition cursor-pointer ${
+                    tutorVerificationFilter === 'rejected'
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'text-rose-700 hover:text-rose-900'
+                  }`}
+                >
+                  রিজেক্টেড ({storeState.tutors.filter(t => t.verificationStatus === 'rejected').length})
+                </button>
               </div>
             </div>
 
             <div className="divide-y divide-slate-100">
-              {storeState.tutors.map((tutor) => (
+              {storeState.tutors
+                .filter(tut => {
+                  if (tutorVerificationFilter === 'all') return true;
+                  return tut.verificationStatus === tutorVerificationFilter;
+                })
+                .map((tutor) => (
                 <div key={tutor.id} className="py-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-bold text-sm text-blue-950">{tutor.fullName}</span>
                       <span className="font-mono text-[11px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{tutor.id}</span>
+                      
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
                         tutor.verificationStatus === 'verified' ? 'bg-emerald-100 text-emerald-800' :
-                        tutor.verificationStatus === 'pending' ? 'bg-amber-100 text-amber-800' :
+                        tutor.verificationStatus === 'pending' ? 'bg-amber-100 text-amber-800 animate-pulse' :
                         tutor.verificationStatus === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'
                       }`}>
-                        {tutor.verificationStatus}
+                        {tutor.verificationStatus === 'pending' ? '⏳ KYC অপেক্ষমাণ' : tutor.verificationStatus}
                       </span>
+
+                      {/* Trust Score badge if verified */}
+                      {tutor.verificationStatus === 'verified' && (
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                          🏆 {tutor.trustScore || 100}% Trust Score
+                        </span>
+                      )}
 
                       {/* Category Badge */}
                       {tutor.tutorCategory === 'qawmi_madrasa' ? (
@@ -1394,21 +1443,54 @@ export const AdminDashboard: React.FC = () => {
                       <strong>{tutor.university}</strong> ({tutor.department}) · {tutor.phone} · {tutor.email}
                     </p>
                     <p className="text-[11px] text-slate-500">
-                      Area: {tutor.area}, {tutor.district} · Fee: {settings.defaultCurrency}{tutor.expectedSalary} · CV: {tutor.completionPercentage}%
+                      <strong>NID:</strong> {tutor.nidNumber || 'তথ্য নেই'} · <strong>ঠিকানা:</strong> {tutor.currentAddress || tutor.area} · <strong>জেলা:</strong> {tutor.district} · পারিশ্রমিক: {settings.defaultCurrency}{tutor.expectedSalary}
                     </p>
+
+                    {/* KYC Document preview tags */}
+                    <div className="flex items-center gap-2 pt-0.5 flex-wrap">
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                        tutor.nidFrontPhoto ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-400'
+                      }`}>
+                        {tutor.nidFrontPhoto ? '✓ NID আপলোডকৃত' : '✗ NID নেই'}
+                      </span>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                        tutor.studentIdCardPhoto ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-400'
+                      }`}>
+                        {tutor.studentIdCardPhoto ? '✓ স্টুডেন্ট আইডি আপলোডকৃত' : '✗ স্টুডেন্ট আইডি নেই'}
+                      </span>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
+                        tutor.certificatePhoto ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-slate-100 text-slate-400'
+                      }`}>
+                        {tutor.certificatePhoto ? '✓ সনদপত্র আপলোডকৃত' : '✗ সনদপত্র নেই'}
+                      </span>
+                    </div>
+
                     {tutor.rejectionReason && (
                       <p className="text-[11px] text-rose-600 font-medium">Rejection Note: {tutor.rejectionReason}</p>
                     )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                    {/* Primary Button: Review KYC Docs */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedKycTutor(tutor);
+                        setKycReviewModalOpen(true);
+                      }}
+                      className="px-3.5 py-1.5 bg-blue-900 hover:bg-blue-800 text-white rounded-lg font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-amber-300" />
+                      <span>রিভিউ KYC ডকুমেন্টস</span>
+                    </button>
+
                     {tutor.verificationStatus !== 'verified' && (
                       <button
                         type="button"
                         onClick={() => store.setTutorVerificationStatus(tutor.id, 'verified')}
                         className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold cursor-pointer"
                       >
-                        ✓ Approve & Verify
+                        ✓ কুইক ভেরিফাই
                       </button>
                     )}
 
@@ -1421,7 +1503,7 @@ export const AdminDashboard: React.FC = () => {
                         }}
                         className="px-3 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-lg font-semibold cursor-pointer"
                       >
-                        Reject with Reason
+                        রিজেক্ট
                       </button>
                     )}
 
@@ -1431,7 +1513,7 @@ export const AdminDashboard: React.FC = () => {
                         onClick={() => store.setTutorVerificationStatus(tutor.id, 'suspended')}
                         className="px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100 rounded-lg font-semibold cursor-pointer"
                       >
-                        Suspend
+                        স্থগিত
                       </button>
                     )}
 
@@ -1441,7 +1523,7 @@ export const AdminDashboard: React.FC = () => {
                         onClick={() => store.setTutorVerificationStatus(tutor.id, 'verified')}
                         className="px-3 py-1.5 bg-blue-900 text-white rounded-lg font-semibold cursor-pointer"
                       >
-                        Reactivate
+                        পুনর্বহাল
                       </button>
                     )}
 
@@ -1451,7 +1533,7 @@ export const AdminDashboard: React.FC = () => {
                       className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-lg font-semibold flex items-center gap-1 cursor-pointer"
                     >
                       <Eye className="w-3.5 h-3.5 text-blue-900" />
-                      <span>সিভি দেখুন</span>
+                      <span>সিভি</span>
                     </button>
                   </div>
                 </div>
@@ -1465,21 +1547,55 @@ export const AdminDashboard: React.FC = () => {
         {/* ========================================================= */}
         {activeTab === 'requests' && (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4 text-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div>
-                <h3 className="font-bold text-base text-blue-950">Guardian Tuition Requirements</h3>
+                <h3 className="font-bold text-base text-blue-950">Guardian Tuition Requirements (অভিভাবকের টিউশন চাহিদা)</h3>
                 <p className="text-slate-500">Approve requests and convert them directly into public tuition circulars.</p>
               </div>
+              <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-semibold self-start sm:self-auto">
+                Total Requests: {storeState.requests.length}
+              </span>
+            </div>
+
+            {/* Request Search Input */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Search requests by ID, guardian name, phone, class, area, subject..."
+                value={requestSearch}
+                onChange={e => setRequestSearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+              />
             </div>
 
             <div className="space-y-3">
-              {storeState.requests.map((req) => (
+              {storeState.requests
+                .filter(req => {
+                  if (!requestSearch) return true;
+                  const q = requestSearch.toLowerCase();
+                  return (
+                    req.id.toLowerCase().includes(q) ||
+                    req.guardianName.toLowerCase().includes(q) ||
+                    req.phone.includes(q) ||
+                    req.studentClass.toLowerCase().includes(q) ||
+                    req.area.toLowerCase().includes(q) ||
+                    req.subjects.some(s => s.toLowerCase().includes(q))
+                  );
+                })
+                .map((req) => (
                 <div key={req.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="font-mono font-bold text-blue-900">{req.id}</span>
                       <span className="font-bold text-slate-900">{req.guardianName} ({req.phone})</span>
-                      <span className="px-2 py-0.5 rounded bg-blue-100 text-blue-900 font-semibold">{req.status}</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        req.status === 'converted_to_job' ? 'bg-emerald-100 text-emerald-800' :
+                        req.status === 'pending' ? 'bg-amber-100 text-amber-800' :
+                        req.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-900'
+                      }`}>
+                        {req.status.replace('_', ' ')}
+                      </span>
                     </div>
                     <p className="text-slate-700">{req.studentClass} ({req.medium}) · Area: {req.area}, {req.location}</p>
                     <p className="text-slate-600">Subjects: {req.subjects.join(', ')} · Routine: {req.daysPerWeek} days/wk ({req.preferredTime})</p>
@@ -1489,17 +1605,42 @@ export const AdminDashboard: React.FC = () => {
 
                   <div className="flex items-center gap-2 shrink-0">
                     {req.status === 'pending' && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          store.convertRequestToJob(req.id);
-                          alert('Converted and published as live Job on Tuition Job Board!');
-                        }}
-                        className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-bold cursor-pointer"
-                      >
-                        Convert to Live Job Circular
-                      </button>
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            store.convertRequestToJob(req.id);
+                            alert('Converted and published as live Job on Tuition Job Board!');
+                          }}
+                          className="px-3.5 py-1.5 bg-blue-900 hover:bg-blue-800 text-white rounded-lg font-bold cursor-pointer transition shadow-xs"
+                        >
+                          Convert to Live Job
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (window.confirm('Reject this guardian tuition requirement?')) {
+                              store.updateTuitionRequest(req.id, { status: 'rejected' }, currentUser.name);
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg font-semibold cursor-pointer transition"
+                        >
+                          Reject
+                        </button>
+                      </>
                     )}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`Delete tuition request ${req.id}?`)) {
+                          store.deleteTuitionRequest(req.id, currentUser.name);
+                        }
+                      }}
+                      className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer border border-transparent hover:border-rose-200 transition"
+                      title="Delete Request"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               ))}
@@ -1752,50 +1893,350 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* ========================================================= */}
-        {/* REVIEWS MODERATION                                        */}
+        {/* FEATURE 2: REVIEWS & RATINGS MODERATION CENTER             */}
         {/* ========================================================= */}
-        {activeTab === 'reviews' && (
+        {activeTab === 'reviews' && (() => {
+          const allReviews = storeState.reviews;
+          const pendingReviewsCount = allReviews.filter(r => r.status === 'pending').length;
+          const approvedReviewsCount = allReviews.filter(r => r.status === 'approved').length;
+          const rejectedReviewsCount = allReviews.filter(r => r.status === 'rejected').length;
+
+          const filteredReviewsList = allReviews.filter(r => {
+            if (reviewFilterStatus !== 'all' && r.status !== reviewFilterStatus) return false;
+            if (reviewSearchQuery.trim()) {
+              const q = reviewSearchQuery.toLowerCase();
+              const tutor = store.getTutorById(r.tutorId);
+              const tutorName = tutor?.fullName.toLowerCase() || '';
+              const guardianName = (r.guardianName || '').toLowerCase();
+              const comment = (r.comment || '').toLowerCase();
+              const subject = (r.studentGradeOrSubject || '').toLowerCase();
+              return tutorName.includes(q) || guardianName.includes(q) || comment.includes(q) || subject.includes(q);
+            }
+            return true;
+          });
+
+          return (
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-5 text-xs">
+              
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-200 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-amber-600" />
+                      ফিচার ২ • রেটিং ও রিভিউ নিয়ন্ত্রণ কেন্দ্র
+                    </span>
+                    <span className="text-slate-400 font-medium">({allReviews.length} টি রিভিউ)</span>
+                  </div>
+                  <h3 className="font-bold text-lg text-blue-950 mt-1">
+                    অভিভাবক রিভিউ ও স্টার রেটিং অডিট (Review Moderation & Trust)
+                  </h3>
+                  <p className="text-slate-500 text-[11px]">
+                    টিউটরদের জন্য জমা পড়া প্রতিটি রিভিউ পর্যালোচনা করুন, সত্যতা যাচাই করুন এবং পাবলিক প্রোফাইলে প্রদর্শন নিশ্চিত করুন।
+                  </p>
+                </div>
+
+                {/* Search Bar */}
+                <div className="w-full sm:w-64">
+                  <input
+                    type="text"
+                    value={reviewSearchQuery}
+                    onChange={(e) => setReviewSearchQuery(e.target.value)}
+                    placeholder="টিউটর, অভিভাবক বা বিষয় খুঁজুন..."
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-hidden focus:ring-1 focus:ring-blue-600"
+                  />
+                </div>
+              </div>
+
+              {/* Status Filter Tabs */}
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setReviewFilterStatus('all')}
+                  className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-colors ${
+                    reviewFilterStatus === 'all'
+                      ? 'bg-blue-900 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  সকল রিভিউ ({allReviews.length})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReviewFilterStatus('pending')}
+                  className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-colors flex items-center gap-1.5 ${
+                    reviewFilterStatus === 'pending'
+                      ? 'bg-amber-500 text-blue-950 shadow-xs'
+                      : 'bg-amber-50 text-amber-900 border border-amber-200 hover:bg-amber-100'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                  <span>পেন্ডিং মডারেশন ({pendingReviewsCount})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReviewFilterStatus('approved')}
+                  className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-colors flex items-center gap-1.5 ${
+                    reviewFilterStatus === 'approved'
+                      ? 'bg-emerald-600 text-white shadow-xs'
+                      : 'bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100'
+                  }`}
+                >
+                  <span>অনুমোদিত ({approvedReviewsCount})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReviewFilterStatus('rejected')}
+                  className={`px-3 py-1.5 rounded-xl font-bold cursor-pointer transition-colors flex items-center gap-1.5 ${
+                    reviewFilterStatus === 'rejected'
+                      ? 'bg-rose-600 text-white shadow-xs'
+                      : 'bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100'
+                  }`}
+                >
+                  <span>বাতিলকৃত ({rejectedReviewsCount})</span>
+                </button>
+              </div>
+
+              {/* Reviews List */}
+              <div className="space-y-4">
+                {filteredReviewsList.length === 0 ? (
+                  <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200/80 text-slate-500">
+                    কোনো রিভিউ পাওয়া যায়নি।
+                  </div>
+                ) : (
+                  filteredReviewsList.map((rev) => {
+                    const tutor = store.getTutorById(rev.tutorId);
+                    return (
+                      <div
+                        key={rev.id}
+                        className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                          rev.status === 'pending'
+                            ? 'bg-amber-50/40 border-amber-200 shadow-xs'
+                            : rev.status === 'approved'
+                            ? 'bg-white border-slate-200'
+                            : 'bg-rose-50/30 border-rose-200'
+                        }`}
+                      >
+                        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                          
+                          {/* Info Column */}
+                          <div className="space-y-2 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-bold text-slate-900 text-sm">{rev.guardianName}</span>
+                              <span className="text-slate-400">→</span>
+                              <span className="font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-lg border border-blue-200">
+                                {tutor ? `${tutor.fullName} (${tutor.institution})` : `টিউটর ID: ${rev.tutorId}`}
+                              </span>
+
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                                rev.status === 'approved'
+                                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                                  : rev.status === 'rejected'
+                                  ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                                  : 'bg-amber-100 text-amber-900 border border-amber-300'
+                              }`}>
+                                {rev.status === 'approved' ? 'অনুমোদিত' : rev.status === 'rejected' ? 'বাতিল' : 'পেন্ডিং'}
+                              </span>
+
+                              {rev.isVerifiedTuition && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                                  <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                                  যাচাইকৃত শিক্ষার্থী
+                                </span>
+                              )}
+                            </div>
+
+                            {rev.studentGradeOrSubject && (
+                              <p className="text-[11px] text-slate-500 font-medium">
+                                শ্রেণি ও বিষয়: <span className="text-slate-700">{rev.studentGradeOrSubject}</span> • তারিখ: {rev.date}
+                              </p>
+                            )}
+
+                            {/* Stars & Criteria Breakdown */}
+                            <div className="flex flex-wrap items-center gap-3 pt-1">
+                              <div className="flex items-center gap-1 text-amber-500 font-bold bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">
+                                <span className="text-sm">{rev.rating}</span>
+                                <span>★</span>
+                                <span className="text-[11px] text-amber-800 ml-1">সার্বিক রেটিং</span>
+                              </div>
+
+                              {rev.criteria && (
+                                <div className="flex flex-wrap gap-1.5 text-[10px]">
+                                  <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md">
+                                    শিক্ষাদান: {rev.criteria.teachingSkill}★
+                                  </span>
+                                  <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md">
+                                    সময়নিষ্ঠতা: {rev.criteria.punctuality}★
+                                  </span>
+                                  <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md">
+                                    ব্যবহার: {rev.criteria.behavior}★
+                                  </span>
+                                  <span className="px-2 py-0.5 bg-slate-100 text-slate-700 rounded-md">
+                                    উন্নতি: {rev.criteria.studentImprovement}★
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Comment */}
+                            <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 mt-2">
+                              <p className="text-slate-700 italic leading-relaxed text-xs">
+                                "{rev.comment}"
+                              </p>
+                            </div>
+
+                            {/* Tutor Reply if present */}
+                            {rev.tutorReply && (
+                              <div className="p-3 bg-blue-50/70 rounded-xl border border-blue-200 text-xs space-y-1">
+                                <div className="flex items-center justify-between font-bold text-blue-950 text-[11px]">
+                                  <span>টিউটরের উত্তর ({rev.tutorReply.tutorName || 'শিক্ষক'}):</span>
+                                  <span className="text-blue-600 font-normal">{rev.tutorReply.repliedAt}</span>
+                                </div>
+                                <p className="text-slate-700 italic">
+                                  "{rev.tutorReply.replyText}"
+                                </p>
+                              </div>
+                            )}
+
+                          </div>
+
+                          {/* Action Buttons Column */}
+                          <div className="flex flex-row lg:flex-col items-center lg:items-end gap-2 shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-100">
+                            
+                            {rev.status !== 'approved' && (
+                              <button
+                                type="button"
+                                onClick={() => store.moderateReview(rev.id, 'approved')}
+                                className="px-4 py-2 bg-emerald-600 text-white rounded-xl font-bold hover:bg-emerald-700 transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer text-xs"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                <span>অনুমোদন করুন</span>
+                              </button>
+                            )}
+
+                            {rev.status !== 'rejected' && (
+                              <button
+                                type="button"
+                                onClick={() => store.moderateReview(rev.id, 'rejected')}
+                                className="px-4 py-2 bg-rose-50 text-rose-700 border border-rose-200 rounded-xl font-bold hover:bg-rose-100 transition-colors cursor-pointer text-xs"
+                              >
+                                <span>বাতিল করুন</span>
+                              </button>
+                            )}
+
+                            {/* Toggle Verified Tuition Badge */}
+                            <button
+                              type="button"
+                              onClick={() => store.moderateReview(rev.id, rev.status, !rev.isVerifiedTuition)}
+                              className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition-colors cursor-pointer flex items-center gap-1 ${
+                                rev.isVerifiedTuition
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
+                                  : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                              }`}
+                            >
+                              <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                              <span>{rev.isVerifiedTuition ? 'যাচাইকৃত ব্যাজ সরানো' : 'যাচাইকৃত ব্যাজ দিন'}</span>
+                            </button>
+
+                            {/* Delete Review */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm('আপনি কি নিশ্চিতভাবে এই রিভিউটি মুছে ফেলতে চান?')) {
+                                  store.deleteReview(rev.id);
+                                }
+                              }}
+                              className="px-3 py-1 text-slate-400 hover:text-rose-600 transition-colors text-[11px] cursor-pointer"
+                            >
+                              মুছে ফেলুন
+                            </button>
+
+                          </div>
+
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+            </div>
+          );
+        })()}
+
+        {/* ========================================================= */}
+        {/* AUDIT ACTIVITY LOGS                                       */}
+        {/* ========================================================= */}
+        {activeTab === 'activity' && (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4 text-xs">
-            <h3 className="font-bold text-base text-blue-950 pb-2 border-b border-slate-100">
-              Review Moderation ({storeState.reviews.length})
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-base text-blue-950">System Audit Trail & Activity Logs (অ্যাক্টিভিটি হিস্ট্রি ও অডিট লগ)</h3>
+                <p className="text-slate-500">Real-time log of administrative actions, user updates, approvals, and system events.</p>
+              </div>
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => handleDownloadCSV('activityLogs')}
+                  className="px-3 py-1.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 rounded-lg font-semibold flex items-center gap-1 cursor-pointer transition"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Export Logs (CSV)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (window.confirm('Are you sure you want to clear audit history? An audit reset log entry will be created.')) {
+                      store.clearActivityLogs(currentUser.name);
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 rounded-lg font-semibold cursor-pointer transition"
+                >
+                  Clear History
+                </button>
+              </div>
+            </div>
 
-            <div className="space-y-3">
-              {storeState.reviews.map((rev) => (
-                <div key={rev.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-bold text-slate-900">{rev.guardianName} rated Tutor ({rev.tutorId})</span>
-                      <span className="text-amber-500 font-bold">{rev.rating} ★</span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                        rev.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                      }`}>
-                        {rev.status}
+            {/* Activity Search */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Search audit logs by action, admin name, details..."
+                value={activitySearch}
+                onChange={e => setActivitySearch(e.target.value)}
+                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+              />
+            </div>
+
+            <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto pr-1">
+              {storeState.activityLogs
+                .filter(log => {
+                  if (!activitySearch) return true;
+                  const q = activitySearch.toLowerCase();
+                  return (
+                    log.action.toLowerCase().includes(q) ||
+                    log.performedBy.toLowerCase().includes(q) ||
+                    log.details.toLowerCase().includes(q)
+                  );
+                })
+                .map((log) => (
+                <div key={log.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 hover:bg-slate-50/50 px-2 rounded-lg transition">
+                  <div className="space-y-0.5">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded text-[11px] border border-blue-100">
+                        {log.action}
                       </span>
+                      <span className="text-slate-800 font-medium">{log.details}</span>
                     </div>
-                    <p className="text-slate-600 mt-1 italic">"{rev.comment}"</p>
+                    <span className="text-[11px] text-slate-500 font-medium">By: <strong className="text-slate-700">{log.performedBy}</strong></span>
                   </div>
-
-                  <div className="flex items-center gap-2 shrink-0">
-                    {rev.status !== 'approved' && (
-                      <button
-                        type="button"
-                        onClick={() => store.moderateReview(rev.id, 'approved')}
-                        className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-semibold cursor-pointer"
-                      >
-                        Approve
-                      </button>
-                    )}
-                    {rev.status !== 'rejected' && (
-                      <button
-                        type="button"
-                        onClick={() => store.moderateReview(rev.id, 'rejected')}
-                        className="px-3 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg font-semibold cursor-pointer"
-                      >
-                        Reject
-                      </button>
-                    )}
-                  </div>
+                  <span className="text-[11px] text-slate-400 font-mono whitespace-nowrap">
+                    {new Date(log.timestamp).toLocaleString()}
+                  </span>
                 </div>
               ))}
             </div>
@@ -1803,32 +2244,296 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* ========================================================= */}
-        {/* AUDIT ACTIVITY LOGS                                       */}
+        {/* STEP 4: ADMIN MANAGEMENT & TEAM ACCESS                    */}
         {/* ========================================================= */}
-        {activeTab === 'activity' && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4 text-xs">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <h3 className="font-bold text-base text-blue-950">System Audit Trail & Activity Logs</h3>
-              <span className="text-[11px] text-slate-500">Recent 50 Actions</span>
+        {activeTab === 'admins' && (
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6 text-xs">
+            
+            {/* Header & Action Buttons */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-blue-900" />
+                  <h3 className="font-bold text-base text-blue-950">
+                    Admin Management & Access Control (অ্যাডমিন ব্যবস্থাপনা ও রোল নিয়ন্ত্রণ)
+                  </h3>
+                </div>
+                <p className="text-slate-500 mt-1">
+                  প্রধান অ্যাডমিন হিসেবে নতুন অ্যাডমিন তৈরি করুন, পদবী ও দায়িত্ব বণ্টন করুন এবং অ্যাক্সেস পরিচালনা করুন।
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => setExportModalOpen(true)}
+                  className="px-3.5 py-2 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 rounded-xl font-bold flex items-center gap-1.5 cursor-pointer transition shadow-xs"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-emerald-600" />
+                  <span>Google Sheets / CSV Export</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdminActionMsg('');
+                    setAdminActionError('');
+                    setAdminModalOpen(true);
+                  }}
+                  className="px-4 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-bold flex items-center gap-1.5 cursor-pointer transition shadow-xs"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>+ নতুন অ্যাডমিন তৈরি করুন</span>
+                </button>
+              </div>
             </div>
 
-            <div className="divide-y divide-slate-100">
-              {storeState.activityLogs.map((log) => (
-                <div key={log.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="space-y-0.5">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded text-[11px]">
-                        {log.action}
-                      </span>
-                      <span className="text-slate-700 font-medium">{log.details}</span>
+            {/* Notification messages */}
+            {adminActionMsg && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl font-semibold flex items-center gap-2 animate-fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{adminActionMsg}</span>
+              </div>
+            )}
+            {adminActionError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl font-semibold flex items-center gap-2 animate-fade-in">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{adminActionError}</span>
+              </div>
+            )}
+
+            {/* Overview Stats Badges */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
+                <span className="text-[11px] text-slate-500 block">মোট অ্যাডমিন</span>
+                <span className="text-xl font-bold text-slate-900">{adminUsers.length} জন</span>
+              </div>
+              <div className="p-3.5 bg-purple-50/60 border border-purple-200 rounded-xl">
+                <span className="text-[11px] text-purple-700 block">Super Admin</span>
+                <span className="text-xl font-bold text-purple-950">
+                  {adminUsers.filter(a => (a.adminRoleLevel || 'super_admin') === 'super_admin').length} জন
+                </span>
+              </div>
+              <div className="p-3.5 bg-emerald-50/60 border border-emerald-200 rounded-xl">
+                <span className="text-[11px] text-emerald-700 block">Moderators & Managers</span>
+                <span className="text-xl font-bold text-emerald-950">
+                  {adminUsers.filter(a => a.adminRoleLevel === 'moderator' || a.adminRoleLevel === 'manager').length} জন
+                </span>
+              </div>
+              <div className="p-3.5 bg-blue-50/60 border border-blue-200 rounded-xl">
+                <span className="text-[11px] text-blue-700 block">নিরাপত্তা প্রোটেকশন</span>
+                <span className="text-xs font-bold text-blue-950 flex items-center gap-1 mt-1">
+                  <Fingerprint className="w-3.5 h-3.5 text-blue-600" />
+                  <span>PIN ও ফিঙ্গারপ্রিন্ট সক্রিয়</span>
+                </span>
+              </div>
+            </div>
+
+            {/* Search and Filters */}
+            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3">
+              <div className="sm:col-span-8 relative">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  placeholder="অ্যাডমিনের নাম, ইমেইল বা ফোন নম্বর দিয়ে খুঁজুন..."
+                  value={adminSearch}
+                  onChange={e => setAdminSearch(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
+                />
+              </div>
+              <div className="sm:col-span-4">
+                <select
+                  value={adminRoleFilter}
+                  onChange={e => setAdminRoleFilter(e.target.value as any)}
+                  className="w-full p-2 bg-slate-50 border border-slate-200 rounded-xl font-semibold capitalize cursor-pointer"
+                >
+                  <option value="all">সকল পদবী ({adminUsers.length})</option>
+                  <option value="super_admin">Super Admin</option>
+                  <option value="moderator">Moderator</option>
+                  <option value="manager">Manager</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Admins Table / Cards */}
+            <div className="space-y-3">
+              {adminUsers
+                .filter(admin => {
+                  const matchesSearch = !adminSearch || 
+                    admin.name.toLowerCase().includes(adminSearch.toLowerCase()) ||
+                    admin.email.toLowerCase().includes(adminSearch.toLowerCase()) ||
+                    admin.phone.includes(adminSearch);
+                  const matchesRole = adminRoleFilter === 'all' || (admin.adminRoleLevel || 'super_admin') === adminRoleFilter;
+                  return matchesSearch && matchesRole;
+                })
+                .map((admin) => {
+                  const roleLevel = admin.adminRoleLevel || 'super_admin';
+                  const isCurrentAdmin = admin.id === currentUser.id;
+
+                  return (
+                    <div
+                      key={admin.id}
+                      className={`p-4 rounded-2xl border transition flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 ${
+                        isCurrentAdmin 
+                          ? 'bg-blue-50/30 border-blue-200 shadow-xs' 
+                          : 'bg-slate-50/70 border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="flex items-start sm:items-center gap-3.5 flex-1">
+                        {/* Avatar / Crown */}
+                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-sm shrink-0 ${
+                          roleLevel === 'super_admin' ? 'bg-purple-600 text-white shadow-xs' :
+                          roleLevel === 'moderator' ? 'bg-emerald-600 text-white shadow-xs' :
+                          'bg-amber-600 text-white shadow-xs'
+                        }`}>
+                          {roleLevel === 'super_admin' ? (
+                            <Crown className="w-5 h-5 text-amber-300" />
+                          ) : (
+                            admin.name.charAt(0).toUpperCase()
+                          )}
+                        </div>
+
+                        <div className="space-y-1 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-sm text-slate-900">{admin.name}</span>
+                            {isCurrentAdmin && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-900 border border-blue-200">
+                                আপনার অ্যাকাউন্ট (You)
+                              </span>
+                            )}
+                            
+                            {/* Role Badge */}
+                            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
+                              roleLevel === 'super_admin' ? 'bg-purple-100 text-purple-900 border-purple-200' :
+                              roleLevel === 'moderator' ? 'bg-emerald-100 text-emerald-900 border-emerald-200' :
+                              'bg-amber-100 text-amber-900 border-amber-200'
+                            }`}>
+                              {roleLevel === 'super_admin' ? '👑 Super Admin' :
+                               roleLevel === 'moderator' ? '🛡️ Moderator' : '📋 Manager'}
+                            </span>
+
+                            {/* Status Badge */}
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                              (admin.status || 'active') === 'active' 
+                                ? 'bg-emerald-100 text-emerald-800' 
+                                : 'bg-rose-100 text-rose-800'
+                            }`}>
+                              {(admin.status || 'active') === 'active' ? '● সক্রিয় (Active)' : '● স্থগিত (Suspended)'}
+                            </span>
+                          </div>
+
+                          <div className="text-slate-600 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                            <span>Phone: <strong className="font-mono text-slate-800">{admin.phone}</strong></span>
+                            <span>Email: <strong className="text-slate-800">{admin.email}</strong></span>
+                            <span>ID: <code className="text-[10px] bg-white px-1.5 py-0.5 rounded border">{admin.id}</code></span>
+                          </div>
+
+                          <div className="text-[11px] text-slate-400">
+                            <span>নিবন্ধন: {admin.createdAt ? admin.createdAt.split('T')[0] : '2026-01-01'}</span>
+                            {roleLevel === 'super_admin' && (
+                              <span className="ml-2 text-purple-700 font-semibold">• সর্বোচ্চ সিস্টেম ক্ষমতা (সব ফিচার এক্সেস)</span>
+                            )}
+                            {roleLevel === 'moderator' && (
+                              <span className="ml-2 text-emerald-700 font-semibold">• টিউটর ও অভিভাবক অনুমোদন, জব ম্যানেজমেন্ট</span>
+                            )}
+                            {roleLevel === 'manager' && (
+                              <span className="ml-2 text-amber-700 font-semibold">• কন্টেন্ট, নোটিস, রিভিউ ও সাপোর্ট ম্যানেজমেন্ট</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Admin Actions */}
+                      <div className="flex flex-wrap items-center gap-2 shrink-0 self-end lg:self-center">
+                        {/* Change Role Selector */}
+                        <div className="flex items-center gap-1.5">
+                          <label className="text-[11px] text-slate-400 font-semibold">রোল পরিবর্তন:</label>
+                          <select
+                            value={roleLevel}
+                            disabled={isCurrentAdmin}
+                            onChange={(e) => {
+                              const newRole = e.target.value as AdminRoleLevel;
+                              store.updateAdminRole(admin.id, newRole, currentUser.name);
+                              setAdminActionMsg(`✓ ${admin.name}-এর পদবী সফলভাবে ${newRole}-এ পরিবর্তন করা হয়েছে!`);
+                              setTimeout(() => setAdminActionMsg(''), 4000);
+                            }}
+                            className={`p-1.5 bg-white border border-slate-200 rounded-lg font-bold text-xs cursor-pointer ${
+                              isCurrentAdmin ? 'opacity-60 cursor-not-allowed' : 'hover:border-blue-400'
+                            }`}
+                            title={isCurrentAdmin ? "Cannot change own role directly" : "Change Admin Role Level"}
+                          >
+                            <option value="super_admin">Super Admin</option>
+                            <option value="moderator">Moderator</option>
+                            <option value="manager">Manager</option>
+                          </select>
+                        </div>
+
+                        {/* Suspend / Reactivate */}
+                        {(admin.status || 'active') === 'active' ? (
+                          <button
+                            type="button"
+                            disabled={isCurrentAdmin}
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to suspend access for admin ${admin.name}?`)) {
+                                store.updateAdminStatus(admin.id, 'suspended', currentUser.name);
+                                setAdminActionMsg(`✓ অ্যাডমিন ${admin.name}-এর এক্সেস স্থগিত করা হয়েছে।`);
+                                setTimeout(() => setAdminActionMsg(''), 4000);
+                              }
+                            }}
+                            className={`px-3 py-1.5 rounded-lg font-semibold transition ${
+                              isCurrentAdmin 
+                                ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
+                                : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200 cursor-pointer'
+                            }`}
+                            title={isCurrentAdmin ? "You cannot suspend your own active account" : "Suspend Admin Access"}
+                          >
+                            স্থগিত (Suspend)
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              store.updateAdminStatus(admin.id, 'active', currentUser.name);
+                              setAdminActionMsg(`✓ অ্যাডমিন ${admin.name}-এর এক্সেস পুনরায় সক্রিয় করা হয়েছে!`);
+                              setTimeout(() => setAdminActionMsg(''), 4000);
+                            }}
+                            className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold cursor-pointer transition"
+                            title="Reactivate Admin Access"
+                          >
+                            পুনরায় সক্রিয় করুন
+                          </button>
+                        )}
+
+                        {/* Revoke / Delete Admin */}
+                        <button
+                          type="button"
+                          disabled={isCurrentAdmin || adminUsers.length <= 1}
+                          onClick={() => {
+                            if (window.confirm(`আপনি কি নিশ্চিতভাবে ${admin.name}-এর অ্যাডমিন অ্যাকাউন্ট ও সমস্ত পারমিশন স্থায়ীভাবে বাতিল (Delete) করতে চান?`)) {
+                              const res = store.deleteAdmin(admin.id, currentUser.id, currentUser.name);
+                              if (res.success) {
+                                setAdminActionMsg(`✓ ${res.message}`);
+                              } else {
+                                setAdminActionError(res.message);
+                              }
+                              setTimeout(() => {
+                                setAdminActionMsg('');
+                                setAdminActionError('');
+                              }, 4000);
+                            }
+                          }}
+                          className={`p-1.5 rounded-lg border transition ${
+                            isCurrentAdmin || adminUsers.length <= 1
+                              ? 'text-slate-300 border-slate-200 cursor-not-allowed'
+                              : 'text-rose-600 hover:bg-rose-50 border-rose-200 cursor-pointer'
+                          }`}
+                          title={isCurrentAdmin ? "Cannot delete own account" : "Delete Admin Account"}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
-                    <span className="text-[11px] text-slate-400">By: {log.performedBy}</span>
-                  </div>
-                  <span className="text-[11px] text-slate-400 font-mono whitespace-nowrap">
-                    {new Date(log.timestamp).toLocaleString()}
-                  </span>
-                </div>
-              ))}
+                  );
+                })}
             </div>
           </div>
         )}
@@ -2010,49 +2715,59 @@ export const AdminDashboard: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Change Strong Password Form */}
+                {/* Change 4-Digit Security PIN Form */}
                 <div className="p-4 bg-white/10 rounded-xl border border-white/10 space-y-3">
                   <div className="flex items-center gap-2">
                     <KeyRound className="w-5 h-5 text-amber-400" />
                     <div>
-                      <h5 className="font-bold text-xs text-white">নতুন স্ট্রং পাসওয়ার্ড সেট করুন</h5>
-                      <span className="text-[10px] text-slate-300">কমপক্ষে ৮ অক্ষর (A-Z, a-z, 0-9, @#$)</span>
+                      <h5 className="font-bold text-xs text-white">৪-ডিজিটের সিকিউরিটি PIN পরিবর্তন</h5>
+                      <span className="text-[10px] text-slate-300">ঠিক ৪টি সংখ্যা (0-9) ব্যবহার করুন</span>
                     </div>
                   </div>
 
-                  {passwordChangeMsg && (
+                  {pinChangeMsg && (
                     <div className="p-2 bg-emerald-500/20 border border-emerald-400/40 rounded text-emerald-300 text-[11px] font-semibold">
-                      {passwordChangeMsg}
+                      {pinChangeMsg}
                     </div>
                   )}
-                  {passwordChangeError && (
+                  {pinChangeError && (
                     <div className="p-2 bg-rose-500/20 border border-rose-400/40 rounded text-rose-300 text-[11px] font-semibold">
-                      {passwordChangeError}
+                      {pinChangeError}
                     </div>
                   )}
 
                   <div className="space-y-2">
                     <input
                       type="password"
-                      value={newAdminPassword}
-                      onChange={e => setNewAdminPassword(e.target.value)}
-                      placeholder="নতুন স্ট্রং পাসওয়ার্ড (e.g. Admin@2026#Secure)"
-                      className="w-full p-2 bg-white/15 border border-white/20 rounded-lg text-white text-xs placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                      maxLength={4}
+                      value={currentPinInput}
+                      onChange={e => setCurrentPinInput(e.target.value.replace(/\D/g, ''))}
+                      placeholder="বর্তমান ৪-ডিজিটের পিন (ডিফল্ট: 2026)"
+                      className="w-full p-2 bg-white/15 border border-white/20 rounded-lg text-white text-xs placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-400 font-mono tracking-widest"
                     />
                     <input
                       type="password"
-                      value={confirmAdminPassword}
-                      onChange={e => setConfirmAdminPassword(e.target.value)}
-                      placeholder="পাসওয়ার্ড পুনরায় লিখুন"
-                      className="w-full p-2 bg-white/15 border border-white/20 rounded-lg text-white text-xs placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-400"
+                      maxLength={4}
+                      value={newPinInput}
+                      onChange={e => setNewPinInput(e.target.value.replace(/\D/g, ''))}
+                      placeholder="নতুন ৪-ডিজিটের পিন (e.g. 5829)"
+                      className="w-full p-2 bg-white/15 border border-white/20 rounded-lg text-white text-xs placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-400 font-mono tracking-widest"
+                    />
+                    <input
+                      type="password"
+                      maxLength={4}
+                      value={confirmPinInput}
+                      onChange={e => setConfirmPinInput(e.target.value.replace(/\D/g, ''))}
+                      placeholder="নতুন পিন পুনরায় লিখুন"
+                      className="w-full p-2 bg-white/15 border border-white/20 rounded-lg text-white text-xs placeholder-slate-400 focus:outline-none focus:ring-1 focus:ring-amber-400 font-mono tracking-widest"
                     />
                     <button
                       type="button"
-                      onClick={handleChangeAdminPassword}
+                      onClick={handleChangeAdminPin}
                       className="w-full py-2 px-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-95 transition-all"
                     >
                       <Lock className="w-3.5 h-3.5" />
-                      <span>পাসওয়ার্ড আপডেট করুন</span>
+                      <span>পিন কোড আপডেট করুন</span>
                     </button>
                   </div>
                 </div>
@@ -2898,6 +3613,258 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* ========================================================= */}
+      {/* STEP 4: MODAL: CREATE NEW ADMIN ACCOUNT                   */}
+      {/* ========================================================= */}
+      {adminModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-5 text-xs animate-fade-in shadow-2xl my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center text-blue-900">
+                  <UserPlus className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-blue-950">নতুন অ্যাডমিন তৈরি করুন</h3>
+                  <p className="text-slate-500 text-[11px]">New Administrator Account Creation</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdminModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {adminActionError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl font-semibold flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{adminActionError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleCreateAdminSubmit} className="space-y-4">
+              <div>
+                <label className="font-bold text-slate-900 block mb-1">পূর্ণ নাম (Full Name) *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="যেমন: মোঃ মাহমুদুল হাসান"
+                  value={newAdminName}
+                  onChange={e => setNewAdminName(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-900 block mb-1">ইমেইল (Email Address) *</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="admin@tutorhat.com"
+                    value={newAdminEmail}
+                    onChange={e => setNewAdminEmail(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-900 block mb-1">মোবাইল নম্বর (Phone) *</label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="017XXXXXXXX"
+                    value={newAdminPhone}
+                    onChange={e => setNewAdminPhone(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-900 block mb-1">অ্যাডমিন পদবী ও রোল (Admin Role Level) *</label>
+                <select
+                  value={newAdminRoleLevel}
+                  onChange={e => setNewAdminRoleLevel(e.target.value as AdminRoleLevel)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs cursor-pointer"
+                >
+                  <option value="moderator">🛡️ Moderator (ভেরিফিকেশন, জব পোস্টিং ও আবেদন হ্যান্ডলিং)</option>
+                  <option value="super_admin">👑 Super Admin (সর্বোচ্চ ক্ষমতা: সেটিংস ও অ্যাডমিন টিম কন্ট্রোল)</option>
+                  <option value="manager">📋 Manager (কমিউনিকেশন, ইনকোয়ারি, সাপোর্ট ও নোটিস বোর্ড)</option>
+                </select>
+                <div className="mt-1.5 p-2 bg-slate-50 rounded-lg text-[11px] text-slate-500">
+                  {newAdminRoleLevel === 'super_admin' && (
+                    <span>• <strong>Super Admin:</strong> প্ল্যাটফর্মের সমস্ত ফিচার, অ্যাডমিন নিয়োগ ও সেটিংস পরিবর্তনের অধিকার পাবে।</span>
+                  )}
+                  {newAdminRoleLevel === 'moderator' && (
+                    <span>• <strong>Moderator:</strong> টিউটর ও গার্ডিয়ান ভেরিফিকেশন, জব পোস্টিং এবং আবেদন শর্টলিস্ট করতে পারবে।</span>
+                  )}
+                  {newAdminRoleLevel === 'manager' && (
+                    <span>• <strong>Manager:</strong> ইউজার মেসেজ, নোটিস বোর্ড ও প্ল্যাটফর্ম রিভিউ পরিচালনা করতে পারবে।</span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-900 block mb-1">
+                  প্রাথমিক চার অক্ষরের পিন (4-Digit Security PIN) *
+                </label>
+                <input
+                  type="text"
+                  maxLength={4}
+                  required
+                  pattern="[0-9]{4}"
+                  placeholder="যেমন: ১২৩৪"
+                  value={newAdminPin}
+                  onChange={e => setNewAdminPin(e.target.value.replace(/[^0-9]/g, ''))}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-center text-lg font-mono tracking-widest font-bold text-blue-950"
+                />
+                <span className="text-[11px] text-slate-400 mt-1 block">
+                  নতুন অ্যাডমিন এই ৪টি সংখ্যা দিয়ে লগইন করতে পারবেন। পরবর্তীতে তিনি ফিঙ্গারপ্রিন্ট যুক্ত করতে পারবেন।
+                </span>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setAdminModalOpen(false)}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-semibold cursor-pointer"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+                >
+                  <Check className="w-4 h-4" />
+                  <span>অ্যাকাউন্ট তৈরি নিশ্চিত করুন</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* MODAL: GOOGLE SHEETS & CSV DATA EXPORT                    */}
+      {/* ========================================================= */}
+      {exportModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl p-6 max-w-lg w-full space-y-5 text-xs animate-fade-in shadow-2xl my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-800">
+                  <FileSpreadsheet className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-blue-950">ডেটা এক্সপোর্ট ও Google Sheets ব্যাকআপ</h3>
+                  <p className="text-slate-500 text-[11px]">Direct CSV & Google Sheets Integration</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setExportModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {copySheetsSuccess && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl font-bold flex items-center gap-2 animate-fade-in">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>✓ ডেটা ক্লিপবোর্ডে কপি হয়েছে! Google Sheets-এ গিয়ে Ctrl + V চাপুন।</span>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div>
+                <label className="font-bold text-slate-900 block mb-1.5">কোন ডেটাসেট এক্সপোর্ট করতে চান?</label>
+                <select
+                  value={exportCategory}
+                  onChange={e => setExportCategory(e.target.value as any)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs cursor-pointer"
+                >
+                  <option value="all">📁 সম্পূর্ণ প্ল্যাটফর্ম ডেটাসেট (All Data Combined)</option>
+                  <option value="jobs">💼 Tuition Jobs Circulars ({storeState.jobs.length} items)</option>
+                  <option value="tutors">🎓 Registered Tutors ({storeState.tutors.length} items)</option>
+                  <option value="guardians">👥 Guardians Directory ({guardians.length} items)</option>
+                  <option value="requests">📝 Tuition Requests ({storeState.requests.length} items)</option>
+                  <option value="applications">📨 Job Applications ({storeState.applications.length} items)</option>
+                  <option value="activityLogs">🛡️ System Audit Trail Logs ({storeState.activityLogs.length} items)</option>
+                </select>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-1 gap-2.5 pt-2">
+                {/* 1. Download CSV with UTF-8 BOM */}
+                <button
+                  type="button"
+                  onClick={() => handleDownloadCSV(exportCategory)}
+                  className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition shadow-xs"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>CSV ফাইল ডাউনলোড করুন (Google Sheets & Excel Ready)</span>
+                </button>
+
+                {/* 2. Copy for Google Sheets TSV Paste */}
+                <button
+                  type="button"
+                  onClick={() => handleCopyForGoogleSheets(exportCategory)}
+                  className="w-full py-2.5 px-4 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-xl font-bold flex items-center justify-center gap-2 cursor-pointer transition"
+                >
+                  <Copy className="w-4 h-4 text-blue-700" />
+                  <span>ক্লিপবোর্ডে কপি করুন (Google Sheets-এ সরাসরি Paste)</span>
+                </button>
+
+                {/* 3. Full JSON backup */}
+                <button
+                  type="button"
+                  onClick={handleDownloadJSONBackup}
+                  className="w-full py-2 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold flex items-center justify-center gap-2 cursor-pointer transition text-[11px]"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>সম্পূর্ণ সিস্টেম ব্যাকআপ ফাইল (.json) সংরক্ষণ করুন</span>
+                </button>
+              </div>
+
+              {/* Quick instructions for user */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1 text-slate-600 text-[11px]">
+                <p className="font-bold text-slate-900">📌 কীভাবে Google Sheets-এ ব্যবহার করবেন:</p>
+                <ol className="list-decimal list-inside space-y-0.5 text-slate-500">
+                  <li><strong>পদ্ধতি ১:</strong> "ক্লিপবোর্ডে কপি" চাপুন এবং <a href="https://sheets.new" target="_blank" rel="noreferrer" className="text-blue-900 underline font-semibold">sheets.new</a> খুলে প্রথম ঘরে <code>Ctrl + V</code> পেস্ট করুন।</li>
+                  <li><strong>পদ্ধতি ২:</strong> ডাউনলোড করা CSV ফাইলটি Google Sheets-এ <em>File &gt; Import &gt; Upload</em> করে খুলুন।</li>
+                  <li>UTF-8 BOM অন্তর্ভুক্ত থাকায় বাংলা নাম ও ঠিকানা কোনো রূপ বিকৃতি ছাড়া সঠিকভাবে আসবে।</li>
+                </ol>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setExportModalOpen(false)}
+                className="px-4 py-1.5 text-slate-600 hover:bg-slate-100 rounded-xl font-semibold cursor-pointer"
+              >
+                বন্ধ করুন (Close)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tutor KYC Verification Review Modal (Feature 1) */}
+      <AdminTutorKycReviewModal
+        tutor={selectedKycTutor}
+        isOpen={kycReviewModalOpen}
+        onClose={() => {
+          setKycReviewModalOpen(false);
+          setSelectedKycTutor(null);
+        }}
+        performedBy={currentUser?.name || 'Super Admin'}
+      />
 
     </div>
   );

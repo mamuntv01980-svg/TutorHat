@@ -1,18 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Mail, MapPin, Phone, MessageCircle, Heart, Shield } from 'lucide-react';
 import { useApp, AppView } from '../../context/AppContext';
 import { BrandLogo } from '../common/BrandLogo';
 import { CallButton } from '../common/CallButton';
 import { WhatsAppButton } from '../common/WhatsAppButton';
 import { TRANSLATIONS } from '../../constants/translations';
+import { AdminAuthBarrier } from '../admin/AdminAuthBarrier';
 
 export const Footer: React.FC = () => {
   const { settings, language, navigateTo } = useApp();
+  const [adminAuthOpen, setAdminAuthOpen] = useState(false);
   const t = TRANSLATIONS[language];
 
   const quickLinks: { label: string; view: AppView }[] = [
     { label: t.findTutor, view: 'find-tutor' },
     { label: t.tuitionJobs, view: 'tuition-jobs' },
+    { label: language === 'bn' ? 'টিউশন ফি ক্যালকুলেটর' : 'Fee Calculator', view: 'fee-calculator' },
     { label: t.becomeTutor, view: 'become-a-tutor' },
     { label: t.howItWorks, view: 'how-it-works' },
     { label: t.aboutUs, view: 'about' },
@@ -113,13 +116,40 @@ export const Footer: React.FC = () => {
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>© {new Date().getFullYear()} TutorHat. {t.allRightsReserved}</p>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <span>Currency: <strong className="text-slate-300 font-mono">BDT ({settings.defaultCurrency})</strong></span>
             <span aria-hidden="true">·</span>
             <span>Bangladesh</span>
+            <span aria-hidden="true" className="text-slate-700">·</span>
+            {/* Secret unobtrusive Admin Access monogram: small letter 'A' */}
+            <button
+              type="button"
+              onClick={() => setAdminAuthOpen(true)}
+              aria-label="Administration"
+              className="w-4 h-4 rounded text-[10px] font-mono text-slate-700 hover:text-slate-400 hover:bg-slate-800/80 transition-colors flex items-center justify-center select-none cursor-pointer focus:outline-none"
+              title=""
+            >
+              A
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Secret Admin Authentication Barrier Modal */}
+      {adminAuthOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 py-8 bg-slate-950/80 backdrop-blur-xs animate-fade-in overflow-y-auto">
+          <div className="w-full max-w-md my-auto">
+            <AdminAuthBarrier
+              isModal={true}
+              onCancel={() => setAdminAuthOpen(false)}
+              onSuccess={() => {
+                setAdminAuthOpen(false);
+                navigateTo('admin-dashboard');
+              }}
+            />
+          </div>
+        </div>
+      )}
     </footer>
   );
 };

@@ -17,6 +17,7 @@ export type AppView =
   | 'privacy'
   | 'terms'
   | 'choose-role'
+  | 'fee-calculator'
   | 'login'
   | 'register'
   | 'tutor-dashboard'

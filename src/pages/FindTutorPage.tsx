@@ -23,6 +23,7 @@ import {
 } from '../constants/bangladeshData';
 import { TRANSLATIONS } from '../constants/translations';
 import { tutorProfileImg } from '../services/store';
+import { TutorVerificationBadge } from '../components/common/TutorVerificationBadge';
 
 export const FindTutorPage: React.FC = () => {
   const { storeState, navigateTo, language, isShortlisted, toggleShortlist, settings } = useApp();
@@ -31,6 +32,7 @@ export const FindTutorPage: React.FC = () => {
   // Filters State
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'general' | 'alia_madrasa' | 'qawmi_madrasa'>('all');
+  const [onlyVerified, setOnlyVerified] = useState(false);
   const [selectedDistrict, setSelectedDistrict] = useState<string>('All');
   const [selectedArea, setSelectedArea] = useState<string>('All');
   const [selectedMedium, setSelectedMedium] = useState<string>('All');
@@ -52,13 +54,21 @@ export const FindTutorPage: React.FC = () => {
         return false;
       }
 
+      // Feature 1: Only Verified Tutors filter
+      if (onlyVerified && tutor.verificationStatus !== 'verified') {
+        return false;
+      }
+
       // Search term
       if (searchTerm.trim()) {
         const term = searchTerm.toLowerCase();
         const matchName = tutor.fullName.toLowerCase().includes(term);
         const matchUni = tutor.university.toLowerCase().includes(term);
         const matchSub = tutor.preferredSubjects.some(s => s.toLowerCase().includes(term));
-        const matchArea = tutor.area.toLowerCase().includes(term) || tutor.preferredAreas.some(a => a.toLowerCase().includes(term));
+        const matchArea = 
+          tutor.area.toLowerCase().includes(term) || 
+          (tutor.currentAddress && tutor.currentAddress.toLowerCase().includes(term)) ||
+          tutor.preferredAreas.some(a => a.toLowerCase().includes(term));
         if (!matchName && !matchUni && !matchSub && !matchArea) return false;
       }
 
@@ -72,9 +82,13 @@ export const FindTutorPage: React.FC = () => {
         return false;
       }
 
-      // Area
-      if (selectedArea !== 'All') {
-        const matchesArea = tutor.area === selectedArea || tutor.preferredAreas.includes(selectedArea);
+      // Area (Present Address or Preferred Areas across Bangladesh)
+      if (selectedArea !== 'All' && selectedArea.trim() !== '') {
+        const areaQuery = selectedArea.toLowerCase();
+        const matchesArea = 
+          tutor.area.toLowerCase().includes(areaQuery) || 
+          (tutor.currentAddress && tutor.currentAddress.toLowerCase().includes(areaQuery)) ||
+          tutor.preferredAreas.some(a => a.toLowerCase().includes(areaQuery));
         if (!matchesArea) return false;
       }
 
@@ -191,18 +205,32 @@ export const FindTutorPage: React.FC = () => {
 
       <div>
         <label className="font-semibold text-slate-900 block mb-1.5">
-          {language === 'bn' ? 'এলাকা (ঢাকা)' : 'Area (Dhaka)'}
+          {language === 'bn' ? 'এলাকা / বর্তমান ঠিকানা' : 'Area / Present Address'}
         </label>
-        <select
-          value={selectedArea}
-          onChange={(e) => setSelectedArea(e.target.value)}
-          className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none text-xs"
-        >
-          <option value="All">All Areas</option>
-          {DHAKA_AREAS.map((a) => (
-            <option key={a} value={a}>{a}</option>
-          ))}
-        </select>
+        <div className="relative">
+          <input
+            type="text"
+            list="bd-filter-areas"
+            value={selectedArea === 'All' ? '' : selectedArea}
+            onChange={(e) => setSelectedArea(e.target.value ? e.target.value : 'All')}
+            placeholder={language === 'bn' ? 'যেকোনো এলাকা বা ঠিকানা লিখুন...' : 'Type any area or address...'}
+            className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none text-xs"
+          />
+          {selectedArea !== 'All' && (
+            <button
+              type="button"
+              onClick={() => setSelectedArea('All')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 font-bold"
+            >
+              ✕
+            </button>
+          )}
+          <datalist id="bd-filter-areas">
+            {DHAKA_AREAS.map((a) => (
+              <option key={a} value={a} />
+            ))}
+          </datalist>
+        </div>
       </div>
 
       {/* Medium */}
@@ -407,6 +435,20 @@ export const FindTutorPage: React.FC = () => {
             >
               📖 {language === 'bn' ? 'কওমি মাদ্রাসা' : 'Qawmi Madrasah'}
             </button>
+
+            {/* Feature 1: Only Verified Toggle */}
+            <button
+              type="button"
+              onClick={() => setOnlyVerified(!onlyVerified)}
+              className={`px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ml-auto cursor-pointer ${
+                onlyVerified
+                  ? 'bg-emerald-600 text-white shadow-xs ring-2 ring-emerald-400'
+                  : 'bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? '🛡️ শুধুমাত্র ভেরিফাইড' : '🛡️ Verified Only'}</span>
+            </button>
           </div>
 
           {filteredTutors.length === 0 ? (
@@ -483,13 +525,8 @@ export const FindTutorPage: React.FC = () => {
                                 </span>
                               )}
 
-                              {/* Verification badge */}
-                              {tutor.verificationStatus === 'verified' && (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-                                  <ShieldCheck className="w-3 h-3" />
-                                  <span>{t.verifiedTutor}</span>
-                                </span>
-                              )}
+                              {/* Feature 1: Dynamic Verification & Trust Badge */}
+                              <TutorVerificationBadge tutor={tutor} size="sm" />
                             </div>
                           </div>
                         </div>

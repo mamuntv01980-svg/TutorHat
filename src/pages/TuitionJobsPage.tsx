@@ -56,7 +56,7 @@ export const TuitionJobsPage: React.FC = () => {
       }
 
       if (selectedDistrict !== 'All' && job.district !== selectedDistrict) return false;
-      if (selectedArea !== 'All' && job.area !== selectedArea) return false;
+      if (selectedArea !== 'All' && selectedArea.trim() !== '' && !job.area.toLowerCase().includes(selectedArea.toLowerCase())) return false;
       if (selectedMedium !== 'All' && job.medium !== selectedMedium) return false;
       if (selectedClass !== 'All' && job.classLevel !== selectedClass) return false;
       if (selectedSubject !== 'All' && !job.subjects.includes(selectedSubject)) return false;
@@ -132,15 +132,29 @@ export const TuitionJobsPage: React.FC = () => {
       </div>
 
       <div>
-        <label className="font-semibold text-slate-900 block mb-1">{language === 'bn' ? 'এলাকা (ঢাকা)' : 'Area'}</label>
-        <select
-          value={selectedArea}
-          onChange={(e) => setSelectedArea(e.target.value)}
-          className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs"
-        >
-          <option value="All">All Areas</option>
-          {DHAKA_AREAS.map(a => <option key={a} value={a}>{a}</option>)}
-        </select>
+        <label className="font-semibold text-slate-900 block mb-1">{language === 'bn' ? 'এলাকা / লোকেশন' : 'Area / Location'}</label>
+        <div className="relative">
+          <input
+            type="text"
+            list="bd-jobs-areas"
+            value={selectedArea === 'All' ? '' : selectedArea}
+            onChange={(e) => setSelectedArea(e.target.value ? e.target.value : 'All')}
+            placeholder={language === 'bn' ? 'যেকোনো এলাকা লিখুন...' : 'Type any area...'}
+            className="w-full py-2 px-3 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+          />
+          {selectedArea !== 'All' && (
+            <button
+              type="button"
+              onClick={() => setSelectedArea('All')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 font-bold"
+            >
+              ✕
+            </button>
+          )}
+          <datalist id="bd-jobs-areas">
+            {DHAKA_AREAS.map(a => <option key={a} value={a} />)}
+          </datalist>
+        </div>
       </div>
 
       <div>

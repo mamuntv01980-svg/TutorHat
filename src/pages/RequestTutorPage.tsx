@@ -369,9 +369,18 @@ export const RequestTutorPage: React.FC = () => {
 
               {/* Monthly Custom Budget (NO FORCED FEES) */}
               <div>
-                <label className="font-semibold text-slate-900 block mb-1">
-                  {language === 'bn' ? 'আপনার মাসিক বাজেট (BDT ৳) — নিজস্ব বাজেট দিন' : 'Your Monthly Budget (BDT ৳)'} *
-                </label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="font-semibold text-slate-900 block">
+                    {language === 'bn' ? 'আপনার মাসিক বাজেট (BDT ৳)' : 'Your Monthly Budget (BDT ৳)'} *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('fee-calculator')}
+                    className="text-[11px] text-blue-700 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <span>ক্যালকুলেটরে যাচাই করুন →</span>
+                  </button>
+                </div>
                 <div className="relative">
                   <span className="absolute left-3 top-2.5 font-bold text-slate-400">{settings.defaultCurrency}</span>
                   <input
