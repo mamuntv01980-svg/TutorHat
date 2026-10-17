@@ -11,7 +11,9 @@ import {
   SlidersHorizontal, 
   X,
   PhoneCall,
-  Check
+  Check,
+  Sparkles,
+  MessageSquare
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { 
@@ -22,11 +24,17 @@ import {
   CLASS_LEVELS 
 } from '../constants/bangladeshData';
 import { TRANSLATIONS } from '../constants/translations';
-import { tutorProfileImg } from '../services/store';
 import { TutorVerificationBadge } from '../components/common/TutorVerificationBadge';
+import { BookDemoModal } from '../components/demo/BookDemoModal';
+import { ChatBoxModal } from '../components/chat/ChatBoxModal';
+import { TutorProfile } from '../types';
 
 export const FindTutorPage: React.FC = () => {
   const { storeState, navigateTo, language, isShortlisted, toggleShortlist, settings } = useApp();
+  const [selectedDemoTutor, setSelectedDemoTutor] = useState<TutorProfile | null>(null);
+  const [demoModalOpen, setDemoModalOpen] = useState(false);
+  const [selectedChatTutor, setSelectedChatTutor] = useState<TutorProfile | null>(null);
+  const [chatModalOpen, setChatModalOpen] = useState(false);
   const t = TRANSLATIONS[language];
 
   // Filters State
@@ -598,11 +606,35 @@ export const FindTutorPage: React.FC = () => {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedChatTutor(tutor);
+                            setChatModalOpen(true);
+                          }}
+                          className="p-2 text-xs font-semibold bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-xl transition-colors min-h-[38px] flex items-center justify-center cursor-pointer shadow-2xs"
+                          title={language === 'bn' ? 'শিক্ষককে সরাসরি মেসেজ পাঠান' : 'Direct Message'}
+                        >
+                          <MessageSquare className="w-4 h-4 text-blue-900" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedDemoTutor(tutor);
+                            setDemoModalOpen(true);
+                          }}
+                          className="px-2.5 py-1.5 text-xs font-bold bg-amber-400 hover:bg-amber-300 text-blue-950 rounded-xl transition-colors min-h-[38px] flex items-center gap-1 cursor-pointer active:scale-95 shadow-2xs"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-blue-950" />
+                          <span>ফ্রি ডেমো</span>
+                        </button>
+
                         <button
                           type="button"
                           onClick={() => navigateTo('tutor-detail', { tutorId: tutor.id })}
-                          className="px-3 py-1.5 text-xs font-semibold bg-blue-900 hover:bg-blue-800 text-white rounded-xl transition-colors min-h-[38px]"
+                          className="px-3 py-1.5 text-xs font-semibold bg-blue-900 hover:bg-blue-800 text-white rounded-xl transition-colors min-h-[38px] cursor-pointer"
                         >
                           {t.viewDetails}
                         </button>
@@ -648,6 +680,30 @@ export const FindTutorPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Feature 4: Book Demo Modal for Selected Tutor */}
+      {selectedDemoTutor && (
+        <BookDemoModal
+          tutor={selectedDemoTutor}
+          isOpen={demoModalOpen}
+          onClose={() => {
+            setDemoModalOpen(false);
+            setSelectedDemoTutor(null);
+          }}
+        />
+      )}
+
+      {/* Feature 6: In-App Direct Chat Modal */}
+      {selectedChatTutor && (
+        <ChatBoxModal
+          isOpen={chatModalOpen}
+          onClose={() => {
+            setChatModalOpen(false);
+            setSelectedChatTutor(null);
+          }}
+          targetTutor={selectedChatTutor}
+        />
       )}
 
     </div>

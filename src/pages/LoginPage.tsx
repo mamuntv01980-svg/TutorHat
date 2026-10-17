@@ -120,14 +120,14 @@ export const LoginPage: React.FC = () => {
           <p className="font-semibold text-slate-700 text-[11px] text-center">
             {language === 'bn' ? 'টেস্টিংয়ের জন্য ওয়ান-ক্লিক লগইন:' : 'Instant Demo Persona Sign-In:'}
           </p>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-2 gap-2">
             <button
               type="button"
               onClick={() => {
                 loginAs('tutor');
                 navigateTo('tutor-dashboard');
               }}
-              className="py-1.5 px-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-medium hover:border-blue-600 hover:text-blue-900 text-center text-[11px]"
+              className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-slate-700 font-medium hover:border-blue-600 hover:text-blue-900 text-center text-xs transition-colors"
             >
               Tutor (Rahim)
             </button>
@@ -137,18 +137,9 @@ export const LoginPage: React.FC = () => {
                 loginAs('guardian');
                 navigateTo('guardian-dashboard');
               }}
-              className="py-1.5 px-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-medium hover:border-blue-600 hover:text-blue-900 text-center text-[11px]"
+              className="py-2 px-3 bg-white border border-slate-200 rounded-xl text-slate-700 font-medium hover:border-blue-600 hover:text-blue-900 text-center text-xs transition-colors"
             >
               Guardian
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                navigateTo('admin-dashboard');
-              }}
-              className="py-1.5 px-2 bg-white border border-slate-200 rounded-lg text-slate-700 font-medium hover:border-blue-600 hover:text-blue-900 text-center text-[11px] flex items-center justify-center gap-1"
-            >
-              <span>🔒 Admin Console</span>
             </button>
           </div>
         </div>

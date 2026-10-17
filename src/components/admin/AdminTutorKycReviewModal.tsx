@@ -35,7 +35,9 @@ export const AdminTutorKycReviewModal: React.FC<AdminTutorKycReviewModalProps> =
   const [isStudentIdVerified, setIsStudentIdVerified] = useState(tutor.isStudentIdVerified ?? true);
   const [isAcademicVerified, setIsAcademicVerified] = useState(tutor.isAcademicVerified ?? true);
   const [badgeLevel, setBadgeLevel] = useState<'standard' | 'verified_pro' | 'golden_star'>(
-    tutor.badgeLevel && tutor.badgeLevel !== 'none' ? tutor.badgeLevel : 'golden_star'
+    (tutor.badgeLevel && ['standard', 'verified_pro', 'golden_star'].includes(tutor.badgeLevel))
+      ? (tutor.badgeLevel as 'standard' | 'verified_pro' | 'golden_star')
+      : 'golden_star'
   );
   const [adminNotes, setAdminNotes] = useState(tutor.verificationNotes || '');
   const [rejectionReason, setRejectionReason] = useState(tutor.rejectionReason || '');

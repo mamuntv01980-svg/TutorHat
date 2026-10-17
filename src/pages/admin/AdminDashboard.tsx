@@ -48,7 +48,15 @@ import {
   FileSpreadsheet,
   Crown,
   Shield,
-  Sparkles
+  Sparkles,
+  Video,
+  CalendarClock,
+  CalendarX,
+  Laptop,
+  Home,
+  MessageSquare,
+  Printer,
+  Bell
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { store } from '../../services/store';
@@ -71,9 +79,21 @@ import {
   AdminRoleLevel,
   NoticeItem, 
   ContactMessage, 
-  ReferralRecord 
+  ReferralRecord,
+  DemoClass,
+  TuitionConfirmation,
+  PaymentRecord,
+  CertificateRecord,
+  AttendanceRecord,
+  StudentProgressReport
 } from '../../types';
 import { BD_DISTRICTS, DHAKA_AREAS, MEDIUMS, CLASS_LEVELS } from '../../constants/bangladeshData';
+import { TuitionAgreementSlipModal } from '../../components/tuition/TuitionAgreementSlipModal';
+import { PaymentReceiptModal } from '../../components/tuition/PaymentReceiptModal';
+import { CertificateViewModal } from '../../components/tuition/CertificateViewModal';
+import { IssueCertificateModal } from '../../components/tuition/IssueCertificateModal';
+import { ChatHubSection } from '../../components/chat/ChatHubSection';
+import { StudentProgressReportModal } from '../../components/progress/StudentProgressReportModal';
 
 export const AdminDashboard: React.FC = () => {
   const { storeState, settings, currentUser, loginAs, logout, language, navigateTo } = useApp();
@@ -86,6 +106,8 @@ export const AdminDashboard: React.FC = () => {
     | 'applications' 
     | 'demos' 
     | 'confirmations' 
+    | 'chats'
+    | 'progress-reports'
     | 'notices'
     | 'referrals'
     | 'messages'
@@ -119,8 +141,68 @@ export const AdminDashboard: React.FC = () => {
   // Activity Log Search State
   const [activitySearch, setActivitySearch] = useState('');
 
+  // Feature 5 Modals State
+  const [selectedConfForAgreement, setSelectedConfForAgreement] = useState<TuitionConfirmation | null>(null);
+  const [agreementModalOpen, setAgreementModalOpen] = useState(false);
+  const [selectedPaymentForReceipt, setSelectedPaymentForReceipt] = useState<PaymentRecord | null>(null);
+  const [receiptModalOpen, setReceiptModalOpen] = useState(false);
+  const [selectedCertForView, setSelectedCertForView] = useState<CertificateRecord | null>(null);
+  const [certModalOpen, setCertModalOpen] = useState(false);
+  const [issueCertModalOpen, setIssueCertModalOpen] = useState(false);
+
+  // Feature 6: In-App Chat Supervision & Progress Reports State
+  const [selectedProgressReportForView, setSelectedProgressReportForView] = useState<StudentProgressReport | null>(null);
+  const [progressReportModalOpen, setProgressReportModalOpen] = useState(false);
+  const [progressSearchQuery, setProgressSearchQuery] = useState('');
+  const [progressGradeFilter, setProgressGradeFilter] = useState<'all' | 'A+' | 'A' | 'B' | 'C'>('all');
+  const [progressToast, setProgressToast] = useState<string | null>(null);
+
   // Tuition Requests Search State
   const [requestSearch, setRequestSearch] = useState('');
+
+  // Delete Confirmation State (Reliable across all platforms, replaces window.confirm)
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<{
+    type: 'request' | 'application' | 'job';
+    id: string;
+    label: string;
+  } | null>(null);
+  const [adminActionToast, setAdminActionToast] = useState<string | null>(null);
+
+  const showAdminToast = (msg: string) => {
+    setAdminActionToast(msg);
+    setTimeout(() => setAdminActionToast(null), 3500);
+  };
+
+  // Tuition Request Edit Modal State (Requirement 1)
+  const [editRequestModalOpen, setEditRequestModalOpen] = useState(false);
+  const [selectedReqForEdit, setSelectedReqForEdit] = useState<TuitionRequest | null>(null);
+  const [reqFormData, setReqFormData] = useState({
+    guardianName: '',
+    phone: '',
+    location: '',
+    area: '',
+    studentClass: '',
+    medium: '',
+    studentGender: 'male' as 'male' | 'female',
+    subjects: '',
+    customRequirements: '',
+    daysPerWeek: 3,
+    preferredTime: '',
+    tutorGenderPreference: 'any' as 'any' | 'male' | 'female',
+    monthlyBudget: 6000,
+    additionalRequirements: '',
+    status: 'pending' as TuitionRequest['status']
+  });
+
+  // Tutor Application Edit Modal State (Requirement 1)
+  const [editAppModalOpen, setEditAppModalOpen] = useState(false);
+  const [selectedAppForEdit, setSelectedAppForEdit] = useState<JobApplication | null>(null);
+  const [appFormData, setAppFormData] = useState({
+    expectedSalary: 6000,
+    status: 'applied' as JobApplication['status'],
+    adminNote: '',
+    coverNote: ''
+  });
 
   // Job Filters and Search
   const [jobSearch, setJobSearch] = useState('');
@@ -185,6 +267,54 @@ export const AdminDashboard: React.FC = () => {
   // Review Moderation State (Feature 2)
   const [reviewFilterStatus, setReviewFilterStatus] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [reviewSearchQuery, setReviewSearchQuery] = useState('');
+
+  // Feature 4: Demo Class Management & Monitoring State
+  const [adminDemoFilterStatus, setAdminDemoFilterStatus] = useState<'all' | 'scheduled' | 'completed' | 'cancelled'>('all');
+  const [adminDemoSearchQuery, setAdminDemoSearchQuery] = useState('');
+  const [adminDemoToast, setAdminDemoToast] = useState<string | null>(null);
+  const [adminConfirmModalOpen, setAdminConfirmModalOpen] = useState(false);
+  const [adminSelectedDemoForConfirm, setAdminSelectedDemoForConfirm] = useState<DemoClass | null>(null);
+  const [adminAgreedSalary, setAdminAgreedSalary] = useState(7500);
+  const [adminAgreedDays, setAdminAgreedDays] = useState(4);
+  const [adminStartDateInput, setAdminStartDateInput] = useState(new Date().toISOString().split('T')[0]);
+  const [adminInstructionsInput, setAdminInstructionsInput] = useState('নিয়মিত মডেল টেস্ট ও অগ্রগতি রিপোর্ট');
+  const [adminRescheduleModalOpen, setAdminRescheduleModalOpen] = useState(false);
+  const [adminSelectedDemoForReschedule, setAdminSelectedDemoForReschedule] = useState<DemoClass | null>(null);
+  const [adminNewRescheduleDate, setAdminNewRescheduleDate] = useState('');
+  const [adminNewRescheduleTime, setAdminNewRescheduleTime] = useState('5:30 PM');
+  const [adminRescheduleReason, setAdminRescheduleReason] = useState('');
+
+  const handleAdminConfirmTuition = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminSelectedDemoForConfirm) return;
+    store.hireTutorAfterDemo(
+      adminSelectedDemoForConfirm.id,
+      adminAgreedSalary,
+      adminAgreedDays,
+      adminStartDateInput,
+      adminSelectedDemoForConfirm.location,
+      adminInstructionsInput
+    );
+    setAdminConfirmModalOpen(false);
+    setAdminSelectedDemoForConfirm(null);
+    setAdminDemoToast(`শিক্ষক ${adminSelectedDemoForConfirm.tutorName}-এর জন্য টিউশন নিয়োগ সফলভাবে কনফার্ম করা হয়েছে!`);
+    setTimeout(() => setAdminDemoToast(null), 4000);
+  };
+
+  const handleAdminReschedule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!adminSelectedDemoForReschedule || !adminNewRescheduleDate) return;
+    store.rescheduleDemo(
+      adminSelectedDemoForReschedule.id,
+      adminNewRescheduleDate,
+      adminNewRescheduleTime,
+      adminRescheduleReason.trim()
+    );
+    setAdminRescheduleModalOpen(false);
+    setAdminSelectedDemoForReschedule(null);
+    setAdminDemoToast('ডেমো ক্লাসের সময়সূচী পরিবর্তন এবং পক্ষদ্বয়কে নোটিফিকেশন প্রেরণ করা হয়েছে।');
+    setTimeout(() => setAdminDemoToast(null), 4000);
+  };
 
   // Demo Modal
   const [demoModalOpen, setDemoModalOpen] = useState(false);
@@ -429,6 +559,104 @@ export const AdminDashboard: React.FC = () => {
       });
     }
     setNoticeModalOpen(false);
+  };
+
+  // Request Edit Handlers (Requirement 1)
+  const openEditRequestModal = (req: TuitionRequest) => {
+    setSelectedReqForEdit(req);
+    setReqFormData({
+      guardianName: req.guardianName,
+      phone: req.phone,
+      location: req.location,
+      area: req.area,
+      studentClass: req.studentClass,
+      medium: req.medium,
+      studentGender: req.studentGender,
+      subjects: req.subjects.join(', '),
+      customRequirements: req.customRequirements || (req.customSubjects ? req.customSubjects.join(', ') : ''),
+      daysPerWeek: req.daysPerWeek,
+      preferredTime: req.preferredTime,
+      tutorGenderPreference: req.tutorGenderPreference,
+      monthlyBudget: req.monthlyBudget,
+      additionalRequirements: req.additionalRequirements,
+      status: req.status
+    });
+    setEditRequestModalOpen(true);
+  };
+
+  const handleSaveRequestEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedReqForEdit) return;
+
+    const subjectsArr = reqFormData.subjects.split(',').map(s => s.trim()).filter(Boolean);
+    const customText = reqFormData.customRequirements.trim();
+
+    store.updateTuitionRequest(selectedReqForEdit.id, {
+      guardianName: reqFormData.guardianName.trim(),
+      phone: reqFormData.phone.trim(),
+      location: reqFormData.location,
+      area: reqFormData.area.trim(),
+      studentClass: reqFormData.studentClass,
+      medium: reqFormData.medium,
+      studentGender: reqFormData.studentGender,
+      subjects: subjectsArr.length > 0 ? subjectsArr : ['General'],
+      customRequirements: customText || undefined,
+      customSubjects: customText ? [customText] : undefined,
+      daysPerWeek: Number(reqFormData.daysPerWeek),
+      preferredTime: reqFormData.preferredTime.trim(),
+      tutorGenderPreference: reqFormData.tutorGenderPreference,
+      monthlyBudget: Number(reqFormData.monthlyBudget),
+      additionalRequirements: reqFormData.additionalRequirements.trim(),
+      status: reqFormData.status
+    }, currentUser.name);
+
+    setEditRequestModalOpen(false);
+    setSelectedReqForEdit(null);
+    showAdminToast(`✓ টিউশন রিকোয়েস্ট [${selectedReqForEdit.id}] সফলভাবে আপডেট করা হয়েছে।`);
+  };
+
+  // Application Edit Handlers (Requirement 1)
+  const openEditAppModal = (app: JobApplication) => {
+    setSelectedAppForEdit(app);
+    setAppFormData({
+      expectedSalary: app.expectedSalary,
+      status: app.status,
+      adminNote: app.adminNote || '',
+      coverNote: app.coverNote
+    });
+    setEditAppModalOpen(true);
+  };
+
+  const handleSaveAppEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAppForEdit) return;
+
+    store.editApplication(selectedAppForEdit.id, {
+      expectedSalary: Number(appFormData.expectedSalary),
+      status: appFormData.status,
+      adminNote: appFormData.adminNote.trim(),
+      coverNote: appFormData.coverNote.trim()
+    }, currentUser.name);
+
+    setEditAppModalOpen(false);
+    setSelectedAppForEdit(null);
+    showAdminToast(`✓ আবেদনপত্র [${selectedAppForEdit.id}] সফলভাবে আপডেট করা হয়েছে।`);
+  };
+
+  // Safe Deletion Handler (Requirement 1 - replaces fragile window.confirm)
+  const handleConfirmDelete = () => {
+    if (!deleteConfirmItem) return;
+    if (deleteConfirmItem.type === 'request') {
+      store.deleteTuitionRequest(deleteConfirmItem.id, currentUser.name);
+      showAdminToast(`✓ অভিভাবক টিউশন চাহিদা [${deleteConfirmItem.id}] সফলভাবে মুছে ফেলা হয়েছে।`);
+    } else if (deleteConfirmItem.type === 'application') {
+      store.deleteApplication(deleteConfirmItem.id, currentUser.name);
+      showAdminToast(`✓ টিউটর আবেদনপত্র [${deleteConfirmItem.id}] সফলভাবে মুছে ফেলা হয়েছে।`);
+    } else if (deleteConfirmItem.type === 'job') {
+      store.deleteJob(deleteConfirmItem.id, currentUser.name);
+      showAdminToast(`✓ টিউশন সার্কুলার [${deleteConfirmItem.id}] সফলভাবে মুছে ফেলা হয়েছে।`);
+    }
+    setDeleteConfirmItem(null);
   };
 
   // Settings Save
@@ -712,6 +940,8 @@ export const AdminDashboard: React.FC = () => {
             { id: 'applications', label: `Applications (${storeState.applications.length})` },
             { id: 'demos', label: `Demo Classes (${storeState.demos.length})` },
             { id: 'confirmations', label: `Confirmations (${storeState.confirmations.length})` },
+            { id: 'chats', label: `Live Chats (${storeState.conversations?.length || 0})` },
+            { id: 'progress-reports', label: `Progress Reports (${storeState.progressReports?.length || 0})` },
             { id: 'notices', label: `Notice Board (${storeState.notices.length})` },
             { id: 'referrals', label: `Referrals (${storeState.referrals.length})` },
             { id: 'messages', label: `Inquiries (${storeState.messages.filter(m => m.status === 'unread').length} new)` },
@@ -880,6 +1110,26 @@ export const AdminDashboard: React.FC = () => {
                         <span>Assign</span>
                       </button>
 
+                      {/* Automated Notification to matching tutors (Requirement 3) */}
+                      {job.status === 'published' && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            store.notifyMatchingTutorsForJob(job);
+                            const matchingCount = storeState.tutors.filter(t => 
+                              (t.preferredAreas && t.preferredAreas.some(a => a.toLowerCase().includes((job.area || '').toLowerCase()))) ||
+                              (t.district && job.district && t.district.toLowerCase() === job.district.toLowerCase())
+                            ).length;
+                            showAdminToast(`✓ "${job.area || job.district}" এলাকার ${matchingCount} জন পছন্দের টিউটরের কাছে নোটিফিকেশন পাঠানো হয়েছে।`);
+                          }}
+                          className="px-2.5 py-1.5 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 rounded-lg font-semibold flex items-center gap-1 cursor-pointer text-xs"
+                          title="এই এলাকার পছন্দের টিউটরদের স্বয়ংক্রিয় নোটিফিকেশন পাঠান"
+                        >
+                          <Bell className="w-3.5 h-3.5 text-amber-700" />
+                          <span>Notify</span>
+                        </button>
+                      )}
+
                       {/* Status Dropdown */}
                       <select
                         value={job.status}
@@ -900,9 +1150,11 @@ export const AdminDashboard: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          if (window.confirm(`আপনি কি নিশ্চিতভাবে এই টিউশন সার্কুলারটি (${job.id}: ${job.title}) মুছে ফেলতে চান?`)) {
-                            store.deleteJob(job.id, currentUser.name);
-                          }
+                          setDeleteConfirmItem({
+                            type: 'job',
+                            id: job.id,
+                            label: `টিউশন সার্কুলার (${job.id}: ${job.title})`
+                          });
                         }}
                         className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer border border-transparent hover:border-rose-200 transition"
                         title="Delete Job Circular (সার্কুলার মুছে ফেলুন)"
@@ -1446,6 +1698,20 @@ export const AdminDashboard: React.FC = () => {
                       <strong>NID:</strong> {tutor.nidNumber || 'তথ্য নেই'} · <strong>ঠিকানা:</strong> {tutor.currentAddress || tutor.area} · <strong>জেলা:</strong> {tutor.district} · পারিশ্রমিক: {settings.defaultCurrency}{tutor.expectedSalary}
                     </p>
 
+                    {/* Preferred Tutoring Areas & Customise Tags (Requirement 2 & 3) */}
+                    <div className="flex items-center gap-1.5 flex-wrap pt-0.5 text-[11px]">
+                      <span className="text-slate-600 font-semibold">কোন কোন এলাকায় টিউশন করতে চান:</span>
+                      {tutor.preferredAreas && tutor.preferredAreas.length > 0 ? (
+                        tutor.preferredAreas.map(a => (
+                          <span key={a} className="bg-blue-50 text-blue-900 border border-blue-200 px-1.5 py-0.5 rounded font-medium text-[10px]">
+                            📍 {a}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-slate-400 italic">কোনো এলাকা নির্ধারিত নেই</span>
+                      )}
+                    </div>
+
                     {/* KYC Document preview tags */}
                     <div className="flex items-center gap-2 pt-0.5 flex-wrap">
                       <span className={`text-[10px] font-semibold px-2 py-0.5 rounded ${
@@ -1550,11 +1816,27 @@ export const AdminDashboard: React.FC = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div>
                 <h3 className="font-bold text-base text-blue-950">Guardian Tuition Requirements (অভিভাবকের টিউশন চাহিদা)</h3>
-                <p className="text-slate-500">Approve requests and convert them directly into public tuition circulars.</p>
+                <p className="text-slate-500">এখান থেকে অভিভাবকদের টিউশন রিকোয়েস্ট সরাসরি এডিট, ডিলিট ও লাইভ জবে রূপান্তর করতে পারবেন।</p>
               </div>
-              <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-semibold self-start sm:self-auto">
-                Total Requests: {storeState.requests.length}
-              </span>
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-semibold">
+                  Total Requests: {storeState.requests.length}
+                </span>
+                {storeState.requests.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('আপনি কি সমস্ত অভিভাবক রিকোয়েস্ট ও টিউটর আবেদন খালি করতে চান?')) {
+                        store.clearAllRequestsAndApplications();
+                        showAdminToast('✓ সমস্ত রিকোয়েস্ট ও আবেদন সফলভাবে মুছে ফেলা হয়েছে।');
+                      }
+                    }}
+                    className="text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded-full font-semibold cursor-pointer transition"
+                  >
+                    সকল রিকোয়েস্ট মুছুন
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Request Search Input */}
@@ -1562,7 +1844,7 @@ export const AdminDashboard: React.FC = () => {
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
-                placeholder="Search requests by ID, guardian name, phone, class, area, subject..."
+                placeholder="Search requests by ID, guardian name, phone, class, area, subject, custom..."
                 value={requestSearch}
                 onChange={e => setRequestSearch(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
@@ -1580,14 +1862,15 @@ export const AdminDashboard: React.FC = () => {
                     req.phone.includes(q) ||
                     req.studentClass.toLowerCase().includes(q) ||
                     req.area.toLowerCase().includes(q) ||
+                    (req.customRequirements && req.customRequirements.toLowerCase().includes(q)) ||
                     req.subjects.some(s => s.toLowerCase().includes(q))
                   );
                 })
                 .map((req) => (
-                <div key={req.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-bold text-blue-900">{req.id}</span>
+                <div key={req.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 hover:border-slate-300 transition-colors">
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{req.id}</span>
                       <span className="font-bold text-slate-900">{req.guardianName} ({req.phone})</span>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
                         req.status === 'converted_to_job' ? 'bg-emerald-100 text-emerald-800' :
@@ -1597,53 +1880,84 @@ export const AdminDashboard: React.FC = () => {
                         {req.status.replace('_', ' ')}
                       </span>
                     </div>
-                    <p className="text-slate-700">{req.studentClass} ({req.medium}) · Area: {req.area}, {req.location}</p>
-                    <p className="text-slate-600">Subjects: {req.subjects.join(', ')} · Routine: {req.daysPerWeek} days/wk ({req.preferredTime})</p>
-                    <p className="text-blue-950 font-bold">Guardian Budget: {settings.defaultCurrency}{req.monthlyBudget.toLocaleString()}/month</p>
-                    {req.additionalRequirements && <p className="text-[11px] text-slate-500 italic">"{req.additionalRequirements}"</p>}
+
+                    <p className="text-slate-700">
+                      <strong>Class:</strong> {req.studentClass} ({req.medium}) · <strong>Area:</strong> {req.area}, {req.location}
+                    </p>
+                    <p className="text-slate-600">
+                      <strong>Subjects:</strong> {req.subjects.join(', ')} · <strong>Routine:</strong> {req.daysPerWeek} days/wk ({req.preferredTime})
+                    </p>
+                    <p className="text-blue-950 font-bold">
+                      Guardian Budget: {settings.defaultCurrency}{req.monthlyBudget.toLocaleString()}/month
+                    </p>
+
+                    {/* Requirement 2: Display Customise requirements in Admin Panel */}
+                    {req.customRequirements && (
+                      <div className="mt-1 inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-300 rounded-lg text-amber-950 font-medium text-[11px]">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span>কাস্টমাইজ চাহিদা (Customise): <strong>{req.customRequirements}</strong></span>
+                      </div>
+                    )}
+
+                    {req.additionalRequirements && (
+                      <p className="text-[11px] text-slate-500 italic">
+                        "{req.additionalRequirements}"
+                      </p>
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-2 shrink-0">
+                  {/* Actions Toolbar - Requirement 1: Edit & Delete */}
+                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
                     {req.status === 'pending' && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            store.convertRequestToJob(req.id);
-                            alert('Converted and published as live Job on Tuition Job Board!');
-                          }}
-                          className="px-3.5 py-1.5 bg-blue-900 hover:bg-blue-800 text-white rounded-lg font-bold cursor-pointer transition shadow-xs"
-                        >
-                          Convert to Live Job
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (window.confirm('Reject this guardian tuition requirement?')) {
-                              store.updateTuitionRequest(req.id, { status: 'rejected' }, currentUser.name);
-                            }
-                          }}
-                          className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg font-semibold cursor-pointer transition"
-                        >
-                          Reject
-                        </button>
-                      </>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          store.convertRequestToJob(req.id);
+                          showAdminToast(`✓ রিকোয়েস্ট [${req.id}] সরাসরি লাইভ জবে কনভার্ট ও প্রকাশিত হয়েছে।`);
+                        }}
+                        className="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-white rounded-lg font-bold cursor-pointer transition shadow-xs text-xs"
+                      >
+                        Convert to Live Job
+                      </button>
                     )}
+
+                    {/* Edit Request Button (Requirement 1) */}
                     <button
                       type="button"
-                      onClick={() => {
-                        if (window.confirm(`Delete tuition request ${req.id}?`)) {
-                          store.deleteTuitionRequest(req.id, currentUser.name);
-                        }
-                      }}
-                      className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer border border-transparent hover:border-rose-200 transition"
-                      title="Delete Request"
+                      onClick={() => openEditRequestModal(req)}
+                      className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 rounded-lg font-semibold flex items-center gap-1 cursor-pointer transition shadow-2xs text-xs"
+                      title="Edit Request"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Edit3 className="w-3.5 h-3.5 text-blue-900" />
+                      <span>Edit</span>
+                    </button>
+
+                    {/* Delete Request Button (Requirement 1 - Fixed & Reliable) */}
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirmItem({
+                        type: 'request',
+                        id: req.id,
+                        label: `অভিভাবক ${req.guardianName}-এর রিকোয়েস্ট (${req.id}: ${req.studentClass})`
+                      })}
+                      className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer border border-transparent hover:border-rose-200 transition"
+                      title="Delete Request (মুছে ফেলুন)"
+                    >
+                      <Trash2 className="w-4 h-4 text-rose-600" />
                     </button>
                   </div>
                 </div>
               ))}
+
+              {storeState.requests.length === 0 && (
+                <div className="py-12 text-center text-slate-500 space-y-2 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                  <FileText className="w-10 h-10 text-slate-300 mx-auto" />
+                  <p className="font-semibold text-slate-700">বর্তমানে কোনো অভিভাবক রিকোয়েস্ট নেই</p>
+                  <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                    সকল ডেমো রিকোয়েস্ট মুছে নতুন কার্যক্রমের জন্য প্রস্তুত করা হয়েছে। অভিভাবকরা ওয়েবসাইটে নতুন টিউশন রিকোয়েস্ট পাঠালে এখানে প্রদর্শিত হবে।
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -1653,20 +1967,53 @@ export const AdminDashboard: React.FC = () => {
         {/* ========================================================= */}
         {activeTab === 'applications' && (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4 text-xs">
-            <h3 className="font-bold text-base text-blue-950 pb-2 border-b border-slate-100">
-              Tutor Job Applications ({storeState.applications.length})
-            </h3>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-base text-blue-950">
+                  Tutor Job Applications ({storeState.applications.length})
+                </h3>
+                <p className="text-slate-500">
+                  টিউশন জবে আবেদনকারী টিউটরদের আবেদনপত্র পর্যালোচনা, এডিট ও ডিলিট করুন।
+                </p>
+              </div>
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-semibold">
+                  Total Applications: {storeState.applications.length}
+                </span>
+                {storeState.applications.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('আপনি কি সমস্ত আবেদনপত্র খালি করতে চান?')) {
+                        store.clearAllRequestsAndApplications();
+                        showAdminToast('✓ সমস্ত আবেদনপত্র সফলভাবে মুছে ফেলা হয়েছে।');
+                      }
+                    }}
+                    className="text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded-full font-semibold cursor-pointer transition"
+                  >
+                    সকল আবেদন মুছুন
+                  </button>
+                )}
+              </div>
+            </div>
 
             <div className="space-y-3">
               {storeState.applications.map((app) => (
-                <div key={app.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                <div key={app.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5 hover:border-slate-300 transition-colors">
                   <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-                    <div>
-                      <span className="font-mono font-bold text-blue-900">{app.jobId}</span> · Applicant: <strong className="text-slate-900">{app.tutorName}</strong> ({app.tutorUniversity})
-                      <p className="text-[11px] text-slate-500">Phone: {app.tutorPhone} · Expected: {settings.defaultCurrency}{app.expectedSalary}/mo · Applied: {app.appliedDate}</p>
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{app.jobId}</span>
+                        <span>Applicant: <strong className="text-slate-900 text-sm">{app.tutorName}</strong></span>
+                        <span className="text-slate-500">({app.tutorUniversity})</span>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Phone: {app.tutorPhone} · Expected: <strong className="text-blue-950">{settings.defaultCurrency}{app.expectedSalary}/mo</strong> · Applied: {app.appliedDate}
+                      </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    {/* Actions Toolbar - Requirement 1: Edit & Delete */}
+                    <div className="flex items-center gap-2 flex-wrap">
                       <select
                         value={app.status}
                         onChange={(e) => store.updateApplicationStatus(app.id, e.target.value as any)}
@@ -1689,79 +2036,410 @@ export const AdminDashboard: React.FC = () => {
                           setDemoGuardianId('user_guardian_01');
                           setDemoModalOpen(true);
                         }}
-                        className="px-3 py-1 bg-blue-900 text-white rounded-lg font-semibold text-[11px] cursor-pointer"
+                        className="px-3 py-1 bg-blue-900 text-white rounded-lg font-semibold text-[11px] cursor-pointer hover:bg-blue-800"
                       >
                         Schedule Demo
                       </button>
+
+                      {/* Edit Application Button (Requirement 1) */}
+                      <button
+                        type="button"
+                        onClick={() => openEditAppModal(app)}
+                        className="px-2.5 py-1 bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 rounded-lg font-semibold text-[11px] flex items-center gap-1 cursor-pointer shadow-2xs"
+                        title="Edit Application (আবেদনপত্র এডিট)"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-blue-900" />
+                        <span>Edit</span>
+                      </button>
+
+                      {/* Delete Application Button (Requirement 1) */}
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmItem({
+                          type: 'application',
+                          id: app.id,
+                          label: `টিউটর ${app.tutorName}-এর আবেদনপত্র (${app.id} for ${app.jobId})`
+                        })}
+                        className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer border border-transparent hover:border-rose-200 transition"
+                        title="Delete Application (আবেদনপত্র মুছে ফেলুন)"
+                      >
+                        <Trash2 className="w-4 h-4 text-rose-600" />
+                      </button>
                     </div>
                   </div>
+
+                  {app.adminNote && (
+                    <p className="text-[11px] text-blue-950 bg-blue-50 border border-blue-200 p-2 rounded-lg">
+                      <strong>Admin Internal Note:</strong> {app.adminNote}
+                    </p>
+                  )}
 
                   <p className="text-slate-600 bg-white p-2.5 rounded-lg border border-slate-100 italic">
                     "{app.coverNote}"
                   </p>
                 </div>
               ))}
+
+              {storeState.applications.length === 0 && (
+                <div className="py-12 text-center text-slate-500 space-y-2 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                  <CheckCircle2 className="w-10 h-10 text-slate-300 mx-auto" />
+                  <p className="font-semibold text-slate-700">বর্তমানে কোনো চাকরির আবেদন নেই</p>
+                  <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
+                    সকল ডেমো আবেদন মুছে নতুন কার্যক্রমের জন্য প্রস্তুত করা হয়েছে। লাইভ জবে শিক্ষকরা আবেদন করলে এখানে প্রদর্শিত হবে।
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         )}
 
         {/* ========================================================= */}
-        {/* DEMO CLASSES MANAGEMENT                                   */}
+        {/* FEATURE 4: DEMO CLASSES & TRIAL CONTROL CENTER            */}
         {/* ========================================================= */}
         {activeTab === 'demos' && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4 text-xs">
-            <h3 className="font-bold text-base text-blue-950 pb-2 border-b border-slate-100">
-              Demo Classes Scheduled ({storeState.demos.length})
-            </h3>
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6 text-xs">
+            
+            {/* Inline Toast Banner */}
+            {adminDemoToast && (
+              <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 flex items-center gap-2 animate-in fade-in duration-200">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span className="font-semibold">{adminDemoToast}</span>
+              </div>
+            )}
 
-            <div className="space-y-3">
-              {storeState.demos.map((demo) => (
-                <div key={demo.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div>
-                    <h4 className="font-bold text-slate-900">{demo.jobTitle}</h4>
-                    <p className="text-slate-600">Tutor: {demo.tutorName} ({demo.tutorPhone}) · Guardian: {demo.guardianName} ({demo.guardianPhone})</p>
-                    <p className="text-[11px] text-blue-900 font-semibold">{demo.date} at {demo.time} ({demo.mode} mode)</p>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        store.updateDemoResult(demo.id, 'selected');
-                        store.confirmTuition({
-                          tutorId: demo.tutorId,
-                          tutorName: demo.tutorName,
-                          guardianId: demo.guardianId,
-                          guardianName: demo.guardianName,
-                          studentName: 'Student',
-                          jobId: demo.jobId,
-                          jobTitle: demo.jobTitle,
-                          startDate: new Date().toISOString().split('T')[0],
-                          monthlyFee: 7500,
-                          daysPerWeek: 4,
-                          scheduleTime: '5:30 PM',
-                          location: 'Guardian Residence',
-                          teachingMode: 'home',
-                          specialInstructions: 'Regular model tests',
-                          status: 'confirmed'
-                        });
-                        alert('Marked as Selected and Created Confirmation Record!');
-                      }}
-                      className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg font-semibold cursor-pointer"
-                    >
-                      ✓ Selected & Confirm
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => store.updateDemoResult(demo.id, 'not_selected')}
-                      className="px-3 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg font-semibold cursor-pointer"
-                    >
-                      Not Selected
-                    </button>
-                  </div>
+            {/* Header with Title and Metrics */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="px-2.5 py-0.5 bg-blue-100 text-blue-900 rounded font-bold text-[10px]">
+                    ট্রায়াল কন্ট্রোল
+                  </span>
+                  <span className="text-slate-400 font-medium">({storeState.demos.length} টি ডেমো সেশন)</span>
                 </div>
-              ))}
+                <h3 className="font-bold text-base text-blue-950 mt-1">
+                  ফ্রি ডেমো ক্লাস ও ট্রায়াল মনিটরিং কেন্দ্র (Demo Control Center)
+                </h3>
+                <p className="text-[11px] text-slate-500">
+                  অভিভাবক ও শিক্ষকদের মধ্যে ট্রায়াল ক্লাসের শিডিউল, অনলাইন মিটিং লিংক, ফলাফল এবং সফল নিয়োগ তদারকি করুন।
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDemoModalOpen(true)}
+                  className="px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white font-bold rounded-xl flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>নতুন ডেমো শিডিউল</span>
+                </button>
+              </div>
             </div>
+
+            {/* Metrics Overview Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                <span className="text-[10px] text-slate-500 block">মোট ডেমো</span>
+                <span className="font-bold text-slate-900 text-base tabular-nums">{storeState.demos.length}</span>
+              </div>
+              <div className="p-3 bg-blue-50/60 rounded-xl border border-blue-200 text-center">
+                <span className="text-[10px] text-blue-700 block">আসন্ন শিডিউল</span>
+                <span className="font-bold text-blue-950 text-base tabular-nums">
+                  {storeState.demos.filter(d => d.status === 'scheduled').length}
+                </span>
+              </div>
+              <div className="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200 text-center">
+                <span className="text-[10px] text-emerald-700 block">টিউশন চূড়ান্ত</span>
+                <span className="font-bold text-emerald-950 text-base tabular-nums">
+                  {storeState.demos.filter(d => d.result === 'selected' || d.status === 'completed').length}
+                </span>
+              </div>
+              <div className="p-3 bg-indigo-50/60 rounded-xl border border-indigo-200 text-center">
+                <span className="text-[10px] text-indigo-700 block">অনলাইন Meet</span>
+                <span className="font-bold text-indigo-950 text-base tabular-nums">
+                  {storeState.demos.filter(d => d.mode === 'online').length}
+                </span>
+              </div>
+              <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200 text-center col-span-2 sm:col-span-1">
+                <span className="text-[10px] text-amber-700 block">হোম টিউশন</span>
+                <span className="font-bold text-amber-950 text-base tabular-nums">
+                  {storeState.demos.filter(d => d.mode === 'home').length}
+                </span>
+              </div>
+            </div>
+
+            {/* Search & Filter Controls */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+              <div className="relative flex-1 max-w-md">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={adminDemoSearchQuery}
+                  onChange={(e) => setAdminDemoSearchQuery(e.target.value)}
+                  placeholder="শিক্ষক, অভিভাবক, বিষয় বা শিক্ষার্থী অনুসন্ধান..."
+                  className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white focus:ring-1 focus:ring-blue-600 focus:outline-hidden"
+                />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setAdminDemoFilterStatus('all')}
+                  className={`py-1.5 px-3 rounded-lg font-bold text-center cursor-pointer transition-colors ${
+                    adminDemoFilterStatus === 'all' ? 'bg-white text-blue-950 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  সব ({storeState.demos.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminDemoFilterStatus('scheduled')}
+                  className={`py-1.5 px-3 rounded-lg font-bold text-center cursor-pointer transition-colors ${
+                    adminDemoFilterStatus === 'scheduled' ? 'bg-white text-blue-950 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  আসন্ন ({storeState.demos.filter(d => d.status === 'scheduled').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminDemoFilterStatus('completed')}
+                  className={`py-1.5 px-3 rounded-lg font-bold text-center cursor-pointer transition-colors ${
+                    adminDemoFilterStatus === 'completed' ? 'bg-white text-blue-950 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  কনফার্মড ({storeState.demos.filter(d => d.result === 'selected' || d.status === 'completed').length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAdminDemoFilterStatus('cancelled')}
+                  className={`py-1.5 px-3 rounded-lg font-bold text-center cursor-pointer transition-colors ${
+                    adminDemoFilterStatus === 'cancelled' ? 'bg-white text-blue-950 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  বাতিল / স্থগিত
+                </button>
+              </div>
+            </div>
+
+            {/* Demos List */}
+            {(() => {
+              const query = adminDemoSearchQuery.trim().toLowerCase();
+              const filtered = storeState.demos.filter((demo) => {
+                const matchesStatus =
+                  adminDemoFilterStatus === 'all' ||
+                  (adminDemoFilterStatus === 'scheduled' && demo.status === 'scheduled') ||
+                  (adminDemoFilterStatus === 'completed' && (demo.status === 'completed' || demo.result === 'selected')) ||
+                  (adminDemoFilterStatus === 'cancelled' && (demo.status === 'cancelled' || demo.status === 'rescheduled'));
+
+                const matchesQuery =
+                  !query ||
+                  demo.tutorName.toLowerCase().includes(query) ||
+                  demo.guardianName.toLowerCase().includes(query) ||
+                  (demo.subject && demo.subject.toLowerCase().includes(query)) ||
+                  (demo.studentName && demo.studentName.toLowerCase().includes(query)) ||
+                  demo.id.toLowerCase().includes(query);
+
+                return matchesStatus && matchesQuery;
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="py-12 text-center space-y-2 bg-slate-50 rounded-2xl border border-slate-200">
+                    <Calendar className="w-10 h-10 text-slate-300 mx-auto" />
+                    <p className="text-slate-600 font-medium">কোনো ডেমো সেশন পাওয়া যায়নি।</p>
+                    <p className="text-[11px] text-slate-400">ফিল্টার পরিবর্তন করে পুনরায় চেষ্টা করুন।</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="space-y-4">
+                  {filtered.map((demo) => {
+                    const isOnline = demo.mode === 'online';
+                    const isConfirmed = demo.result === 'selected' || demo.status === 'completed';
+
+                    return (
+                      <div
+                        key={demo.id}
+                        className={`p-5 rounded-2xl border transition-all ${
+                          isConfirmed
+                            ? 'bg-emerald-50/30 border-emerald-300'
+                            : demo.status === 'scheduled'
+                            ? 'bg-white border-blue-200 shadow-2xs'
+                            : 'bg-slate-50 border-slate-200'
+                        }`}
+                      >
+                        {/* Header */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-mono text-[11px] bg-slate-100 px-2 py-0.5 rounded text-slate-700 font-bold">
+                                {demo.id}
+                              </span>
+                              <h4 className="font-bold text-slate-900 text-sm">{demo.jobTitle}</h4>
+                              <span className="text-slate-400">•</span>
+                              <span className="text-blue-900 font-semibold">{demo.subject || 'সাধারণ বিষয়'}</span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 mt-0.5">
+                              শিক্ষার্থী: <strong>{demo.studentName || 'শিক্ষার্থী'}</strong> ({demo.studentGrade || 'Class'})
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`px-2.5 py-1 rounded-lg font-bold text-[10px] flex items-center gap-1 ${
+                              isOnline ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-amber-50 text-amber-800 border border-amber-200'
+                            }`}>
+                              {isOnline ? <Laptop className="w-3 h-3" /> : <Home className="w-3 h-3" />}
+                              <span>{isOnline ? 'Online Meet' : 'Home Visit'}</span>
+                            </span>
+
+                            <span className={`px-2.5 py-1 rounded-lg font-bold uppercase text-[10px] ${
+                              demo.status === 'completed'
+                                ? 'bg-emerald-100 text-emerald-800'
+                                : demo.status === 'scheduled'
+                                ? 'bg-blue-100 text-blue-900'
+                                : demo.status === 'rescheduled'
+                                ? 'bg-amber-100 text-amber-900'
+                                : 'bg-rose-100 text-rose-800'
+                            }`}>
+                              {demo.status}
+                            </span>
+
+                            {demo.result && (
+                              <span className={`px-2.5 py-1 rounded-lg font-bold text-[10px] ${
+                                demo.result === 'selected'
+                                  ? 'bg-emerald-600 text-white'
+                                  : demo.result === 'further_review'
+                                  ? 'bg-amber-600 text-white'
+                                  : 'bg-slate-200 text-slate-700'
+                              }`}>
+                                {demo.result === 'selected' ? '✓ Selected' : demo.result}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Details */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 py-3 text-xs">
+                          {/* Tutor Card */}
+                          <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-1">
+                            <span className="text-[10px] text-slate-500 block font-medium">শিক্ষক (Tutor)</span>
+                            <p className="font-bold text-slate-900">{demo.tutorName}</p>
+                            <p className="text-[11px] text-slate-600">{demo.tutorPhone} • {demo.tutorUniversity || 'Verified'}</p>
+                          </div>
+
+                          {/* Guardian Card */}
+                          <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-1">
+                            <span className="text-[10px] text-slate-500 block font-medium">অভিভাবক (Guardian)</span>
+                            <p className="font-bold text-slate-900">{demo.guardianName}</p>
+                            <p className="text-[11px] text-slate-600">{demo.guardianPhone}</p>
+                          </div>
+
+                          {/* Date, Time & Meeting */}
+                          <div className="p-3 bg-slate-50/80 rounded-xl border border-slate-200/80 space-y-1 sm:col-span-2 md:col-span-1">
+                            <span className="text-[10px] text-slate-500 block font-medium">শিডিউল ও সেশন লিঙ্ক</span>
+                            <p className="font-bold text-blue-900">{demo.date} at {demo.time}</p>
+                            {isOnline ? (
+                              <a
+                                href={demo.meetingLink || 'https://meet.google.com'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] text-indigo-700 font-bold hover:underline"
+                              >
+                                <Video className="w-3 h-3" />
+                                <span>{demo.meetingLink || 'Google Meet'}</span>
+                              </a>
+                            ) : (
+                              <p className="text-[11px] text-slate-600">{demo.location || 'অভিভাবকের বাসা'}</p>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Notes & Feedback Logs */}
+                        {(demo.notes || demo.tutorFeedback || demo.guardianFeedback) && (
+                          <div className="pt-2 border-t border-slate-100 space-y-1.5 text-[11px]">
+                            {demo.notes && (
+                              <p className="text-slate-600"><strong className="text-slate-800">নোট:</strong> "{demo.notes}"</p>
+                            )}
+                            {demo.tutorFeedback && (
+                              <p className="text-blue-950 bg-blue-50/60 p-2 rounded-lg border border-blue-100">
+                                <strong>শিক্ষকের মূল্যায়ন:</strong> {demo.tutorFeedback}
+                              </p>
+                            )}
+                            {demo.guardianFeedback && (
+                              <p className="text-emerald-950 bg-emerald-50/60 p-2 rounded-lg border border-emerald-100">
+                                <strong>অভিভাবকের মন্তব্য:</strong> {demo.guardianFeedback}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            {/* Selected & Confirm Tuition */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAdminSelectedDemoForConfirm(demo);
+                                setAdminAgreedSalary(7500);
+                                setAdminAgreedDays(4);
+                                setAdminStartDateInput(new Date().toISOString().split('T')[0]);
+                                setAdminInstructionsInput('নিয়মিত মডেল টেস্ট ও অগ্রগতি রিপোর্ট');
+                                setAdminConfirmModalOpen(true);
+                              }}
+                              className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+                            >
+                              <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                              <span>{demo.result === 'selected' ? 'চুক্তি আপডেট' : '✓ Selected & Confirm Tuition'}</span>
+                            </button>
+
+                            {/* Reschedule Demo */}
+                            {demo.status === 'scheduled' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAdminSelectedDemoForReschedule(demo);
+                                  setAdminNewRescheduleDate(demo.date);
+                                  setAdminNewRescheduleTime(demo.time);
+                                  setAdminRescheduleReason('');
+                                  setAdminRescheduleModalOpen(true);
+                                }}
+                                className="px-3 py-1.5 border border-slate-300 hover:bg-slate-100 text-slate-700 rounded-xl font-semibold transition-colors cursor-pointer flex items-center gap-1"
+                              >
+                                <CalendarClock className="w-3.5 h-3.5 text-slate-500" />
+                                <span>রি-শিডিউল</span>
+                              </button>
+                            )}
+
+                            {/* Mark Not Selected */}
+                            {demo.result !== 'not_selected' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  store.updateDemoResult(demo.id, 'not_selected', 'অ্যাডমিন কর্তৃক নট সিলেক্টেড চিহ্নিত');
+                                  setAdminDemoToast('ডেমো ক্লাসের স্ট্যাটাস Not Selected হিসেবে আপডেট হয়েছে।');
+                                  setTimeout(() => setAdminDemoToast(null), 3000);
+                                }}
+                                className="px-3 py-1.5 text-rose-700 hover:bg-rose-50 border border-rose-200 rounded-xl font-semibold transition-colors cursor-pointer"
+                              >
+                                Not Selected
+                              </button>
+                            )}
+                          </div>
+
+                          <div className="text-[11px] text-slate-400">
+                            জব আইডি: {demo.jobId}
+                          </div>
+                        </div>
+
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+
           </div>
         )}
 
@@ -1770,21 +2448,52 @@ export const AdminDashboard: React.FC = () => {
         {/* ========================================================= */}
         {activeTab === 'confirmations' && (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4 text-xs">
-            <h3 className="font-bold text-base text-blue-950 pb-2 border-b border-slate-100">
-              Active Tuition Confirmations ({storeState.confirmations.length})
-            </h3>
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-base text-blue-950">
+                  নিশ্চিত টিউশন চুক্তি ও স্লিপ ({storeState.confirmations.length})
+                </h3>
+                <p className="text-slate-500 text-[11px]">
+                  অভিভাবক ও টিউটরের চূড়ান্ত চুক্তিপত্র, সময়সূচি এবং মাসিক পারিশ্রমিক রেকর্ড
+                </p>
+              </div>
+            </div>
 
             <div className="space-y-3">
               {storeState.confirmations.map((conf) => (
-                <div key={conf.id} className="p-4 rounded-xl bg-emerald-50/40 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div>
-                    <h4 className="font-bold text-slate-900">{conf.jobTitle} — {conf.studentName}</h4>
-                    <p className="text-slate-700">Tutor: {conf.tutorName} · Guardian: {conf.guardianName}</p>
-                    <p className="text-[11px] text-slate-500">Monthly Fee: {settings.defaultCurrency}{conf.monthlyFee.toLocaleString()} · Schedule: {conf.scheduleTime} ({conf.daysPerWeek} days/wk)</p>
+                <div key={conf.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-blue-900 bg-blue-100 px-2 py-0.5 rounded text-[10px]">
+                        {conf.agreementNumber || conf.id}
+                      </span>
+                      <h4 className="font-bold text-slate-900 text-sm">{conf.jobTitle}</h4>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        conf.status === 'confirmed' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-700'
+                      }`}>
+                        {conf.status}
+                      </span>
+                    </div>
+                    <p className="text-slate-700 font-medium">
+                      শিক্ষক: <strong className="text-blue-950">{conf.tutorName}</strong> · অভিভাবক: <strong>{conf.guardianName}</strong> · শিক্ষার্থী: {conf.studentName}
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      মাসিক বেতন: <strong className="text-emerald-700">{settings.defaultCurrency}{conf.monthlyFee.toLocaleString()}</strong> · শিডিউল: {conf.scheduleTime || 'বিকেল ৫:০০'} ({conf.daysPerWeek} দিন/সপ্তাহ)
+                    </p>
                   </div>
-                  <span className="px-3 py-1 bg-emerald-600 text-white rounded-lg font-bold text-[11px] uppercase">
-                    {conf.status}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedConfForAgreement(conf);
+                        setAgreementModalOpen(true);
+                      }}
+                      className="px-3.5 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>চুক্তিপত্র স্লিপ</span>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -1792,14 +2501,261 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* ========================================================= */}
+        {/* FEATURE 6: LIVE CHAT SUPERVISION & MESSAGING HUB          */}
+        {/* ========================================================= */}
+        {activeTab === 'chats' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4 text-xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                <div className="space-y-1">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 font-bold text-[10px]">
+                    <MessageSquare className="w-3.5 h-3.5 text-blue-700" />
+                    <span>ইন-অ্যাপ লাইভ চ্যাট সুপারভিশন ও অডিট</span>
+                  </div>
+                  <h3 className="font-extrabold text-base text-blue-950">
+                    প্ল্যাটফর্ম লাইভ চ্যাট মনিটরিং ও মেসেজিং হাব (Direct Chat Hub)
+                  </h3>
+                  <p className="text-slate-500">
+                    অভিভাবক ও শিক্ষকদের মধ্যে আদান-প্রদানকৃত বার্তা ও টিউশন আলোচনা রিয়েল-টাইমে পর্যবেক্ষণ ও মডারেশন করুন।
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 font-semibold text-xs border border-slate-200">
+                    মোট থ্রেড: {store.getAllConversations().length}
+                  </span>
+                </div>
+              </div>
+
+              {/* Chat Hub Section in Admin Mode */}
+              <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+                <ChatHubSection userRole="admin" currentUserId={currentUser?.id || 'admin_user'} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* FEATURE 6: STUDENT PROGRESS & MONTHLY EVALUATION REPORTS  */}
+        {/* ========================================================= */}
+        {activeTab === 'progress-reports' && (() => {
+          const allReports = store.getAllProgressReports();
+          const filteredReports = allReports.filter(report => {
+            const matchesGrade = progressGradeFilter === 'all' || report.overallGrade === progressGradeFilter;
+            const q = progressSearchQuery.toLowerCase();
+            const matchesSearch = !q || 
+              report.studentName.toLowerCase().includes(q) ||
+              report.tutorName.toLowerCase().includes(q) ||
+              report.subject.toLowerCase().includes(q) ||
+              report.reportCode.toLowerCase().includes(q);
+            return matchesGrade && matchesSearch;
+          });
+
+          const totalReports = allReports.length;
+          const avgAttendance = totalReports > 0 
+            ? Math.round(allReports.reduce((acc, r) => acc + (r.attendanceScore || 0), 0) / totalReports) 
+            : 0;
+          const avgExam = totalReports > 0 
+            ? Math.round(allReports.reduce((acc, r) => acc + (r.examOrQuizScore || 0), 0) / totalReports) 
+            : 0;
+          const aPlusCount = allReports.filter(r => r.overallGrade === 'A+').length;
+
+          return (
+            <div className="space-y-6 text-xs">
+              {progressToast && (
+                <div className="p-3 bg-emerald-100 border border-emerald-300 text-emerald-900 rounded-xl font-bold flex items-center justify-between">
+                  <span>{progressToast}</span>
+                  <button type="button" onClick={() => setProgressToast(null)} className="text-emerald-700 cursor-pointer">✕</button>
+                </div>
+              )}
+
+              {/* Header & Stat Cards */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 font-bold text-[10px]">
+                      <Award className="w-3.5 h-3.5 text-amber-600" />
+                      <span>শিক্ষার্থী মাসিক একাডেমিক প্রগ্রেস ও ফলাফল রিপোর্ট</span>
+                    </div>
+                    <h3 className="font-extrabold text-base text-blue-950">
+                      শিক্ষার্থী মাসিক মূল্যায়ন ও প্রগ্রেস কার্ড ডাটাবেস
+                    </h3>
+                    <p className="text-slate-500">
+                      শিক্ষকদের দাখিলকৃত মাসিক উপস্থিতি, পড়াশোনায় মনোযোগ, কুইজ/মডেল টেস্ট স্কোর ও একাডেমিক গ্রেডিং বিবরণী।
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200">
+                    <span className="text-slate-500 text-[11px] block">মোট রিপোর্ট কার্ড</span>
+                    <span className="text-xl font-black text-blue-950">{totalReports} টি</span>
+                  </div>
+                  <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200">
+                    <span className="text-slate-500 text-[11px] block">গড় উপস্থিতি হার</span>
+                    <span className="text-xl font-black text-emerald-900">{avgAttendance}%</span>
+                  </div>
+                  <div className="p-4 rounded-xl bg-indigo-50/70 border border-indigo-200">
+                    <span className="text-slate-500 text-[11px] block">গড় টেস্ট স্কোর</span>
+                    <span className="text-xl font-black text-indigo-900">{avgExam}%</span>
+                  </div>
+                  <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200">
+                    <span className="text-slate-500 text-[11px] block">A+ প্রাপ্ত রিপোর্ট</span>
+                    <span className="text-xl font-black text-amber-900">{aPlusCount} টি</span>
+                  </div>
+                </div>
+
+                {/* Filter and Search Bar */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+                  <div className="relative flex-1 max-w-sm">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={progressSearchQuery}
+                      onChange={(e) => setProgressSearchQuery(e.target.value)}
+                      placeholder="শিক্ষার্থী, শিক্ষক, বিষয় বা কোড দিয়ে খুঁজুন..."
+                      className="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-1.5 overflow-x-auto">
+                    <span className="text-[11px] text-slate-400 font-bold mr-1">গ্রেড ফিল্টার:</span>
+                    {(['all', 'A+', 'A', 'B', 'C'] as const).map(grade => (
+                      <button
+                        key={grade}
+                        type="button"
+                        onClick={() => setProgressGradeFilter(grade)}
+                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                          progressGradeFilter === grade
+                            ? 'bg-blue-900 text-white shadow-2xs'
+                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                        }`}
+                      >
+                        {grade === 'all' ? 'সব গ্রেড' : `Grade ${grade}`}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Reports List */}
+                {filteredReports.length === 0 ? (
+                  <div className="p-10 text-center text-slate-400 space-y-2">
+                    <Award className="w-10 h-10 text-slate-300 mx-auto mb-1" />
+                    <p className="font-bold text-slate-600">কোনো প্রগ্রেস রিপোর্ট পাওয়া যায়নি</p>
+                    <p className="text-[11px]">শিক্ষকরা টিউটর ড্যাশবোর্ড থেকে শিক্ষার্থীদের মাসিক রিপোর্ট দাখিল করবেন।</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    {filteredReports.map(report => (
+                      <div
+                        key={report.id}
+                        className="p-5 rounded-2xl bg-gradient-to-br from-white to-blue-50/30 border border-slate-200 shadow-xs space-y-3 relative overflow-hidden"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-mono text-[10px] font-bold text-blue-900 bg-blue-100 px-2 py-0.5 rounded">
+                                {report.reportCode}
+                              </span>
+                              <span className="text-xs font-semibold text-slate-500">{report.month}</span>
+                            </div>
+                            <h4 className="font-bold text-slate-900 text-sm">{report.studentName}</h4>
+                            <p className="text-xs text-slate-600">{report.classLevel} • {report.subject}</p>
+                          </div>
+
+                          <div className="text-center px-3 py-1.5 bg-gradient-to-br from-amber-400 to-amber-500 text-blue-950 font-black text-base rounded-xl shadow-xs shrink-0">
+                            <span className="block text-[8px] uppercase tracking-wider font-bold">Grade</span>
+                            {report.overallGrade}
+                          </div>
+                        </div>
+
+                        {/* Performance Grid */}
+                        <div className="grid grid-cols-4 gap-2 pt-1 pb-1">
+                          <div className="bg-white p-2 rounded-xl border border-slate-100 text-center">
+                            <span className="text-[9px] text-slate-400 block">উপস্থিতি</span>
+                            <span className="font-bold text-slate-800 text-xs">{report.attendanceScore}%</span>
+                          </div>
+                          <div className="bg-white p-2 rounded-xl border border-slate-100 text-center">
+                            <span className="text-[9px] text-slate-400 block">হোমওয়ার্ক</span>
+                            <span className="font-bold text-slate-800 text-xs">{report.homeworkCompletionScore}%</span>
+                          </div>
+                          <div className="bg-white p-2 rounded-xl border border-slate-100 text-center">
+                            <span className="text-[9px] text-slate-400 block">মনোযোগ</span>
+                            <span className="font-bold text-slate-800 text-xs">{report.classAttentionScore}%</span>
+                          </div>
+                          <div className="bg-white p-2 rounded-xl border border-slate-100 text-center">
+                            <span className="text-[9px] text-slate-400 block">পরীক্ষা</span>
+                            <span className="font-bold text-blue-900 text-xs">{report.examOrQuizScore}%</span>
+                          </div>
+                        </div>
+
+                        {/* Tutor and Guardian details */}
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                          <div>
+                            <span>শিক্ষক: <strong className="text-slate-700">{report.tutorName}</strong></span>
+                            {report.tutorUniversity && <span className="text-[10px] block text-slate-400">{report.tutorUniversity}</span>}
+                          </div>
+                          <div className="text-right">
+                            <span>অভিভাবক: <strong className="text-slate-700">{report.guardianName}</strong></span>
+                          </div>
+                        </div>
+
+                        {report.tutorRemarks && (
+                          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 text-[11px] text-slate-600 line-clamp-2">
+                            💬 "{report.tutorRemarks}"
+                          </div>
+                        )}
+
+                        {/* Actions */}
+                        <div className="pt-2 flex items-center justify-between gap-2">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedProgressReportForView(report);
+                              setProgressReportModalOpen(true);
+                            }}
+                            className="flex-1 py-2 px-3 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                          >
+                            <Printer className="w-3.5 h-3.5 text-amber-400" />
+                            <span>ভিউ ও প্রিন্ট কার্ড</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              store.deleteProgressReport(report.id);
+                              setProgressToast(`রিপোর্ট ${report.reportCode} সফলভাবে মুছে ফেলা হয়েছে!`);
+                              setTimeout(() => setProgressToast(null), 3000);
+                            }}
+                            className="p-2 rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 cursor-pointer"
+                            title="রিপোর্ট মুছুন"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ========================================================= */}
         {/* PAYMENTS                                                  */}
         {/* ========================================================= */}
         {activeTab === 'payments' && (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4 text-xs">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="font-bold text-base text-blue-950">
-                Payment Management ({storeState.payments.length})
-              </h3>
+              <div>
+                <h3 className="font-bold text-base text-blue-950">
+                  টিউটর বেতন ও পেমেন্ট রিসিট অডিট ({storeState.payments.length})
+                </h3>
+                <p className="text-slate-500 text-[11px]">
+                  অভিভাবক কর্তৃক পরিশোধিত টিউটর বেতন ও ডিজিটাল মানি রিসিট ভাউচার
+                </p>
+              </div>
             </div>
 
             {/* Official Accounts Receiving Card */}
@@ -1830,11 +2786,25 @@ export const AdminDashboard: React.FC = () => {
               {storeState.payments.map((p) => (
                 <div key={p.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                   <div>
-                    <span className="font-mono font-bold text-blue-900">{p.id}</span>
-                    <h4 className="font-bold text-slate-900">{p.month} — Tutor: {p.tutorName}</h4>
-                    <p className="text-slate-600">Guardian: {p.guardianName} · Amount: <strong>{settings.defaultCurrency}{p.amount.toLocaleString()}</strong></p>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-blue-900 bg-blue-100 px-2 py-0.5 rounded text-[10px]">{p.receiptNumber || p.id}</span>
+                      <h4 className="font-bold text-slate-900">{p.month} — Tutor: {p.tutorName}</h4>
+                    </div>
+                    <p className="text-slate-600 mt-1">Guardian: {p.guardianName} · Amount: <strong className="text-emerald-700">{settings.defaultCurrency}{p.amount.toLocaleString()}</strong> · Method: <span className="uppercase font-semibold">{p.method || 'bkash'}</span></p>
+                    {p.transactionId && <p className="text-[11px] font-mono text-slate-500">TrxID: {p.transactionId}</p>}
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPaymentForReceipt(p);
+                        setReceiptModalOpen(true);
+                      }}
+                      className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 rounded-lg font-bold text-xs flex items-center gap-1 cursor-pointer"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>রিসিট ভাউচার</span>
+                    </button>
                     <select
                       value={p.status}
                       onChange={(e) => store.updatePaymentStatus(p.id, e.target.value as any)}
@@ -1858,34 +2828,66 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === 'certificates' && (
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4 text-xs">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <h3 className="font-bold text-base text-blue-950">Issued Certificates ({storeState.certificates.length})</h3>
+              <div>
+                <h3 className="font-bold text-base text-blue-950">অভিজ্ঞতা ও মেন্টরশিপ প্রশংসাপত্র ({storeState.certificates.length})</h3>
+                <p className="text-slate-500 text-[11px]">সফল টিউশন সম্পন্নের পর টিউটরদের জন্য অফিসিয়াল ভেরিফাইড সনদ প্রদান ও ট্র্যাকিং</p>
+              </div>
               <button
                 type="button"
-                onClick={() => {
-                  store.issueCertificate({
-                    tutorId: 'tut_01',
-                    tutorName: 'Rahim Chowdhury',
-                    title: 'Star Mentor Certificate 2026',
-                    issueDate: new Date().toISOString().split('T')[0],
-                    description: 'Recognized for excellent pedagogy and parent satisfaction.',
-                    status: 'active'
-                  });
-                  alert('Issued new certificate to Rahim Chowdhury!');
-                }}
-                className="px-3 py-1.5 bg-blue-900 text-white rounded-lg font-semibold cursor-pointer"
+                onClick={() => setIssueCertModalOpen(true)}
+                className="px-3.5 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl font-bold cursor-pointer flex items-center gap-1.5 shadow-xs"
               >
-                + Issue New Certificate
+                <Award className="w-4 h-4 text-amber-400" />
+                <span>+ নতুন প্রশংসাপত্র ইস্যু</span>
               </button>
             </div>
 
             <div className="space-y-3">
               {storeState.certificates.map((cert) => (
-                <div key={cert.id} className="p-4 rounded-xl bg-amber-50/60 border border-amber-200 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-900">{cert.title} — {cert.tutorName}</span>
-                    <span className="font-mono font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">{cert.verificationCode}</span>
+                <div key={cert.id} className="p-4 rounded-xl bg-gradient-to-r from-amber-50/70 to-blue-50/40 border border-amber-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-slate-900 text-sm">{cert.title}</span>
+                      <span className="font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded text-[10px]">{cert.verificationCode}</span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                        cert.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'
+                      }`}>
+                        {cert.status}
+                      </span>
+                    </div>
+                    <p className="text-slate-700 font-medium">শিক্ষক: <strong className="text-blue-950">{cert.tutorName}</strong> · ইস্যু তারিখ: {cert.issueDate}</p>
+                    <p className="text-slate-600 text-[11px]">{cert.description}</p>
                   </div>
-                  <p className="text-slate-600">{cert.description}</p>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCertForView(cert);
+                        setCertModalOpen(true);
+                      }}
+                      className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Eye className="w-3.5 h-3.5 text-amber-700" />
+                      <span>সনদপত্র দেখুন</span>
+                    </button>
+                    {cert.status === 'active' ? (
+                      <button
+                        type="button"
+                        onClick={() => store.revokeCertificate(cert.id)}
+                        className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-semibold rounded-xl cursor-pointer"
+                      >
+                        বাতিল
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => store.updateCertificateStatus(cert.id, 'active')}
+                        className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 font-semibold rounded-xl cursor-pointer"
+                      >
+                        পুনর্বহাল
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -1924,7 +2926,7 @@ export const AdminDashboard: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-200 flex items-center gap-1">
                       <Sparkles className="w-3 h-3 text-amber-600" />
-                      ফিচার ২ • রেটিং ও রিভিউ নিয়ন্ত্রণ কেন্দ্র
+                      রেটিং ও রিভিউ নিয়ন্ত্রণ কেন্দ্র
                     </span>
                     <span className="text-slate-400 font-medium">({allReviews.length} টি রিভিউ)</span>
                   </div>
@@ -3865,6 +4867,617 @@ export const AdminDashboard: React.FC = () => {
         }}
         performedBy={currentUser?.name || 'Super Admin'}
       />
+
+      {/* Feature 4: Admin Tuition Confirmation from Demo Modal */}
+      {adminConfirmModalOpen && adminSelectedDemoForConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 text-xs space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-emerald-100 text-emerald-700">
+                  <CheckCircle2 className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="font-bold text-sm text-blue-950">
+                    অফিসিয়াল টিউশন নিয়োগ ও চুক্তিপত্র তৈরি (Admin Confirmation)
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    শিক্ষক: {adminSelectedDemoForConfirm.tutorName} • অভিভাবক: {adminSelectedDemoForConfirm.guardianName}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdminConfirmModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAdminConfirmTuition} className="space-y-4">
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between">
+                <div>
+                  <span className="font-bold text-slate-900 block">{adminSelectedDemoForConfirm.studentName || 'শিক্ষার্থী'}</span>
+                  <p className="text-[11px] text-slate-500">{adminSelectedDemoForConfirm.subject} • {adminSelectedDemoForConfirm.studentGrade}</p>
+                </div>
+                <span className="px-2.5 py-1 rounded-lg bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                  ডেমো ভেরিফাইড
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">মাসিক বেতন (৳) *</label>
+                  <input
+                    type="number"
+                    required
+                    min={1000}
+                    step={500}
+                    value={adminAgreedSalary}
+                    onChange={(e) => setAdminAgreedSalary(Number(e.target.value))}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold text-slate-900 focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">সপ্তাহে দিন সংখ্যা *</label>
+                  <select
+                    value={adminAgreedDays}
+                    onChange={(e) => setAdminAgreedDays(Number(e.target.value))}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold focus:bg-white"
+                  >
+                    <option value={2}>২ দিন / সপ্তাহ</option>
+                    <option value={3}>৩ দিন / সপ্তাহ</option>
+                    <option value={4}>৪ দিন / সপ্তাহ</option>
+                    <option value={5}>৫ দিন / সপ্তাহ</option>
+                    <option value={6}>৬ দিন / সপ্তাহ</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">টিউশন শুরুর তারিখ *</label>
+                <input
+                  type="date"
+                  required
+                  value={adminStartDateInput}
+                  onChange={(e) => setAdminStartDateInput(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">বিশেষ নির্দেশনা / অফিসিয়াল নোট</label>
+                <input
+                  type="text"
+                  value={adminInstructionsInput}
+                  onChange={(e) => setAdminInstructionsInput(e.target.value)}
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white"
+                />
+              </div>
+
+              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-[11px] text-emerald-950">
+                🔒 এটি নিশ্চিত করলে স্বয়ংক্রিয়ভাবে একটি অফিসিয়াল TuitionConfirmation রেকর্ড তৈরি হবে এবং টিউটর ও অভিভাবক উভয়ের ড্যাশবোর্ডে নোটিফিকেশন যাবে।
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAdminConfirmModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold cursor-pointer shadow-xs"
+                >
+                  চুক্তি তৈরি ও কনফার্ম ✓
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Feature 4: Admin Reschedule Demo Modal */}
+      {adminRescheduleModalOpen && adminSelectedDemoForReschedule && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 text-xs space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-xl bg-amber-100 text-amber-900">
+                  <CalendarClock className="w-5 h-5" />
+                </span>
+                <div>
+                  <h3 className="font-bold text-sm text-blue-950">
+                    ডেমো সেশনের সময় পরিবর্তন (Admin Reschedule)
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    শিক্ষক: {adminSelectedDemoForReschedule.tutorName} • অভিভাবক: {adminSelectedDemoForReschedule.guardianName}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAdminRescheduleModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAdminReschedule} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">নতুন তারিখ *</label>
+                  <input
+                    type="date"
+                    required
+                    min={new Date().toISOString().split('T')[0]}
+                    value={adminNewRescheduleDate}
+                    onChange={(e) => setAdminNewRescheduleDate(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">নতুন সময় *</label>
+                  <select
+                    value={adminNewRescheduleTime}
+                    onChange={(e) => setAdminNewRescheduleTime(e.target.value)}
+                    className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold focus:bg-white"
+                  >
+                    <option value="10:00 AM">10:00 AM</option>
+                    <option value="11:30 AM">11:30 AM</option>
+                    <option value="3:30 PM">3:30 PM</option>
+                    <option value="4:30 PM">4:30 PM</option>
+                    <option value="5:30 PM">5:30 PM</option>
+                    <option value="6:30 PM">6:30 PM</option>
+                    <option value="7:30 PM">7:30 PM</option>
+                    <option value="8:30 PM">8:30 PM</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">রি-শিডিউলের কারণ বা নোট</label>
+                <input
+                  type="text"
+                  value={adminRescheduleReason}
+                  onChange={(e) => setAdminRescheduleReason(e.target.value)}
+                  placeholder="যেমন: অভিভাবকের জরুরি অনুরোধের প্রেক্ষিতে সময় পেছানো হলো"
+                  className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs focus:bg-white"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setAdminRescheduleModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-bold cursor-pointer shadow-xs"
+                >
+                  সময় পরিবর্তন নিশ্চিত করুন
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Feature 5: Tuition Agreement Slip Modal */}
+      <TuitionAgreementSlipModal
+        confirmation={selectedConfForAgreement}
+        isOpen={agreementModalOpen}
+        onClose={() => setAgreementModalOpen(false)}
+      />
+
+      {/* Feature 5: Official Payment Receipt Voucher Modal */}
+      <PaymentReceiptModal
+        payment={selectedPaymentForReceipt}
+        isOpen={receiptModalOpen}
+        onClose={() => setReceiptModalOpen(false)}
+      />
+
+      {/* Feature 5: Certificate Viewer Modal */}
+      <CertificateViewModal
+        certificate={selectedCertForView}
+        isOpen={certModalOpen}
+        onClose={() => setCertModalOpen(false)}
+      />
+
+      {/* Feature 5: Issue Certificate Modal */}
+      <IssueCertificateModal
+        isOpen={issueCertModalOpen}
+        onClose={() => setIssueCertModalOpen(false)}
+        tutors={storeState.tutors}
+      />
+
+      {/* Feature 6: Student Academic Progress Report Card Modal */}
+      <StudentProgressReportModal
+        report={selectedProgressReportForView}
+        isOpen={progressReportModalOpen}
+        onClose={() => setProgressReportModalOpen(false)}
+      />
+
+      {/* ========================================================= */}
+      {/* REQUIREMENT 1: IN-APP SAFE DELETE CONFIRMATION MODAL       */}
+      {/* Replaces fragile window.confirm that fails in iframes    */}
+      {/* ========================================================= */}
+      {deleteConfirmItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <Trash2 className="w-6 h-6" />
+            </div>
+            
+            <div className="text-center space-y-1.5">
+              <h3 className="text-base font-bold text-slate-900">
+                স্থায়ীভাবে মুছে ফেলতে চান?
+              </h3>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                আপনি কি নিশ্চিতভাবে এই আইটেমটি মুছে ফেলতে চান? এটি স্থায়ীভাবে ডাটাবেস থেকে মুছে ফেলা হবে।
+              </p>
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-left text-xs font-medium text-slate-800 break-words mt-2">
+                <span className="text-[10px] text-slate-400 block font-bold uppercase tracking-wider mb-0.5">নির্বাচিত আইটেম:</span>
+                {deleteConfirmItem.label}
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmItem(null)}
+                className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold text-xs cursor-pointer"
+              >
+                বাতিল (Cancel)
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs cursor-pointer shadow-sm flex items-center gap-1.5"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>মুছে ফেলুন (Confirm Delete)</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* REQUIREMENT 1: EDIT TUITION REQUEST MODAL                  */}
+      {/* ========================================================= */}
+      {editRequestModalOpen && selectedReqForEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 space-y-4 my-8">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-blue-900" />
+                <h3 className="font-bold text-base text-blue-950">
+                  অভিভাবকের টিউশন চাহিদা এডিট (Request ID: {selectedReqForEdit.id})
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditRequestModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveRequestEdit} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">অভিভাবকের নাম</label>
+                  <input
+                    type="text"
+                    required
+                    value={reqFormData.guardianName}
+                    onChange={(e) => setReqFormData({ ...reqFormData, guardianName: e.target.value })}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">মোবাইল নম্বর</label>
+                  <input
+                    type="tel"
+                    required
+                    value={reqFormData.phone}
+                    onChange={(e) => setReqFormData({ ...reqFormData, phone: e.target.value })}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white tabular-nums"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">জেলা (District)</label>
+                  <select
+                    value={reqFormData.location}
+                    onChange={(e) => setReqFormData({ ...reqFormData, location: e.target.value })}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white"
+                  >
+                    {BD_DISTRICTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">এলাকা / থানা (Area)</label>
+                  <input
+                    type="text"
+                    required
+                    value={reqFormData.area}
+                    onChange={(e) => setReqFormData({ ...reqFormData, area: e.target.value })}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">শ্রেণি (Class / Level)</label>
+                  <input
+                    type="text"
+                    required
+                    value={reqFormData.studentClass}
+                    onChange={(e) => setReqFormData({ ...reqFormData, studentClass: e.target.value })}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">মিডিয়াম (Medium)</label>
+                  <input
+                    type="text"
+                    required
+                    value={reqFormData.medium}
+                    onChange={(e) => setReqFormData({ ...reqFormData, medium: e.target.value })}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">শিক্ষার্থীর লিঙ্গ</label>
+                  <select
+                    value={reqFormData.studentGender}
+                    onChange={(e) => setReqFormData({ ...reqFormData, studentGender: e.target.value as any })}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white"
+                  >
+                    <option value="male">ছাত্র (Male)</option>
+                    <option value="female">ছাত্রী (Female)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">পড়ার বিষয়সমূহ (কমা দিয়ে লিখুন)</label>
+                <input
+                  type="text"
+                  value={reqFormData.subjects}
+                  onChange={(e) => setReqFormData({ ...reqFormData, subjects: e.target.value })}
+                  placeholder="যেমন: Mathematics, Physics, English"
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-amber-950 block mb-1 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <span>কাস্টমাইজ অপশন / বিশেষ চাহিদা (Customise):</span>
+                </label>
+                <input
+                  type="text"
+                  value={reqFormData.customRequirements}
+                  onChange={(e) => setReqFormData({ ...reqFormData, customRequirements: e.target.value })}
+                  placeholder="অভিভাবকের নিজস্ব পছন্দমতো লেখা বিশেষ চাহিদা"
+                  className="w-full p-2 bg-amber-50/50 border border-amber-300 rounded-xl text-amber-950 font-medium focus:bg-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">দিন / সপ্তাহ</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="7"
+                    value={reqFormData.daysPerWeek}
+                    onChange={(e) => setReqFormData({ ...reqFormData, daysPerWeek: Number(e.target.value) })}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">পছন্দের সময়</label>
+                  <input
+                    type="text"
+                    value={reqFormData.preferredTime}
+                    onChange={(e) => setReqFormData({ ...reqFormData, preferredTime: e.target.value })}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">শিক্ষক জেন্ডার পছন্দ</label>
+                  <select
+                    value={reqFormData.tutorGenderPreference}
+                    onChange={(e) => setReqFormData({ ...reqFormData, tutorGenderPreference: e.target.value as any })}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white"
+                  >
+                    <option value="any">যেকোনো (Any)</option>
+                    <option value="male">পুরুষ শিক্ষক (Male)</option>
+                    <option value="female">মহিলা শিক্ষক (Female)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">মাসিক বাজেট (BDT ৳)</label>
+                  <input
+                    type="number"
+                    value={reqFormData.monthlyBudget}
+                    onChange={(e) => setReqFormData({ ...reqFormData, monthlyBudget: Number(e.target.value) })}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-semibold focus:bg-white"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">স্ট্যাটাস (Status)</label>
+                  <select
+                    value={reqFormData.status}
+                    onChange={(e) => setReqFormData({ ...reqFormData, status: e.target.value as any })}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold uppercase text-xs focus:bg-white"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="matched">Matched</option>
+                    <option value="closed">Closed</option>
+                    <option value="converted_to_job">Converted to Job</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">অতিরিক্ত বিবরণ / নোট</label>
+                <textarea
+                  rows={2}
+                  value={reqFormData.additionalRequirements}
+                  onChange={(e) => setReqFormData({ ...reqFormData, additionalRequirements: e.target.value })}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditRequestModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold cursor-pointer"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-bold cursor-pointer shadow-xs"
+                >
+                  আপডেট সংরক্ষণ করুন
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* REQUIREMENT 1: EDIT APPLICATION MODAL                      */}
+      {/* ========================================================= */}
+      {editAppModalOpen && selectedAppForEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-blue-900" />
+                <h3 className="font-bold text-base text-blue-950">
+                  টিউটরের আবেদনপত্র এডিট ({selectedAppForEdit.id})
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditAppModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+              <p><strong>টিউটর:</strong> {selectedAppForEdit.tutorName} ({selectedAppForEdit.tutorUniversity})</p>
+              <p><strong>মোবাইল:</strong> {selectedAppForEdit.tutorPhone} · <strong>জব আইডি:</strong> {selectedAppForEdit.jobId}</p>
+            </div>
+
+            <form onSubmit={handleSaveAppEdit} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">আবেদনের স্ট্যাটাস</label>
+                  <select
+                    value={appFormData.status}
+                    onChange={(e) => setAppFormData({ ...appFormData, status: e.target.value as any })}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-semibold uppercase text-xs focus:bg-white"
+                  >
+                    <option value="applied">Applied</option>
+                    <option value="under_review">Under Review</option>
+                    <option value="shortlisted">Shortlisted</option>
+                    <option value="demo_scheduled">Demo Scheduled</option>
+                    <option value="appointed">Appointed</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="rejected">Rejected</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-bold text-slate-800 block mb-1">প্রত্যাশিত সম্মানী (BDT ৳)</label>
+                  <input
+                    type="number"
+                    value={appFormData.expectedSalary}
+                    onChange={(e) => setAppFormData({ ...appFormData, expectedSalary: Number(e.target.value) })}
+                    className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl font-mono font-semibold focus:bg-white"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">এডমিন ইন্টার্নাল নোট (Admin Internal Note)</label>
+                <textarea
+                  rows={2}
+                  value={appFormData.adminNote}
+                  onChange={(e) => setAppFormData({ ...appFormData, adminNote: e.target.value })}
+                  placeholder="যেমন: অভিভাবকের সাথে কথা হয়েছে, কাল ৩টায় ডেমো কল দিতে হবে..."
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">টিউটরের কভার নোট (Cover Note)</label>
+                <textarea
+                  rows={2}
+                  value={appFormData.coverNote}
+                  onChange={(e) => setAppFormData({ ...appFormData, coverNote: e.target.value })}
+                  className="w-full p-2 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setEditAppModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 font-semibold cursor-pointer"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-bold cursor-pointer shadow-xs"
+                >
+                  আপডেট সংরক্ষণ করুন
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================= */}
+      {/* FLOATING ADMIN ACTION TOAST FEEDBACK                       */}
+      {/* ========================================================= */}
+      {adminActionToast && (
+        <div className="fixed bottom-6 right-6 z-50 bg-blue-950 text-white px-4 py-3 rounded-2xl shadow-2xl border border-blue-800 text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 duration-300">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span>{adminActionToast}</span>
+        </div>
+      )}
 
     </div>
   );

@@ -118,7 +118,7 @@ export const TutorReviewModal: React.FC<TutorReviewModalProps> = ({
             </div>
             <div>
               <span className="text-[11px] font-bold tracking-wider text-amber-300 uppercase block">
-                {language === 'bn' ? 'ফিচার ২ • অভিভাবক ও শিক্ষার্থী ফিডব্যাক' : 'Feature 2 • Guardian & Student Review'}
+                {language === 'bn' ? 'অভিভাবক ও শিক্ষার্থী ফিডব্যাক' : 'Guardian & Student Review'}
               </span>
               <h2 className="text-lg sm:text-xl font-bold leading-tight">
                 {language === 'bn' ? `${tutor.fullName}-এর জন্য রিভিউ প্রদান` : `Write Review for ${tutor.fullName}`}

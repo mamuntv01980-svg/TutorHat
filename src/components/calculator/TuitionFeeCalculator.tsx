@@ -189,7 +189,7 @@ export const TuitionFeeCalculator: React.FC<TuitionFeeCalculatorProps> = ({
           <div className="flex items-center gap-2">
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-200 flex items-center gap-1">
               <Sparkles className="w-3 h-3 text-amber-600" />
-              {language === 'bn' ? 'ফিচার ৩ • স্মার্ট টিউশন ফি ক্যালকুলেটর' : 'Feature 3 • Smart Fee Calculator'}
+              {language === 'bn' ? 'স্মার্ট টিউশন ফি ক্যালকুলেটর' : 'Smart Fee Calculator'}
             </span>
             <span className="text-xs text-slate-400 font-medium">বাংলাদেশ স্ট্যান্ডার্ড</span>
           </div>

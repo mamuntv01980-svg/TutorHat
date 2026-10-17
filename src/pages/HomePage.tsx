@@ -13,7 +13,11 @@ import {
   Users,
   Compass,
   Briefcase,
-  Sparkles
+  Sparkles,
+  Calendar,
+  MessageSquare,
+  Award,
+  FileText
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { heroImg, tutorProfileImg } from '../services/store';
@@ -48,8 +52,8 @@ export const HomePage: React.FC = () => {
 
               <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-blue-950 leading-[1.18] text-balance">
                 {language === 'bn'
-                  ? 'আপনার শিক্ষার যাত্রায় সঠিক টিউটর খুঁজুন'
-                  : 'Find the Right Tutor for Your Learning Journey'}
+                  ? 'আপনার এলাকার উপযুক্ত টিউটর/টিউশন খুঁজুন'
+                  : 'Find the Right Tutor / Tuition in Your Area'}
               </h1>
 
               <p className="text-base sm:text-lg text-slate-600 leading-relaxed max-w-2xl">
@@ -387,7 +391,7 @@ export const HomePage: React.FC = () => {
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-amber-400 text-blue-950 text-xs font-bold">
               <Sparkles className="w-3.5 h-3.5" />
-              <span>{language === 'bn' ? 'ফিচার ৩ • স্মার্ট টিউশন ফি ক্যালকুলেটর' : 'Feature 3 • Smart Fee Calculator'}</span>
+              <span>{language === 'bn' ? 'স্মার্ট টিউশন ফি ক্যালকুলেটর' : 'Smart Fee Calculator'}</span>
             </div>
             <h3 className="text-xl sm:text-2xl font-black">
               {language === 'bn' ? 'টিউশন ফি কত হওয়া উচিত বুঝতে পারছেন না?' : 'Unsure what tuition fees should be?'}
@@ -407,6 +411,136 @@ export const HomePage: React.FC = () => {
             <span>{language === 'bn' ? 'ক্যালকুলেটরে হিসাব দেখুন' : 'Calculate Fee Now'}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
+        </div>
+      </section>
+
+      {/* Feature 4 Spotlight: Free Demo Class Booking & Trial Guarantee */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-gradient-to-r from-emerald-950 via-teal-950 to-blue-950 rounded-3xl p-6 sm:p-8 text-white shadow-lg border border-emerald-800/80 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-emerald-400 text-blue-950 text-xs font-bold">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? 'ফ্রি ডেমো ক্লাস ও ট্রায়াল নিশ্চয়তা' : 'Free Trial Demo Class'}</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black">
+              {language === 'bn' ? 'শিক্ষক নেওয়ার আগে ১ম ক্লাস সম্পূর্ণ ফ্রি যাচাই করুন!' : 'Try Before You Hire — 1st Class 100% Free!'}
+            </h3>
+            <p className="text-xs sm:text-sm text-emerald-100/90 leading-relaxed">
+              {language === 'bn'
+                ? 'কোনো অগ্রিম ফি বা চুক্তি ছাড়াই আপনার পছন্দের শিক্ষক দিয়ে ১টি ট্রায়াল ক্লাস নিন (বাসায় অথবা অনলাইনে)। পাঠদান ও বোঝানোর স্টাইল পছন্দ হলে তবেই টিউশন চূড়ান্ত করুন।'
+                : 'Zero advance risk. Schedule a 1-on-1 free trial session (Home or Online Meet) with any verified tutor before committing to tuition.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2.5 shrink-0 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => navigateTo('find-tutor')}
+              className="px-6 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-blue-950 font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Sparkles className="w-4 h-4" />
+              <span>{language === 'bn' ? 'ফ্রি ডেমো টিউটর খুঁজুন' : 'Find Tutors with Free Demo'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateTo('guardian-dashboard')}
+              className="px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>{language === 'bn' ? 'আমার ডেমো সেশন' : 'My Demo Sessions'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Official Tuition Agreement & Digital Receipts */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 rounded-3xl p-6 sm:p-8 text-white shadow-lg border border-blue-900/60 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-amber-400 text-blue-950 text-xs font-bold">
+              <FileText className="w-3.5 h-3.5" />
+              <span>{language === 'bn' ? 'ডিজিটাল টিউশন চুক্তিপত্র ও কনফার্মেশন স্লিপ' : 'Official Tuition Agreement Slip'}</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-black">
+              {language === 'bn' ? 'নিরাপদ টিউশন নিয়োগের অফিসিয়াল চুক্তি ও ভাউচার' : 'Legal Tuition Agreements & Verified Payment Slips'}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              {language === 'bn'
+                ? 'অনুমোদিত টিউশনের জন্য অভিভাবক ও শিক্ষক উভয় পক্ষের স্বাক্ষর, অফিসিয়াল সিল ও কিউআর কোড সংবলিত প্রিন্টযোগ্য চুক্তিপত্র স্লিপ এবং নিয়মিত পেমেন্ট মানি রিসিট।'
+                : '100% formal and legally clear. Official downloadable agreement slips featuring verified seals, QR codes, and digital monthly fee vouchers.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2.5 shrink-0 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => navigateTo('guardian-dashboard')}
+              className="px-6 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-blue-950 font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <FileText className="w-4 h-4" />
+              <span>{language === 'bn' ? 'চুক্তিপত্র ড্যাশবোর্ড' : 'View Agreements'}</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* In-App Direct Chat & Monthly Student Progress Report Cards */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-gradient-to-r from-indigo-950 via-purple-950 to-blue-950 rounded-3xl p-6 sm:p-8 text-white shadow-xl border border-indigo-800/80 flex flex-col md:flex-row items-center justify-between gap-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="space-y-2.5 max-w-2xl relative z-10">
+            <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-300 text-blue-950 text-xs font-black shadow-xs">
+              <MessageSquare className="w-3.5 h-3.5 text-blue-950" />
+              <span>{language === 'bn' ? 'ইন-অ্যাপ লাইভ চ্যাট ও শিক্ষার্থী প্রগ্রেস কার্ড' : 'In-App Live Chat & Progress Cards'}</span>
+            </div>
+            
+            <h3 className="text-xl sm:text-2xl font-black tracking-tight text-white">
+              {language === 'bn' 
+                ? 'সরাসরি রিয়েল-টাইম চ্যাট এবং মাসিক একাডেমিক প্রগ্রেস রিপোর্ট!' 
+                : 'Direct In-App Chat & Monthly Academic Progress Cards!'}
+            </h3>
+            
+            <p className="text-xs sm:text-sm text-indigo-200/90 leading-relaxed">
+              {language === 'bn'
+                ? 'অভিভাবক ও শিক্ষক প্ল্যাটফর্মের ভেতরেই নিরাপদ ও সরাসরি মেসেজিং করতে পারবেন। এছাড়াও প্রতি মাসের শেষে শিক্ষার্থীর উপস্থিতি, বাড়ির কাজ, পরীক্ষার নম্বর ও শিক্ষকের মন্তব্যের অফিশিয়াল প্রগ্রেস কার্ড ডাউনলোড ও প্রিন্ট করার সম্পূর্ণ সুবিধা।'
+                : 'Communicate safely inside TutorHat with built-in instant chat. Plus, receive monthly student evaluation report cards tracking attendance, study engagement, test performance, and tutor remarks.'}
+            </p>
+
+            {/* Feature 6 Bullet Pills */}
+            <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-indigo-100">
+              <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/15 flex items-center gap-1.5 font-medium">
+                💬 {language === 'bn' ? 'সরাসরি মেসেজিং' : 'Direct In-App Messaging'}
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/15 flex items-center gap-1.5 font-medium">
+                📊 {language === 'bn' ? 'মাসিক অগ্রগতি কার্ড' : 'Monthly Progress Cards'}
+              </span>
+              <span className="px-2.5 py-1 rounded-lg bg-white/10 border border-white/15 flex items-center gap-1.5 font-medium">
+                🎓 {language === 'bn' ? 'একাডেমিক গ্রেডিং ও প্রিন্ট' : 'Printable Evaluation'}
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-2.5 shrink-0 w-full sm:w-auto relative z-10">
+            <button
+              type="button"
+              onClick={() => navigateTo('find-tutor')}
+              className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-amber-400 to-amber-300 hover:from-amber-300 hover:to-amber-200 text-blue-950 font-black text-xs uppercase tracking-wider transition-all shadow-md active:scale-98 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>{language === 'bn' ? 'শিক্ষকদের সাথে চ্যাট করুন' : 'Chat with Tutors'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateTo('guardian-dashboard')}
+              className="px-5 py-3.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Award className="w-4 h-4 text-amber-400" />
+              <span>{language === 'bn' ? 'প্রগ্রেস রিপোর্ট কার্ড' : 'Progress Reports'}</span>
+            </button>
+          </div>
         </div>
       </section>
 

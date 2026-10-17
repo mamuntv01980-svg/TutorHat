@@ -11,9 +11,11 @@ import {
   GraduationCap, 
   HelpCircle,
   ShieldCheck,
-  ChevronDown
+  ChevronDown,
+  MessageSquare
 } from 'lucide-react';
 import { useApp, AppView } from '../../context/AppContext';
+import { store } from '../../services/store';
 import { BrandLogo } from '../common/BrandLogo';
 import { LanguageToggle } from '../common/LanguageToggle';
 import { TRANSLATIONS } from '../../constants/translations';
@@ -137,6 +139,21 @@ export const Header: React.FC = () => {
             {currentUser ? (
               <div className="relative">
                 <div className="flex items-center gap-1.5">
+                  {/* Feature 6: In-App Chat Header Shortcut */}
+                  <button
+                    type="button"
+                    onClick={() => handleNavClick(getDashboardView())}
+                    className="relative p-2 rounded-xl text-slate-600 hover:text-blue-900 hover:bg-blue-50 border border-slate-200 transition-colors cursor-pointer"
+                    title={language === 'bn' ? 'ইন-অ্যাপ চ্যাট ও মেসেজ' : 'In-App Messages'}
+                  >
+                    <MessageSquare className="w-4 h-4 text-blue-900" />
+                    {store.getUnreadChatCountForUser(currentUser.id) > 0 && (
+                      <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-600 text-white text-[9px] flex items-center justify-center font-bold ring-2 ring-white">
+                        {store.getUnreadChatCountForUser(currentUser.id)}
+                      </span>
+                    )}
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => handleNavClick(getDashboardView())}
@@ -154,7 +171,7 @@ export const Header: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                    className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+                    className="p-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
                     aria-label="User profile menu"
                   >
                     <UserIcon className="w-5 h-5 text-slate-700" />
@@ -174,10 +191,19 @@ export const Header: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => { handleNavClick(getDashboardView()); setProfileDropdownOpen(false); }}
-                      className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-blue-50 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-blue-50 flex items-center gap-2 cursor-pointer"
                     >
                       <LayoutDashboard className="w-4 h-4 text-blue-700" />
                       <span>{language === 'bn' ? 'ড্যাশবোর্ড' : 'Dashboard'}</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => { handleNavClick(getDashboardView()); setProfileDropdownOpen(false); }}
+                      className="w-full text-left px-4 py-2 text-xs font-medium text-slate-700 hover:bg-blue-50 flex items-center gap-2 cursor-pointer"
+                    >
+                      <MessageSquare className="w-4 h-4 text-blue-700" />
+                      <span>{language === 'bn' ? 'ইন-অ্যাপ চ্যাট মেসেজ' : 'In-App Messages'}</span>
                     </button>
 
                     {currentUser.role === 'tutor' && (

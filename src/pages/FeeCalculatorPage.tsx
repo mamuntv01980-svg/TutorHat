@@ -15,7 +15,7 @@ export const FeeCalculatorPage: React.FC = () => {
       <div className="text-center max-w-3xl mx-auto space-y-3">
         <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-100 text-blue-900 text-xs font-bold border border-blue-200">
           <Sparkles className="w-3.5 h-3.5 text-blue-700" />
-          <span>{language === 'bn' ? 'ফিচার ৩ • অফিসিয়াল স্যালারি ও ফি প্রাক্কলন' : 'Feature 3 • Tuition Remuneration Guide'}</span>
+          <span>{language === 'bn' ? 'অফিসিয়াল স্যালারি ও ফি প্রাক্কলন' : 'Tuition Remuneration Guide'}</span>
         </div>
         <h1 className="text-3xl sm:text-4xl font-black text-blue-950 tracking-tight">
           {language === 'bn' ? 'টিউশন ফি ও টিউটর স্যালারি ক্যালকুলেটর' : 'Tuition Fee & Salary Calculator'}

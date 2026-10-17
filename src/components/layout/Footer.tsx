@@ -116,20 +116,22 @@ export const Footer: React.FC = () => {
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>© {new Date().getFullYear()} TutorHat. {t.allRightsReserved}</p>
-          <div className="flex items-center gap-3">
-            <span>Currency: <strong className="text-slate-300 font-mono">BDT ({settings.defaultCurrency})</strong></span>
-            <span aria-hidden="true">·</span>
-            <span>Bangladesh</span>
-            <span aria-hidden="true" className="text-slate-700">·</span>
-            {/* Secret unobtrusive Admin Access monogram: small letter 'A' */}
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span>
+              {language === 'bn' ? 'মুদ্রা:' : 'Currency:'}{' '}
+              <strong className="text-slate-300 font-mono">BDT ({settings.defaultCurrency})</strong>
+            </span>
+            <span aria-hidden="true" className="text-slate-600">·</span>
+            <span>{language === 'bn' ? 'বাংলাদেশ' : 'Bangladesh'}</span>
+            {/* Discreet Admin Panel Trigger disguised as an ordinary punctuation dot (·) */}
             <button
               type="button"
               onClick={() => setAdminAuthOpen(true)}
-              aria-label="Administration"
-              className="w-4 h-4 rounded text-[10px] font-mono text-slate-700 hover:text-slate-400 hover:bg-slate-800/80 transition-colors flex items-center justify-center select-none cursor-pointer focus:outline-none"
-              title=""
+              className="text-slate-500 hover:text-slate-400 select-none px-1 py-0.5 -mx-1 focus:outline-none transition-colors inline-flex items-center justify-center cursor-pointer font-bold text-sm"
+              aria-hidden="true"
+              tabIndex={0}
             >
-              A
+              ·
             </button>
           </div>
         </div>

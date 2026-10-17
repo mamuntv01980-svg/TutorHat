@@ -113,7 +113,10 @@ export interface TutorProfile {
   verifiedByAdminId?: string;
   verificationNotes?: string;
   trustScore?: number; // e.g. 100%
-  badgeLevel?: 'none' | 'standard' | 'verified_pro' | 'golden_star';
+  badgeLevel?: 'basic' | 'bronze' | 'silver' | 'gold' | 'platinum' | 'verified_expert' | string;
+  customSubjects?: string[];
+  customClasses?: string[];
+  customMediums?: string[];
 }
 
 export interface TuitionRequest {
@@ -134,6 +137,12 @@ export interface TuitionRequest {
   tutorGenderPreference: 'any' | 'male' | 'female';
   monthlyBudget: number; // Guardian sets their own budget
   additionalRequirements: string;
+  customRequirements?: string;
+  customSubjects?: string[];
+  customClass?: string;
+  customMedium?: string;
+  customSchedule?: string;
+  customMode?: string;
   status: 'pending' | 'approved' | 'converted_to_job' | 'rejected';
   createdAt: string;
 }
@@ -198,17 +207,27 @@ export interface DemoClass {
   tutorId: string;
   tutorName: string;
   tutorPhone: string;
+  tutorPhoto?: string;
+  tutorUniversity?: string;
   guardianId: string;
   guardianName: string;
   guardianPhone: string;
   jobId: string;
   jobTitle: string;
+  studentName?: string;
+  studentGrade?: string;
+  subject?: string;
+  location?: string;
   date: string;
   time: string;
   mode: 'home' | 'online';
+  meetingLink?: string;
   notes: string;
   status: 'scheduled' | 'completed' | 'rescheduled' | 'cancelled';
   result?: 'selected' | 'not_selected' | 'further_review';
+  guardianFeedback?: string;
+  tutorFeedback?: string;
+  createdAt?: string;
 }
 
 export interface TuitionConfirmation {
@@ -227,7 +246,16 @@ export interface TuitionConfirmation {
   location: string;
   teachingMode: 'home' | 'online';
   specialInstructions: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  agreementCode?: string; // e.g. TH-AGR-2026-901
+  agreementNumber?: string; // alias
+  subject?: string;
+  studentClass?: string;
+  guardianPhone?: string;
+  tutorPhone?: string;
+  tutorUniversity?: string;
+  completedClassesCount?: number;
+  createdAt?: string;
 }
 
 export interface AttendanceRecord {
@@ -240,6 +268,12 @@ export interface AttendanceRecord {
   jobId: string;
   status: 'present' | 'absent' | 'late' | 'cancelled';
   notes: string;
+  topicsCovered?: string; // আজকের পাঠ/টপিক
+  homeworkAssigned?: string; // বাড়ির কাজ
+  durationMinutes?: number; // পাঠদানের সময়কাল
+  time?: string; // সময়
+  verifiedByGuardian?: boolean; // অভিভাবক কর্তৃক সত্যায়িত
+  verifiedDate?: string;
 }
 
 export interface PaymentRecord {
@@ -254,6 +288,14 @@ export interface PaymentRecord {
   paymentDate: string;
   status: 'pending' | 'due' | 'paid' | 'cancelled';
   notes: string;
+  paymentMethod?: 'bkash' | 'nagad' | 'rocket' | 'bank' | 'cash';
+  method?: string; // alias
+  transactionId?: string; // TrxID
+  receiptNumber?: string; // TH-REC-2026-XXXX
+  paidAt?: string;
+  studentName?: string;
+  paymentSlipUrl?: string;
+  acknowledgedByTutor?: boolean;
 }
 
 export interface CertificateRecord {
@@ -265,6 +307,10 @@ export interface CertificateRecord {
   description: string;
   status: 'active' | 'revoked';
   verificationCode: string;
+  subject?: string;
+  totalHoursCompleted?: number;
+  gradeHonor?: 'Outstanding Mentor' | 'Distinguished Educator' | 'Verified Star Tutor';
+  issuedBy?: string;
 }
 
 export interface ReviewCriteria {
@@ -324,6 +370,65 @@ export interface ContactMessage {
   message: string;
   date: string;
   status: 'unread' | 'read' | 'resolved';
+}
+
+// Feature 6: In-App Direct Chat & Messaging
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderName: string;
+  senderRole: 'tutor' | 'guardian' | 'admin';
+  receiverId: string;
+  receiverName: string;
+  text: string;
+  createdAt: string;
+  read: boolean;
+  messageType?: 'text' | 'template' | 'system' | 'proposal';
+}
+
+export interface ChatConversation {
+  id: string;
+  participantIds: string[]; // [guardianUserId, tutorUserId]
+  guardianId: string;
+  guardianName: string;
+  guardianPhone?: string;
+  tutorId: string;
+  tutorName: string;
+  tutorPhone?: string;
+  tutorAvatar?: string;
+  jobId?: string;
+  jobTitle?: string;
+  lastMessageText: string;
+  lastMessageTime: string;
+  unreadCountGuardian: number;
+  unreadCountTutor: number;
+  status: 'active' | 'archived';
+  subjectOrContext?: string;
+}
+
+// Feature 6: Student Progress & Monthly Evaluation Report
+export interface StudentProgressReport {
+  id: string;
+  reportCode: string; // e.g. TH-REP-2026-801
+  tutorId: string;
+  tutorName: string;
+  tutorUniversity?: string;
+  guardianId: string;
+  guardianName: string;
+  studentName: string;
+  subject: string;
+  classLevel: string;
+  month: string; // e.g. 'মার্চ ২০২৬'
+  attendanceScore: number; // e.g. 95 (%)
+  homeworkCompletionScore: number; // e.g. 90 (%)
+  classAttentionScore: number; // e.g. 88 (%)
+  examOrQuizScore: number; // e.g. 85 (%)
+  overallGrade: 'A+' | 'A' | 'B' | 'C';
+  strengths: string;
+  improvementsNeeded: string;
+  tutorRemarks: string;
+  createdAt: string;
 }
 
 export interface ReferralRecord {

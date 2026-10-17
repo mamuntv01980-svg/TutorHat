@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   GraduationCap, 
   MapPin, 
@@ -12,13 +12,16 @@ import {
   ArrowLeft, 
   Phone, 
   MessageSquare,
-  Award
+  Award,
+  Sparkles
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { TRANSLATIONS } from '../constants/translations';
 import { tutorProfileImg } from '../services/store';
 import { TutorVerificationBadge } from '../components/common/TutorVerificationBadge';
 import { TutorReviewsSection } from '../components/review/TutorReviewsSection';
+import { BookDemoModal } from '../components/demo/BookDemoModal';
+import { ChatBoxModal } from '../components/chat/ChatBoxModal';
 
 export const TutorDetailPage: React.FC = () => {
   const { 
@@ -32,6 +35,8 @@ export const TutorDetailPage: React.FC = () => {
     settings
   } = useApp();
 
+  const [demoModalOpen, setDemoModalOpen] = useState(false);
+  const [chatModalOpen, setChatModalOpen] = useState(false);
   const t = TRANSLATIONS[language];
 
   const tutor = storeState.tutors.find(tut => tut.id === selectedTutorId) || storeState.tutors[0];
@@ -140,11 +145,11 @@ export const TutorDetailPage: React.FC = () => {
           </div>
 
           {/* Action CTAs */}
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full sm:w-auto">
             <button
               type="button"
               onClick={() => toggleShortlist(tutor.id)}
-              className={`flex-1 sm:flex-initial px-4 py-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-2 transition-all min-h-[44px] ${
+              className={`flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all min-h-[44px] cursor-pointer ${
                 shortlisted
                   ? 'bg-rose-50 border-rose-200 text-rose-600'
                   : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
@@ -156,11 +161,29 @@ export const TutorDetailPage: React.FC = () => {
 
             <button
               type="button"
+              onClick={() => setDemoModalOpen(true)}
+              className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-blue-950 text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all min-h-[44px] cursor-pointer active:scale-98"
+            >
+              <Sparkles className="w-4 h-4 text-blue-950" />
+              <span>{language === 'bn' ? 'ফ্রি ডেমো বুক করুন' : 'Book Free Demo'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setChatModalOpen(true)}
+              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-900 text-xs font-bold shadow-xs flex items-center justify-center gap-1.5 transition-all min-h-[44px] cursor-pointer"
+            >
+              <MessageSquare className="w-4 h-4 text-blue-700" />
+              <span>{language === 'bn' ? 'সরাসরি চ্যাট' : 'Chat'}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={() => navigateTo('request-tutor')}
-              className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-2 transition-all min-h-[44px]"
+              className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-all min-h-[44px] cursor-pointer"
             >
               <Calendar className="w-4 h-4" />
-              <span>{language === 'bn' ? 'টিউটর রিকোয়েস্ট করুন' : 'Request This Tutor'}</span>
+              <span>{language === 'bn' ? 'রিকোয়েস্ট' : 'Request'}</span>
             </button>
           </div>
 
@@ -434,7 +457,7 @@ export const TutorDetailPage: React.FC = () => {
 
             <div>
               <span className="text-slate-400 block mb-1.5 font-medium">
-                {language === 'bn' ? 'পছন্দের এলাকা (Preferred Areas):' : 'Preferred Areas:'}
+                {language === 'bn' ? 'কোন কোন এলাকায় টিউশন করতে চান (Preferred Tutoring Areas):' : 'Preferred Tutoring Areas:'}
               </span>
               <div className="flex flex-wrap gap-1">
                 {tutor.preferredAreas.map((area) => (
@@ -474,6 +497,24 @@ export const TutorDetailPage: React.FC = () => {
         </div>
 
       </div>
+
+      {/* Feature 4: Book Free Demo Class Modal */}
+      {tutor && (
+        <BookDemoModal
+          tutor={tutor}
+          isOpen={demoModalOpen}
+          onClose={() => setDemoModalOpen(false)}
+        />
+      )}
+
+      {/* Feature 6: In-App Chat Modal */}
+      {tutor && (
+        <ChatBoxModal
+          isOpen={chatModalOpen}
+          onClose={() => setChatModalOpen(false)}
+          targetTutor={tutor}
+        />
+      )}
 
     </div>
   );

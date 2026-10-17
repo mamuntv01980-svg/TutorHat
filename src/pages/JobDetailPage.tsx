@@ -11,11 +11,13 @@ import {
   Send, 
   UserCheck, 
   ShieldAlert,
-  GraduationCap
+  GraduationCap,
+  MessageSquare
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { store } from '../services/store';
 import { TRANSLATIONS } from '../constants/translations';
+import { ChatBoxModal } from '../components/chat/ChatBoxModal';
 
 export const JobDetailPage: React.FC = () => {
   const { 
@@ -33,6 +35,7 @@ export const JobDetailPage: React.FC = () => {
   const job = storeState.jobs.find(j => j.id === selectedJobId) || storeState.jobs[0];
 
   const [applyModalOpen, setApplyModalOpen] = useState(false);
+  const [chatModalOpen, setChatModalOpen] = useState(false);
   const [expectedSalary, setExpectedSalary] = useState(job ? job.salary : 6000);
   const [coverNote, setCoverNote] = useState('');
   const [applySuccess, setApplySuccess] = useState(false);
@@ -220,14 +223,24 @@ export const JobDetailPage: React.FC = () => {
               <div className="text-xs text-slate-500">
                 <span>{language === 'bn' ? 'আপনার সিভি অভিভাবক ও অ্যাডমিন কর্তৃক মূল্যায়িত হবে।' : 'Your CV will be reviewed by platform admins.'}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setApplyModalOpen(true)}
-                className="w-full sm:w-auto px-8 py-3 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] min-h-[44px]"
-              >
-                <Send className="w-4 h-4" />
-                <span>{t.applyNow}</span>
-              </button>
+              <div className="flex items-center gap-2 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => setChatModalOpen(true)}
+                  className="flex-1 sm:flex-initial px-5 py-3 rounded-xl bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-900 text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] min-h-[44px] cursor-pointer"
+                >
+                  <MessageSquare className="w-4 h-4 text-blue-700" />
+                  <span>{language === 'bn' ? 'মেসেজ দিন' : 'Message'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setApplyModalOpen(true)}
+                  className="flex-1 sm:flex-initial px-8 py-3 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] min-h-[44px] cursor-pointer"
+                >
+                  <Send className="w-4 h-4" />
+                  <span>{t.applyNow}</span>
+                </button>
+              </div>
             </div>
           )}
 
@@ -326,6 +339,18 @@ export const JobDetailPage: React.FC = () => {
 
           </div>
         </div>
+      )}
+
+      {/* Feature 6: In-App Chat with Guardian Modal */}
+      {job && (
+        <ChatBoxModal
+          isOpen={chatModalOpen}
+          onClose={() => setChatModalOpen(false)}
+          targetGuardianId={job.guardianId}
+          targetGuardianName={job.guardianName}
+          jobId={job.id}
+          jobTitle={job.title}
+        />
       )}
 
     </div>

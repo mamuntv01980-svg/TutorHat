@@ -18,7 +18,10 @@ import {
   ReferralRecord,
   AdminNote,
   ActivityLog,
-  SystemSettings
+  SystemSettings,
+  ChatMessage,
+  ChatConversation,
+  StudentProgressReport
 } from '../types';
 
 import heroImg from '../assets/images/hero_bangladesh_tutoring_1791378378802.jpg';
@@ -436,50 +439,8 @@ const INITIAL_TUTORS: TutorProfile[] = [
   }
 ];
 
-const INITIAL_REQUESTS: TuitionRequest[] = [
-  {
-    id: 'req_101',
-    guardianId: 'user_guardian_01',
-    guardianName: 'Mrs. Farhana Begum',
-    phone: '01799887766',
-    location: 'Dhaka',
-    area: 'Mirpur DOHS',
-    studentClass: 'Class 9 (SSC)',
-    studentGender: 'male',
-    medium: 'Bangla Medium',
-    subjects: ['Higher Mathematics', 'Physics', 'Chemistry'],
-    daysPerWeek: 4,
-    preferredDays: ['Saturday', 'Monday', 'Wednesday', 'Thursday'],
-    preferredTime: '5:30 PM - 7:00 PM',
-    teachingType: 'home',
-    tutorGenderPreference: 'male',
-    monthlyBudget: 7500,
-    additionalRequirements: 'Prefer BUET or DU Science tutor who can take weekly quizzes and clarify basic physics concepts.',
-    status: 'converted_to_job',
-    createdAt: '2026-03-02T10:15:00.000Z'
-  },
-  {
-    id: 'req_102',
-    guardianId: 'user_guardian_01',
-    guardianName: 'Mrs. Farhana Begum',
-    phone: '01799887766',
-    location: 'Dhaka',
-    area: 'Dhanmondi',
-    studentClass: 'Class 4',
-    studentGender: 'female',
-    medium: 'English Version',
-    subjects: ['Mathematics', 'General Science', 'English (1st & 2nd Paper)'],
-    daysPerWeek: 3,
-    preferredDays: ['Sunday', 'Tuesday', 'Thursday'],
-    preferredTime: '4:00 PM',
-    teachingType: 'home',
-    tutorGenderPreference: 'female',
-    monthlyBudget: 6000,
-    additionalRequirements: 'Caring female tutor from renowned university. Need help with school homework and term exams.',
-    status: 'pending',
-    createdAt: '2026-03-05T14:20:00.000Z'
-  }
-];
+// Empty initial requests and applications so the platform starts completely fresh for real users
+const INITIAL_REQUESTS: TuitionRequest[] = [];
 
 const INITIAL_JOBS: TuitionJob[] = [
   {
@@ -501,10 +462,7 @@ const INITIAL_JOBS: TuitionJob[] = [
     postedDate: '2026-03-02',
     deadline: '2026-03-25',
     status: 'published',
-    guardianRequestId: 'req_101',
-    guardianId: 'user_guardian_01',
-    guardianName: 'Mrs. Farhana Begum',
-    totalApplications: 3
+    totalApplications: 0
   },
   {
     id: 'JOB-2026-102',
@@ -525,9 +483,7 @@ const INITIAL_JOBS: TuitionJob[] = [
     postedDate: '2026-03-03',
     deadline: '2026-03-28',
     status: 'published',
-    guardianId: 'user_guardian_01',
-    guardianName: 'Farhana Begum',
-    totalApplications: 2
+    totalApplications: 0
   },
   {
     id: 'JOB-2026-103',
@@ -548,7 +504,7 @@ const INITIAL_JOBS: TuitionJob[] = [
     postedDate: '2026-03-04',
     deadline: '2026-03-30',
     status: 'published',
-    totalApplications: 1
+    totalApplications: 0
   },
   {
     id: 'JOB-2026-104',
@@ -569,7 +525,7 @@ const INITIAL_JOBS: TuitionJob[] = [
     postedDate: '2026-03-05',
     deadline: '2026-04-05',
     status: 'published',
-    totalApplications: 4
+    totalApplications: 0
   },
   {
     id: 'JOB-2026-105',
@@ -590,56 +546,12 @@ const INITIAL_JOBS: TuitionJob[] = [
     postedDate: '2026-03-06',
     deadline: '2026-04-10',
     status: 'published',
-    totalApplications: 2
+    totalApplications: 0
   }
 ];
 
-const INITIAL_APPLICATIONS: JobApplication[] = [
-  {
-    id: 'app_301',
-    jobId: 'JOB-2026-101',
-    tutorId: 'tut_01',
-    tutorName: 'Rahim Chowdhury',
-    tutorPhoto: tutorProfileImg,
-    tutorUniversity: 'BUET (EEE)',
-    tutorDepartment: 'Electrical & Electronic Engineering',
-    tutorPhone: '01711223344',
-    expectedSalary: 7500,
-    coverNote: 'Assalamu Alaikum. I am an EEE graduate from BUET. I live near Mirpur DOHS and have successfully mentored several SSC science candidates who achieved Golden GPA-5.',
-    appliedDate: '2026-03-03',
-    status: 'shortlisted',
-    adminNote: 'Strong profile, matched location and academic qualifications.',
-    guardianNote: 'Looks very suitable for my son.'
-  },
-  {
-    id: 'app_302',
-    jobId: 'JOB-2026-102',
-    tutorId: 'tut_01',
-    tutorName: 'Rahim Chowdhury',
-    tutorPhoto: tutorProfileImg,
-    tutorUniversity: 'BUET (EEE)',
-    tutorDepartment: 'EEE',
-    tutorPhone: '01711223344',
-    expectedSalary: 9000,
-    coverNote: 'Experienced in Cambridge IGCSE Math and Physics syllabus with past papers solutions.',
-    appliedDate: '2026-03-04',
-    status: 'applied'
-  },
-  {
-    id: 'app_303',
-    jobId: 'JOB-2026-103',
-    tutorId: 'tut_03',
-    tutorName: 'Hafez Maulana Abdullah',
-    tutorPhoto: '',
-    tutorUniversity: 'Islamic Arabic University',
-    tutorDepartment: 'Hadith & Islamic Studies',
-    tutorPhone: '01911445566',
-    expectedSalary: 5500,
-    coverNote: 'InshaAllah I can teach the kids Tajweed and essential Islamic manners with utmost care.',
-    appliedDate: '2026-03-04',
-    status: 'demo_scheduled'
-  }
-];
+// Empty initial applications so the platform starts completely fresh
+const INITIAL_APPLICATIONS: JobApplication[] = [];
 
 const INITIAL_DEMOS: DemoClass[] = [
   {
@@ -665,19 +577,53 @@ const INITIAL_CONFIRMATIONS: TuitionConfirmation[] = [
     id: 'conf_501',
     tutorId: 'tut_01',
     tutorName: 'Rahim Chowdhury',
+    tutorPhone: '01711223344',
+    tutorUniversity: 'BUET (Electrical & Electronic Engineering)',
     guardianId: 'user_guardian_01',
     guardianName: 'Mrs. Farhana Begum',
+    guardianPhone: '01712345678',
     studentName: 'Ahsan Habib (Class 9)',
+    studentClass: 'Class 9 (SSC Batch 2027)',
+    subject: 'Physics, Higher Math & ICT',
     jobId: 'JOB-2026-101',
     jobTitle: 'Class 9 (SSC) Science Tuition',
-    startDate: '2026-03-15',
+    startDate: '2026-03-01',
     monthlyFee: 7500,
     daysPerWeek: 4,
     scheduleTime: '5:30 PM - 7:00 PM',
     location: 'House 45, Road 2, Mirpur DOHS, Dhaka',
     teachingMode: 'home',
-    specialInstructions: 'Regular model tests at end of month. Inform guardian if class rescheduled.',
-    status: 'confirmed'
+    specialInstructions: 'মাস শেষে রেগুলার মডেল টেস্ট নিতে হবে। কোনো দিন শিডিউল পরিবর্তন হলে অভিভাবককে আগে থেকে জানাতে হবে।',
+    status: 'confirmed',
+    agreementCode: 'TH-AGR-2026-0101',
+    completedClassesCount: 8,
+    createdAt: '2026-02-28'
+  },
+  {
+    id: 'conf_502',
+    tutorId: 'tut_02',
+    tutorName: 'Nusrat Jahan',
+    tutorPhone: '01811334455',
+    tutorUniversity: 'Dhaka University (English Dept.)',
+    guardianId: 'user_guardian_01',
+    guardianName: 'Mrs. Farhana Begum',
+    guardianPhone: '01712345678',
+    studentName: 'Tania Habib (Class 8)',
+    studentClass: 'Class 8 (JSC / Junior English)',
+    subject: 'English 1st & 2nd Paper',
+    jobId: 'JOB-2026-104',
+    jobTitle: 'Class 8 English Version Tutor',
+    startDate: '2026-03-05',
+    monthlyFee: 6500,
+    daysPerWeek: 3,
+    scheduleTime: '4:00 PM - 5:30 PM',
+    location: 'House 45, Road 2, Mirpur DOHS, Dhaka',
+    teachingMode: 'home',
+    specialInstructions: 'স্পিকিং ও রিটেন গ্রামার বেশি গুরুত্ব দিতে হবে।',
+    status: 'confirmed',
+    agreementCode: 'TH-AGR-2026-0104',
+    completedClassesCount: 6,
+    createdAt: '2026-03-04'
   }
 ];
 
@@ -691,7 +637,13 @@ const INITIAL_ATTENDANCE: AttendanceRecord[] = [
     studentName: 'Ahsan Habib',
     jobId: 'JOB-2026-101',
     status: 'present',
-    notes: 'Covered Physics Chapter 3: Force & Motion formulas and problems.'
+    time: '05:30 PM',
+    durationMinutes: 90,
+    topicsCovered: 'পদার্থবিজ্ঞান ৩য় অধ্যায়: বল, নিউটনের গতিসূত্র ও গাণিতিক উদাহরণ সমাধান।',
+    homeworkAssigned: 'অনুশীলনী ৩.১ থেকে ৩.৫ পর্যন্ত অঙ্ক এবং সৃজনশীল প্রশ্ন ১ ও ২।',
+    notes: 'ছাত্র মনোযোগ দিয়ে পড়েছে এবং সূত্রগুলো ভালো বুঝতে পেরেছে।',
+    verifiedByGuardian: true,
+    verifiedDate: '2026-03-15'
   },
   {
     id: 'att_602',
@@ -702,7 +654,46 @@ const INITIAL_ATTENDANCE: AttendanceRecord[] = [
     studentName: 'Ahsan Habib',
     jobId: 'JOB-2026-101',
     status: 'present',
-    notes: 'Higher Math coordinate geometry basics.'
+    time: '05:30 PM',
+    durationMinutes: 90,
+    topicsCovered: 'উচ্চতর গণিত স্থানাঙ্ক জ্যামিতি (অধ্যায় ১১): ঢাল নির্ণয় ও ক্ষেত্রফল সূত্র।',
+    homeworkAssigned: 'বোর্ড প্রশ্ন ২০২৪ স্থানাঙ্ক জ্যামিতি সৃজনশীল সমাধান।',
+    notes: 'সূত্রের প্রমাণ খাতায় লিখে দেখানো হয়েছে।',
+    verifiedByGuardian: true,
+    verifiedDate: '2026-03-17'
+  },
+  {
+    id: 'att_603',
+    date: '2026-03-19',
+    tutorId: 'tut_01',
+    tutorName: 'Rahim Chowdhury',
+    guardianId: 'user_guardian_01',
+    studentName: 'Ahsan Habib',
+    jobId: 'JOB-2026-101',
+    status: 'present',
+    time: '05:35 PM',
+    durationMinutes: 90,
+    topicsCovered: 'আইসিটি: সি-প্রোগ্রামিং লুপ ও কন্ডিশনাল স্টেটমেন্ট প্র্যাকটিস।',
+    homeworkAssigned: 'ফর লুপ দিয়ে প্রাইম নম্বর নির্ণয়ের প্রোগ্রাম লিখবে।',
+    notes: 'ল্যাপটপে কোড রান করে দেখানো হয়েছে।',
+    verifiedByGuardian: false
+  },
+  {
+    id: 'att_604',
+    date: '2026-03-22',
+    tutorId: 'tut_01',
+    tutorName: 'Rahim Chowdhury',
+    guardianId: 'user_guardian_01',
+    studentName: 'Ahsan Habib',
+    jobId: 'JOB-2026-101',
+    status: 'late',
+    time: '05:50 PM',
+    durationMinutes: 80,
+    topicsCovered: 'পদার্থবিজ্ঞান কাজ, ক্ষমতা ও শক্তি অধ্যায়ের রিভিশন।',
+    homeworkAssigned: 'সংক্ষিপ্ত নোট রিভিশন ও সৃজনশীল টেস্ট প্রস্তুতি।',
+    notes: 'ভারী যানজটের কারণে ১৫ মিনিট বিলম্বে ক্লাস শুরু হয়েছিল। সময় পুষিয়ে দেওয়া হয়েছে।',
+    verifiedByGuardian: true,
+    verifiedDate: '2026-03-22'
   }
 ];
 
@@ -713,12 +704,32 @@ const INITIAL_PAYMENTS: PaymentRecord[] = [
     tutorName: 'Rahim Chowdhury',
     guardianId: 'user_guardian_01',
     guardianName: 'Mrs. Farhana Begum',
+    studentName: 'Ahsan Habib (Class 9)',
     jobId: 'JOB-2026-101',
     amount: 7500,
     month: 'March 2026',
-    paymentDate: '2026-04-01',
+    paymentDate: '2026-03-31',
+    status: 'paid',
+    paymentMethod: 'bkash',
+    transactionId: 'BK9X28M7QL',
+    receiptNumber: 'TH-REC-2026-9041',
+    paidAt: '2026-03-31T14:30:00.000Z',
+    acknowledgedByTutor: true,
+    notes: 'মার্চ মাসের সম্মানী বিকাশ পার্সোনাল মাধ্যমে পরিশোধিত। ধন্যবাদ।'
+  },
+  {
+    id: 'PAY-2026-002',
+    tutorId: 'tut_01',
+    tutorName: 'Rahim Chowdhury',
+    guardianId: 'user_guardian_01',
+    guardianName: 'Mrs. Farhana Begum',
+    studentName: 'Ahsan Habib (Class 9)',
+    jobId: 'JOB-2026-101',
+    amount: 7500,
+    month: 'April 2026',
+    paymentDate: '2026-04-30',
     status: 'due',
-    notes: 'Monthly tuition salary for Ahsan Habib (Class 9 SSC)'
+    notes: 'এপ্রিল মাসের নিয়মিত টিউশন ফি বকেয়া রয়েছে।'
   }
 ];
 
@@ -731,7 +742,25 @@ const INITIAL_CERTIFICATES: CertificateRecord[] = [
     issueDate: '2026-01-15',
     description: 'Awarded for demonstrating superior pedagogical methodology, 100% attendance punctuality, and stellar student exam outcomes on TutorHat platform.',
     status: 'active',
-    verificationCode: 'TH-VER-2026-0199'
+    verificationCode: 'TH-VER-2026-0199',
+    subject: 'SSC Physics, Higher Mathematics & ICT',
+    totalHoursCompleted: 120,
+    gradeHonor: 'Outstanding Mentor',
+    issuedBy: 'TutorHat Academic Verification Board'
+  },
+  {
+    id: 'CERT-TH-9012',
+    tutorId: 'tut_02',
+    tutorName: 'Nusrat Jahan',
+    title: 'Distinguished English Language Educator',
+    issueDate: '2026-02-10',
+    description: 'Recognized for top-tier student engagement, verified lesson plans, and stellar parent feedback in English Version curriculum.',
+    status: 'active',
+    verificationCode: 'TH-VER-2026-0210',
+    subject: 'English 1st & 2nd Paper (National Curriculum & IGCSE)',
+    totalHoursCompleted: 96,
+    gradeHonor: 'Distinguished Educator',
+    issuedBy: 'TutorHat Academic Verification Board'
   }
 ];
 
@@ -999,7 +1028,155 @@ const INITIAL_ACTIVITY_LOGS: ActivityLog[] = [
   }
 ];
 
-const STORAGE_KEY = 'tutorhat_data_v4';
+// Feature 6: Initial Chat Conversations
+const INITIAL_CONVERSATIONS: ChatConversation[] = [
+  {
+    id: 'conv_01',
+    participantIds: ['user_guardian_01', 'user_tutor_01'],
+    guardianId: 'user_guardian_01',
+    guardianName: 'Mrs. Farhana Begum',
+    guardianPhone: '01719876543',
+    tutorId: 'tut_01',
+    tutorName: 'Rahim Chowdhury',
+    tutorPhone: '01711223344',
+    jobId: 'JOB-2026-101',
+    jobTitle: 'Class 9 Higher Math & Physics (Mirpur DOHS)',
+    lastMessageText: 'আজকের ক্লাসের নির্ধারিত হোমওয়ার্ক সম্পন্ন হয়েছে। আগামী ক্লাসে টেস্ট নেওয়া হবে।',
+    lastMessageTime: '2026-03-08T18:45:00.000Z',
+    unreadCountGuardian: 0,
+    unreadCountTutor: 1,
+    status: 'active',
+    subjectOrContext: 'Class 9 Higher Math & Physics'
+  },
+  {
+    id: 'conv_02',
+    participantIds: ['user_guardian_01', 'user_tutor_02'],
+    guardianId: 'user_guardian_01',
+    guardianName: 'Mrs. Farhana Begum',
+    guardianPhone: '01719876543',
+    tutorId: 'tut_02',
+    tutorName: 'Nusrat Jahan',
+    tutorPhone: '01811334455',
+    jobId: 'JOB-2026-102',
+    jobTitle: 'Class 5 English Version All Subjects (Uttara)',
+    lastMessageText: 'আসসালামু আলাইকুম আন্টি, আগামী রবিবার বিকেল ৫টায় ফ্রি ডেমো ক্লাসে আসছি।',
+    lastMessageTime: '2026-03-07T15:20:00.000Z',
+    unreadCountGuardian: 0,
+    unreadCountTutor: 0,
+    status: 'active',
+    subjectOrContext: 'Class 5 English Version All Subjects'
+  }
+];
+
+// Feature 6: Initial Messages
+const INITIAL_CHAT_MESSAGES: ChatMessage[] = [
+  {
+    id: 'msg_chat_101',
+    conversationId: 'conv_01',
+    senderId: 'user_guardian_01',
+    senderName: 'Mrs. Farhana Begum',
+    senderRole: 'guardian',
+    receiverId: 'user_tutor_01',
+    receiverName: 'Rahim Chowdhury',
+    text: 'আসসালামু আলাইকুম রহিম সাহেব। আহসান হাবিবের উচ্চতর গণিত জ্যামিতি অংশের কিছু সমস্যা আছে, এ বিষয়ে একটু বেশি নজর দিলে ভালো হয়।',
+    createdAt: '2026-03-08T14:10:00.000Z',
+    read: true,
+    messageType: 'text'
+  },
+  {
+    id: 'msg_chat_102',
+    conversationId: 'conv_01',
+    senderId: 'user_tutor_01',
+    senderName: 'Rahim Chowdhury',
+    senderRole: 'tutor',
+    receiverId: 'user_guardian_01',
+    receiverName: 'Mrs. Farhana Begum',
+    text: 'ওয়ালাইকুম আসসালাম আন্টি। অবশ্যই, আমি ইতোমধ্যে ত্রিকোণমিতি ও স্থানাঙ্ক জ্যামিতির বেসিক ক্লিয়ার করেছি। আগামী সপ্তাহে অতিরিক্ত ৩০ মিনিট সময় দিয়ে প্র্যাকটিস করাব ইনশাআল্লাহ।',
+    createdAt: '2026-03-08T14:35:00.000Z',
+    read: true,
+    messageType: 'text'
+  },
+  {
+    id: 'msg_chat_103',
+    conversationId: 'conv_01',
+    senderId: 'user_guardian_01',
+    senderName: 'Mrs. Farhana Begum',
+    senderRole: 'guardian',
+    receiverId: 'user_tutor_01',
+    receiverName: 'Rahim Chowdhury',
+    text: 'মাশাল্লাহ, খুব ভালো হবে। আগামী ক্লাসের সময় কি বিকেল ৫:০০ টাই থাকছে?',
+    createdAt: '2026-03-08T15:00:00.000Z',
+    read: true,
+    messageType: 'text'
+  },
+  {
+    id: 'msg_chat_104',
+    conversationId: 'conv_01',
+    senderId: 'user_tutor_01',
+    senderName: 'Rahim Chowdhury',
+    senderRole: 'tutor',
+    receiverId: 'user_guardian_01',
+    receiverName: 'Mrs. Farhana Begum',
+    text: 'জি আন্টি, ইনশাআল্লাহ ঠিক বিকেল ৫:০০ টায় আসব। আজকের ক্লাসের নির্ধারিত হোমওয়ার্ক সম্পন্ন হয়েছে। আগামী ক্লাসে টেস্ট নেওয়া হবে।',
+    createdAt: '2026-03-08T18:45:00.000Z',
+    read: false,
+    messageType: 'text'
+  },
+  {
+    id: 'msg_chat_201',
+    conversationId: 'conv_02',
+    senderId: 'user_guardian_01',
+    senderName: 'Mrs. Farhana Begum',
+    senderRole: 'guardian',
+    receiverId: 'user_tutor_02',
+    receiverName: 'Nusrat Jahan',
+    text: 'আসসালামু আলাইকুম নুসরাত। ক্লাস ফাইভের মেয়ের জন্য আপনার প্রোফাইলটি দেখেছি। রবিবারে কি ডেমো ক্লাস নেওয়া সম্ভব?',
+    createdAt: '2026-03-07T14:00:00.000Z',
+    read: true,
+    messageType: 'text'
+  },
+  {
+    id: 'msg_chat_202',
+    conversationId: 'conv_02',
+    senderId: 'user_tutor_02',
+    senderName: 'Nusrat Jahan',
+    senderRole: 'tutor',
+    receiverId: 'user_guardian_01',
+    receiverName: 'Mrs. Farhana Begum',
+    text: 'আসসালামু আলাইকুম আন্টি, আগামী রবিবার বিকেল ৫টায় ফ্রি ডেমো ক্লাসে আসছি। সব নোটস ও সিলেবাস রেডি আছে।',
+    createdAt: '2026-03-07T15:20:00.000Z',
+    read: true,
+    messageType: 'text'
+  }
+];
+
+// Feature 6: Initial Student Progress Reports
+const INITIAL_PROGRESS_REPORTS: StudentProgressReport[] = [
+  {
+    id: 'rep_01',
+    reportCode: 'TH-REP-2026-901',
+    tutorId: 'tut_01',
+    tutorName: 'Rahim Chowdhury',
+    tutorUniversity: 'BUET (Electrical & Electronic Engineering)',
+    guardianId: 'user_guardian_01',
+    guardianName: 'Mrs. Farhana Begum',
+    studentName: 'Ahsan Habib',
+    subject: 'Higher Mathematics & Physics',
+    classLevel: 'Class 9 (Bangla Medium)',
+    month: 'ফেব্রুয়ারি - মার্চ ২০২৬',
+    attendanceScore: 96,
+    homeworkCompletionScore: 92,
+    classAttentionScore: 88,
+    examOrQuizScore: 90,
+    overallGrade: 'A+',
+    strengths: 'বীজগণিত ও ক্যালকুলাস সম্পর্কিত ফর্মুলা দ্রুত বুঝতে পারে। ক্লাসে প্রশ্ন করার আগ্রহ চমৎকার। নিয়মিত পড়া রিভিশন দেয়।',
+    improvementsNeeded: 'জ্যামিতিক উপপাদ্য লেখার ক্ষেত্রে ধাপে ধাপে উপস্থাপন আরও নিখুঁত করতে হবে এবং সময় মেনে লেখা প্র্যাকটিস করতে হবে।',
+    tutorRemarks: 'গত ১ মাসে শিক্ষার্থীর গণিতে ভয় অনেকটাই দূর হয়েছে। নিয়মিত এই ধারাবাহিকতা বজায় রাখলে টার্ম ফাইনালে জিপিএ-৫ অর্জন নিশ্চিত।',
+    createdAt: '2026-03-05T10:00:00.000Z'
+  }
+];
+
+const STORAGE_KEY = 'tutorhat_data_v7';
 
 export interface StoreState {
   settings: SystemSettings;
@@ -1021,6 +1198,10 @@ export interface StoreState {
   adminNotes: AdminNote[];
   activityLogs: ActivityLog[];
   shortlists: { guardianId: string; tutorId: string }[];
+  conversations: ChatConversation[];
+  chatMessages: ChatMessage[];
+  progressReports: StudentProgressReport[];
+  _freshCleanV7?: boolean;
 }
 
 export function calculateCvCompletion(tutor?: Partial<TutorProfile> | null): { percent: number; missing: string[] } {
@@ -1097,13 +1278,20 @@ class Store {
 
   constructor() {
     this.state = this.loadState();
+    // Guarantee fresh clean state is persisted to v7
+    this.state._freshCleanV7 = true;
+    this.saveState();
   }
 
   private loadState(): StoreState {
     try {
-      const data = localStorage.getItem(STORAGE_KEY);
+      let data = localStorage.getItem(STORAGE_KEY);
+      if (!data) {
+        data = localStorage.getItem('tutorhat_data_v6') || localStorage.getItem('tutorhat_data_v5');
+      }
       if (data) {
         const parsed = JSON.parse(data);
+        const isFreshClean = parsed._freshCleanV7 === true;
         return {
           settings: {
             ...DEFAULT_SETTINGS,
@@ -1131,9 +1319,13 @@ class Store {
                 };
               })
             : INITIAL_TUTORS,
-          requests: Array.isArray(parsed.requests) ? parsed.requests : INITIAL_REQUESTS,
-          jobs: (Array.isArray(parsed.jobs) && parsed.jobs.length > 0) ? parsed.jobs : INITIAL_JOBS,
-          applications: Array.isArray(parsed.applications) ? parsed.applications : INITIAL_APPLICATIONS,
+          // Clear all demo guardian requests and tutor applications so user starts fresh
+          requests: isFreshClean && Array.isArray(parsed.requests) ? parsed.requests : [],
+          jobs: (Array.isArray(parsed.jobs) && parsed.jobs.length > 0) 
+            ? parsed.jobs.map((j: TuitionJob) => ({ ...j, totalApplications: isFreshClean ? (j.totalApplications || 0) : 0 })) 
+            : INITIAL_JOBS,
+          applications: isFreshClean && Array.isArray(parsed.applications) ? parsed.applications : [],
+          _freshCleanV7: true,
           demos: Array.isArray(parsed.demos) ? parsed.demos : INITIAL_DEMOS,
           confirmations: Array.isArray(parsed.confirmations) ? parsed.confirmations : INITIAL_CONFIRMATIONS,
           attendance: Array.isArray(parsed.attendance) ? parsed.attendance : INITIAL_ATTENDANCE,
@@ -1159,7 +1351,10 @@ class Store {
           referrals: Array.isArray(parsed.referrals) ? parsed.referrals : INITIAL_REFERRALS,
           adminNotes: Array.isArray(parsed.adminNotes) ? parsed.adminNotes : INITIAL_ADMIN_NOTES,
           activityLogs: Array.isArray(parsed.activityLogs) ? parsed.activityLogs : INITIAL_ACTIVITY_LOGS,
-          shortlists: Array.isArray(parsed.shortlists) ? parsed.shortlists : [{ guardianId: 'user_guardian_01', tutorId: 'tut_01' }]
+          shortlists: Array.isArray(parsed.shortlists) ? parsed.shortlists : [{ guardianId: 'user_guardian_01', tutorId: 'tut_01' }],
+          conversations: Array.isArray(parsed.conversations) ? parsed.conversations : INITIAL_CONVERSATIONS,
+          chatMessages: Array.isArray(parsed.chatMessages) ? parsed.chatMessages : INITIAL_CHAT_MESSAGES,
+          progressReports: Array.isArray(parsed.progressReports) ? parsed.progressReports : INITIAL_PROGRESS_REPORTS
         };
       }
     } catch {
@@ -1185,7 +1380,10 @@ class Store {
       referrals: INITIAL_REFERRALS,
       adminNotes: INITIAL_ADMIN_NOTES,
       activityLogs: INITIAL_ACTIVITY_LOGS,
-      shortlists: [{ guardianId: 'user_guardian_01', tutorId: 'tut_01' }]
+      shortlists: [{ guardianId: 'user_guardian_01', tutorId: 'tut_01' }],
+      conversations: INITIAL_CONVERSATIONS,
+      chatMessages: INITIAL_CHAT_MESSAGES,
+      progressReports: INITIAL_PROGRESS_REPORTS
     };
   }
 
@@ -1567,6 +1765,8 @@ class Store {
       type: 'job'
     });
 
+    this.notifyMatchingTutorsForJob(newJob);
+
     this.logActivity('REQUEST_CONVERTED_TO_JOB', `Converted request ${requestId} to job ${jobId}`);
     this.saveState();
     return newJob;
@@ -1584,6 +1784,38 @@ class Store {
     this.saveState();
   }
 
+  // Automatic Notification to matching tutors based on their preferred areas (Requirement 3)
+  public notifyMatchingTutorsForJob(job: TuitionJob) {
+    if (!job || job.status !== 'published') return;
+
+    const jobArea = (job.area || '').toLowerCase().trim();
+    const jobDistrict = (job.district || '').toLowerCase().trim();
+
+    const matchingTutors = this.state.tutors.filter(t => {
+      const areaMatches = Array.isArray(t.preferredAreas) && t.preferredAreas.some(area => {
+        const a = area.toLowerCase().trim();
+        return a === jobArea || jobArea.includes(a) || a.includes(jobArea);
+      });
+      const districtMatches = t.district && jobDistrict && t.district.toLowerCase().trim() === jobDistrict;
+      return areaMatches || districtMatches;
+    });
+
+    matchingTutors.forEach(tutor => {
+      const alreadyNotified = this.state.notifications.some(
+        n => n.userId === tutor.userId && n.message.includes(job.id)
+      );
+      if (!alreadyNotified) {
+        this.addNotification({
+          userId: tutor.userId,
+          title: `নতুন টিউশন অফার (${job.area})`,
+          message: `আপনার পছন্দের এলাকা "${job.area}, ${job.district}"-এ নতুন টিউশন সার্কুলার [${job.id}] প্রকাশিত হয়েছে: ${job.title} (সম্মানী: ৳${job.salary.toLocaleString()}/মাস)। এখনই বিস্তারিত দেখুন ও আবেদন করুন!`,
+          type: 'job',
+          actionUrl: 'tuition-jobs'
+        });
+      }
+    });
+  }
+
   // Jobs Management (Admin Section 33)
   public createJob(jobData: Omit<TuitionJob, 'id' | 'totalApplications'>): TuitionJob {
     const id = `JOB-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
@@ -1594,6 +1826,11 @@ class Store {
     };
     this.state.jobs = [newJob, ...this.state.jobs];
     this.logActivity('JOB_CREATED', `Created tuition job ${id}`);
+    
+    if (newJob.status === 'published') {
+      this.notifyMatchingTutorsForJob(newJob);
+    }
+
     this.saveState();
     return newJob;
   }
@@ -1601,12 +1838,26 @@ class Store {
   public editJob(jobId: string, updates: Partial<TuitionJob>) {
     this.state.jobs = this.state.jobs.map(j => j.id === jobId ? { ...j, ...updates } : j);
     this.logActivity('JOB_EDITED', `Updated tuition job ${jobId}`);
+
+    const updatedJob = this.state.jobs.find(j => j.id === jobId);
+    if (updatedJob && updatedJob.status === 'published') {
+      this.notifyMatchingTutorsForJob(updatedJob);
+    }
+
     this.saveState();
   }
 
   public updateJobStatus(jobId: string, status: TuitionJobStatus) {
     this.state.jobs = this.state.jobs.map(j => j.id === jobId ? { ...j, status } : j);
     this.logActivity('JOB_STATUS_UPDATED', `Set job ${jobId} status to ${status}`);
+
+    if (status === 'published') {
+      const updatedJob = this.state.jobs.find(j => j.id === jobId);
+      if (updatedJob) {
+        this.notifyMatchingTutorsForJob(updatedJob);
+      }
+    }
+
     this.saveState();
   }
 
@@ -1727,6 +1978,36 @@ class Store {
     this.saveState();
   }
 
+  public editApplication(appId: string, updates: Partial<JobApplication>, performedBy: string = 'Admin') {
+    this.state.applications = this.state.applications.map(a => a.id === appId ? { ...a, ...updates } : a);
+    this.logActivity('APPLICATION_EDITED', `Updated application ${appId}`, performedBy);
+    this.saveState();
+  }
+
+  public deleteApplication(appId: string, performedBy: string = 'Admin') {
+    const app = this.state.applications.find(a => a.id === appId);
+    if (app) {
+      this.state.applications = this.state.applications.filter(a => a.id !== appId);
+      this.state.jobs = this.state.jobs.map(j => {
+        if (j.id === app.jobId && j.totalApplications > 0) {
+          return { ...j, totalApplications: j.totalApplications - 1 };
+        }
+        return j;
+      });
+      this.logActivity('APPLICATION_DELETED', `Deleted application ${appId} for job ${app.jobId}`, performedBy);
+      this.saveState();
+    }
+  }
+
+  public clearAllRequestsAndApplications(performedBy: string = 'Admin') {
+    this.state.requests = [];
+    this.state.applications = [];
+    this.state.jobs = this.state.jobs.map(j => ({ ...j, totalApplications: 0 }));
+    this.logActivity('DATA_RESET', `Cleared all demo guardian requests and tutor applications`, performedBy);
+    this.saveState();
+    this.notify();
+  }
+
   // Shortlisting
   public toggleShortlist(guardianId: string, tutorId: string) {
     const exists = this.state.shortlists.some(s => s.guardianId === guardianId && s.tutorId === tutorId);
@@ -1751,26 +2032,31 @@ class Store {
     return this.state.shortlists.some(s => s.guardianId === guardianId && s.tutorId === tutorId);
   }
 
-  // Demo Classes
+  // Demo Classes (Feature 4: Free Demo Class Booking & Scheduling System)
   public scheduleDemoClass(demoData: Omit<DemoClass, 'id'>): DemoClass {
     const id = `demo_${Date.now()}`;
-    const newDemo: DemoClass = { ...demoData, id };
+    const newDemo: DemoClass = { 
+      ...demoData, 
+      id,
+      meetingLink: demoData.meetingLink || (demoData.mode === 'online' ? `https://meet.google.com/tuh-${Math.random().toString(36).substring(2, 6)}-${Math.random().toString(36).substring(2, 5)}` : undefined),
+      createdAt: demoData.createdAt || new Date().toISOString().split('T')[0]
+    };
     this.state.demos = [newDemo, ...this.state.demos];
 
     const tutor = this.getTutorById(demoData.tutorId);
     if (tutor) {
       this.addNotification({
         userId: tutor.userId,
-        title: 'New Demo Class Scheduled',
-        message: `Demo class scheduled on ${demoData.date} at ${demoData.time} with ${demoData.guardianName}.`,
+        title: 'নতুন ফ্রি ডেমো ক্লাস বুকিং! (New Demo Request)',
+        message: `${demoData.guardianName} আপনার সাথে ${demoData.date} তারিখে ${demoData.time}-এ একটি ডেমো ক্লাস বুক করেছেন। বিষয়: ${demoData.subject || 'সাধারণ পাঠদান'}।`,
         type: 'demo'
       });
     }
 
     this.addNotification({
       userId: demoData.guardianId,
-      title: 'Demo Class Scheduled with Tutor',
-      message: `Demo class scheduled on ${demoData.date} at ${demoData.time} with tutor ${demoData.tutorName}.`,
+      title: 'ফ্রি ডেমো ক্লাস নিশ্চিতকরণ',
+      message: `শিক্ষক ${demoData.tutorName}-এর সাথে আপনার ডেমো ক্লাস নির্ধারিত হয়েছে। তারিখ: ${demoData.date}, সময়: ${demoData.time}।`,
       type: 'demo'
     });
 
@@ -1779,19 +2065,193 @@ class Store {
     return newDemo;
   }
 
-  public updateDemoResult(demoId: string, result: 'selected' | 'not_selected' | 'further_review', notes?: string) {
+  public bookFreeDemo(data: {
+    tutorId: string;
+    tutorName: string;
+    tutorPhone?: string;
+    tutorPhoto?: string;
+    tutorUniversity?: string;
+    guardianId: string;
+    guardianName: string;
+    guardianPhone: string;
+    studentName: string;
+    studentGrade: string;
+    subject: string;
+    date: string;
+    time: string;
+    mode: 'home' | 'online';
+    location?: string;
+    notes?: string;
+    jobId?: string;
+    jobTitle?: string;
+  }): DemoClass {
+    const tutor = this.getTutorById(data.tutorId);
+    const tutorPhoto = data.tutorPhoto || tutor?.photo;
+    const tutorUniversity = data.tutorUniversity || tutor?.university;
+    const tutorPhone = data.tutorPhone || tutor?.phone || '01711223344';
+
+    return this.scheduleDemoClass({
+      tutorId: data.tutorId,
+      tutorName: data.tutorName,
+      tutorPhone,
+      tutorPhoto,
+      tutorUniversity,
+      guardianId: data.guardianId,
+      guardianName: data.guardianName,
+      guardianPhone: data.guardianPhone,
+      jobId: data.jobId || `JOB-DEMO-${Date.now().toString().slice(-4)}`,
+      jobTitle: data.jobTitle || `${data.studentGrade} - ${data.subject} ফ্রি ডেমো ক্লাস`,
+      studentName: data.studentName,
+      studentGrade: data.studentGrade,
+      subject: data.subject,
+      location: data.location || (data.mode === 'home' ? 'অভিভাবকের বাসা' : 'অনলাইন সেশন'),
+      date: data.date,
+      time: data.time,
+      mode: data.mode,
+      notes: data.notes || 'অভিভাবক কর্তৃক ফ্রি ট্রায়াল ডেমো ক্লাস বুকিং।',
+      status: 'scheduled'
+    });
+  }
+
+  public rescheduleDemo(demoId: string, newDate: string, newTime: string, reason?: string) {
+    this.state.demos = this.state.demos.map(d => {
+      if (d.id === demoId) {
+        return {
+          ...d,
+          date: newDate,
+          time: newTime,
+          status: 'rescheduled',
+          notes: reason ? `${d.notes || ''} [রি-শিডিউল কারণ: ${reason}]` : d.notes
+        };
+      }
+      return d;
+    });
+
+    const targetDemo = this.state.demos.find(d => d.id === demoId);
+    if (targetDemo) {
+      const tutor = this.getTutorById(targetDemo.tutorId);
+      if (tutor) {
+        this.addNotification({
+          userId: tutor.userId,
+          title: 'ডেমো ক্লাসের সময় পরিবর্তন হয়েছে (Rescheduled)',
+          message: `${targetDemo.guardianName}-এর ডেমো ক্লাসের নতুন সময়: ${newDate}, ${newTime}।`,
+          type: 'demo'
+        });
+      }
+      this.addNotification({
+        userId: targetDemo.guardianId,
+        title: 'ডেমো ক্লাসের সময় আপডেট হয়েছে',
+        message: `শিক্ষক ${targetDemo.tutorName}-এর সাথে ডেমো ক্লাসের নতুন সময়: ${newDate}, ${newTime}।`,
+        type: 'demo'
+      });
+    }
+
+    this.logActivity('DEMO_RESCHEDULED', `Demo ${demoId} rescheduled to ${newDate} at ${newTime}`);
+    this.saveState();
+  }
+
+  public cancelDemo(demoId: string, reason?: string) {
+    this.state.demos = this.state.demos.map(d => {
+      if (d.id === demoId) {
+        return {
+          ...d,
+          status: 'cancelled',
+          notes: reason ? `${d.notes || ''} [বাতিলের কারণ: ${reason}]` : d.notes
+        };
+      }
+      return d;
+    });
+
+    const targetDemo = this.state.demos.find(d => d.id === demoId);
+    if (targetDemo) {
+      const tutor = this.getTutorById(targetDemo.tutorId);
+      if (tutor) {
+        this.addNotification({
+          userId: tutor.userId,
+          title: 'ডেমো ক্লাস বাতিল হয়েছে',
+          message: `${targetDemo.guardianName}-এর সাথে ডেমো ক্লাসটি বাতিল করা হয়েছে। কারণ: ${reason || 'অভিভাবকের অনুরোধ'}`,
+          type: 'demo'
+        });
+      }
+    }
+
+    this.logActivity('DEMO_CANCELLED', `Demo ${demoId} was cancelled`);
+    this.saveState();
+  }
+
+  public updateDemoResult(
+    demoId: string, 
+    result: 'selected' | 'not_selected' | 'further_review', 
+    guardianFeedback?: string, 
+    tutorFeedback?: string
+  ) {
     this.state.demos = this.state.demos.map(d => {
       if (d.id === demoId) {
         return {
           ...d,
           result,
           status: 'completed',
-          notes: notes || d.notes
+          guardianFeedback: guardianFeedback || d.guardianFeedback,
+          tutorFeedback: tutorFeedback || d.tutorFeedback
         };
       }
       return d;
     });
+
+    const targetDemo = this.state.demos.find(d => d.id === demoId);
+    if (targetDemo) {
+      const tutor = this.getTutorById(targetDemo.tutorId);
+      if (tutor) {
+        const msg = result === 'selected' 
+          ? `অভিনন্দন! ডেমো ক্লাস সফল হয়েছে এবং অভিভাবক আপনাকে নির্বাচন করেছেন।`
+          : `ডেমো ক্লাসের ফলাফল আপডেট হয়েছে: ${result}।`;
+        this.addNotification({
+          userId: tutor.userId,
+          title: 'ডেমো ক্লাসের মূল্যায়ন ফলাফল',
+          message: msg,
+          type: 'demo'
+        });
+      }
+    }
+
+    this.logActivity('DEMO_RESULT_UPDATED', `Demo ${demoId} result updated to ${result}`);
     this.saveState();
+  }
+
+  public hireTutorAfterDemo(
+    demoId: string, 
+    monthlyFee: number, 
+    daysPerWeek: number, 
+    startDate: string,
+    location?: string,
+    specialInstructions?: string
+  ): TuitionConfirmation | null {
+    const demo = this.state.demos.find(d => d.id === demoId);
+    if (!demo) return null;
+
+    // 1. Mark demo as completed and selected
+    this.updateDemoResult(demoId, 'selected', 'অভিভাবক কর্তৃক ডেমো ক্লাসের পর সরাসরি টিউশন কনফার্ম করা হয়েছে।');
+
+    // 2. Create official TuitionConfirmation
+    const newConf = this.confirmTuition({
+      tutorId: demo.tutorId,
+      tutorName: demo.tutorName,
+      guardianId: demo.guardianId,
+      guardianName: demo.guardianName,
+      studentName: demo.studentName || 'শিক্ষার্থী',
+      jobId: demo.jobId,
+      jobTitle: demo.jobTitle,
+      startDate: startDate || new Date().toISOString().split('T')[0],
+      monthlyFee: monthlyFee || 7000,
+      daysPerWeek: daysPerWeek || 3,
+      scheduleTime: demo.time || 'সন্ধ্যা ৬:০০ টা',
+      location: location || demo.location || 'অভিভাবকের বাসা',
+      teachingMode: demo.mode,
+      specialInstructions: specialInstructions || 'ফ্রি ডেমো ক্লাসের সন্তোষজনক মূল্যায়নের ভিত্তিতে চূড়ান্ত টিউশন নিয়োগ।',
+      status: 'confirmed'
+    });
+
+    return newConf;
   }
 
   // Tuition Confirmation
@@ -1815,16 +2275,240 @@ class Store {
     return newConf;
   }
 
-  // Attendance
-  public addAttendance(record: Omit<AttendanceRecord, 'id'>): AttendanceRecord {
+  // Feature 5: Tuition Agreement, Attendance Log, Salary Receipts & Verified Certificates
+  public updateConfirmationStatus(confId: string, status: 'confirmed' | 'cancelled' | 'completed') {
+    this.state.confirmations = this.state.confirmations.map(c => {
+      if (c.id === confId) {
+        return { ...c, status };
+      }
+      return c;
+    });
+
+    const target = this.state.confirmations.find(c => c.id === confId);
+    if (target) {
+      const tutor = this.getTutorById(target.tutorId);
+      if (tutor) {
+        this.addNotification({
+          userId: tutor.userId,
+          title: `টিউশন স্ট্যাটাস আপডেট: ${status.toUpperCase()}`,
+          message: `${target.guardianName}-এর সাথে "${target.jobTitle}" টিউশনের স্ট্যাটাস পরিবর্তিত হয়েছে: ${status}।`,
+          type: 'confirmation'
+        });
+      }
+      this.addNotification({
+        userId: target.guardianId,
+        title: `টিউশন চুক্তি স্ট্যাটাস আপডেট`,
+        message: `শিক্ষক ${target.tutorName}-এর সাথে টিউশন স্ট্যাটাস: ${status}।`,
+        type: 'confirmation'
+      });
+    }
+
+    this.logActivity('CONFIRMATION_STATUS_UPDATED', `Tuition ${confId} status updated to ${status}`);
+    this.saveState();
+  }
+
+  // Feature 5: Class Attendance & Study Log Tracker
+  public logClassAttendance(record: Omit<AttendanceRecord, 'id'>): AttendanceRecord {
     const id = `att_${Date.now()}`;
-    const newRecord: AttendanceRecord = { ...record, id };
+    const newRecord: AttendanceRecord = {
+      ...record,
+      id,
+      durationMinutes: record.durationMinutes || 90,
+      time: record.time || '০৫:৩০ PM',
+      verifiedByGuardian: record.verifiedByGuardian || false
+    };
     this.state.attendance = [newRecord, ...this.state.attendance];
+
+    // Increment completed classes count in TuitionConfirmation if matching
+    this.state.confirmations = this.state.confirmations.map(c => {
+      if ((c.jobId && c.jobId === record.jobId) || (c.tutorId === record.tutorId && c.guardianId === record.guardianId)) {
+        return {
+          ...c,
+          completedClassesCount: (c.completedClassesCount || 0) + 1
+        };
+      }
+      return c;
+    });
+
+    // Notify Guardian of class log
+    this.addNotification({
+      userId: record.guardianId,
+      title: 'নতুন ক্লাস হাজিরা ও পড়া লগ করা হয়েছে',
+      message: `শিক্ষক ${record.tutorName} আজকের ক্লাস সম্পন্ন করেছেন। শিক্ষার্থী: ${record.studentName}। বিষয়/পাঠ: ${record.topicsCovered || record.notes || 'সাধারণ পাঠদান'}। হাজিরা ভেরিফাই করুন।`,
+      type: 'system'
+    });
+
+    this.logActivity('ATTENDANCE_LOGGED', `Tutor ${record.tutorName} logged attendance for ${record.studentName} on ${record.date}`);
     this.saveState();
     return newRecord;
   }
 
-  // Payment Tracking
+  public verifyAttendance(attendanceId: string, verified: boolean = true) {
+    this.state.attendance = this.state.attendance.map(a => {
+      if (a.id === attendanceId) {
+        return {
+          ...a,
+          verifiedByGuardian: verified,
+          verifiedDate: verified ? new Date().toISOString().split('T')[0] : undefined
+        };
+      }
+      return a;
+    });
+
+    const target = this.state.attendance.find(a => a.id === attendanceId);
+    if (target) {
+      const tutor = this.getTutorById(target.tutorId);
+      if (tutor && verified) {
+        this.addNotification({
+          userId: tutor.userId,
+          title: 'ক্লাস হাজিরা সত্যায়িত হয়েছে ✓',
+          message: `অভিভাবক ${target.date} তারিখের (${target.studentName}) ক্লাস উপস্থিতি ও পাঠ অনুমোদন করেছেন।`,
+          type: 'system'
+        });
+      }
+    }
+
+    this.logActivity('ATTENDANCE_VERIFIED', `Attendance ${attendanceId} verified: ${verified}`);
+    this.saveState();
+  }
+
+  public deleteAttendance(attendanceId: string) {
+    this.state.attendance = this.state.attendance.filter(a => a.id !== attendanceId);
+    this.logActivity('ATTENDANCE_DELETED', `Attendance ${attendanceId} removed`);
+    this.saveState();
+  }
+
+  // Feature 5: Tuition Salary & Fee Payment Receipts
+  public recordTuitionPayment(paymentData: {
+    confId?: string;
+    tutorId: string;
+    tutorName: string;
+    guardianId: string;
+    guardianName: string;
+    studentName?: string;
+    jobId: string;
+    amount: number;
+    month: string;
+    paymentMethod: 'bkash' | 'nagad' | 'rocket' | 'bank' | 'cash';
+    transactionId?: string;
+    notes?: string;
+  }): PaymentRecord {
+    const id = `PAY-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
+    const receiptNumber = `TH-REC-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
+
+    const newPayment: PaymentRecord = {
+      id,
+      tutorId: paymentData.tutorId,
+      tutorName: paymentData.tutorName,
+      guardianId: paymentData.guardianId,
+      guardianName: paymentData.guardianName,
+      studentName: paymentData.studentName || 'শিক্ষার্থী',
+      jobId: paymentData.jobId,
+      amount: paymentData.amount,
+      month: paymentData.month,
+      paymentDate: new Date().toISOString().split('T')[0],
+      status: 'paid',
+      paymentMethod: paymentData.paymentMethod,
+      transactionId: paymentData.transactionId || `TRX${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+      receiptNumber,
+      paidAt: new Date().toISOString(),
+      acknowledgedByTutor: false,
+      notes: paymentData.notes || `${paymentData.month} মাসের টিউশন ফি পরিশোধিত।`
+    };
+
+    // If there was an existing 'due' payment for the same tutor, guardian and month, update or replace it
+    const existingDueIndex = this.state.payments.findIndex(
+      p => p.tutorId === paymentData.tutorId && p.guardianId === paymentData.guardianId && p.month === paymentData.month && p.status === 'due'
+    );
+
+    if (existingDueIndex >= 0) {
+      this.state.payments[existingDueIndex] = newPayment;
+    } else {
+      this.state.payments = [newPayment, ...this.state.payments];
+    }
+
+    const tutor = this.getTutorById(paymentData.tutorId);
+    if (tutor) {
+      this.addNotification({
+        userId: tutor.userId,
+        title: 'টিউশন ফি / বেতন জমা হয়েছে! ৳' + paymentData.amount.toLocaleString(),
+        message: `${paymentData.guardianName} আপনার ${paymentData.month}-এর বেতন পরিশোধ করেছেন (${paymentData.paymentMethod.toUpperCase()} TrxID: ${newPayment.transactionId})। মানি রিসিট নং: ${receiptNumber}।`,
+        type: 'payment'
+      });
+    }
+
+    this.addNotification({
+      userId: paymentData.guardianId,
+      title: 'পেমেন্ট সফল ও ডিজিটাল মানি রিসিট প্রস্তুত',
+      message: `শিক্ষক ${paymentData.tutorName}-কে ৳${paymentData.amount.toLocaleString()} সফলভাবে পরিশোধ হয়েছে। মানি রিসিট নং: ${receiptNumber}।`,
+      type: 'payment'
+    });
+
+    this.logActivity('PAYMENT_RECORDED', `Payment of ৳${paymentData.amount} recorded by ${paymentData.guardianName} for tutor ${paymentData.tutorName} (Receipt: ${receiptNumber})`);
+    this.saveState();
+    return newPayment;
+  }
+
+  public acknowledgePayment(paymentId: string) {
+    this.state.payments = this.state.payments.map(p => {
+      if (p.id === paymentId) {
+        return { ...p, acknowledgedByTutor: true };
+      }
+      return p;
+    });
+
+    const target = this.state.payments.find(p => p.id === paymentId);
+    if (target) {
+      this.addNotification({
+        userId: target.guardianId,
+        title: 'শিক্ষক কর্তৃক বেতন প্রাপ্তি নিশ্চিতকরণ ✓',
+        message: `শিক্ষক ${target.tutorName} ${target.month}-এর বেতন (৳${target.amount.toLocaleString()}) হস্তগত হওয়ার স্বীকৃতি দিয়েছেন।`,
+        type: 'payment'
+      });
+    }
+
+    this.logActivity('PAYMENT_ACKNOWLEDGED', `Payment ${paymentId} acknowledged by tutor`);
+    this.saveState();
+  }
+
+  public requestSalaryInvoice(tutorId: string, guardianId: string, jobId: string, month: string, amount: number, notes?: string): PaymentRecord {
+    const id = `PAY-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
+    const tutor = this.getTutorById(tutorId);
+    const guardian = this.getUserById(guardianId);
+
+    const newBill: PaymentRecord = {
+      id,
+      tutorId,
+      tutorName: tutor?.fullName || 'শিক্ষক',
+      guardianId,
+      guardianName: guardian?.name || 'অভিভাবক',
+      jobId,
+      amount,
+      month,
+      paymentDate: new Date().toISOString().split('T')[0],
+      status: 'due',
+      notes: notes || `${month} মাসের নিয়মিত টিউশন ফি রিকুয়েস্ট।`
+    };
+
+    this.state.payments = [newBill, ...this.state.payments];
+
+    this.addNotification({
+      userId: guardianId,
+      title: `টিউশন বেতনের বিল এসেছে: ${month}`,
+      message: `শিক্ষক ${tutor?.fullName || 'টিউটর'} ${month} মাসের সম্মানী বাবদ ৳${amount.toLocaleString()} পরিশোধের অনুরোধ পাঠিয়েছেন। প্ল্যাটফর্মে বিকাশ/নগদে পরিশোধ করে রিসিট সংগ্রহ করুন।`,
+      type: 'payment'
+    });
+
+    this.logActivity('INVOICE_REQUESTED', `Tutor ${tutor?.fullName} sent salary invoice of ৳${amount} for ${month} to guardian`);
+    this.saveState();
+    return newBill;
+  }
+
+  // Legacy Attendance & Payment helpers (for backwards compatibility)
+  public addAttendance(record: Omit<AttendanceRecord, 'id'>): AttendanceRecord {
+    return this.logClassAttendance(record);
+  }
+
   public addPayment(record: Omit<PaymentRecord, 'id'>): PaymentRecord {
     const id = `PAY-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
     const newRecord: PaymentRecord = { ...record, id };
@@ -1838,25 +2522,52 @@ class Store {
     this.saveState();
   }
 
-  // Certificates
+  // Feature 5: Experience Certificate Management
   public issueCertificate(cert: Omit<CertificateRecord, 'id' | 'verificationCode'>): CertificateRecord {
     const id = `CERT-TH-${Math.floor(1000 + Math.random() * 9000)}`;
     const verificationCode = `TH-VER-${new Date().getFullYear()}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const newCert: CertificateRecord = { ...cert, id, verificationCode };
+    const newCert: CertificateRecord = {
+      ...cert,
+      id,
+      verificationCode,
+      gradeHonor: cert.gradeHonor || 'Outstanding Mentor',
+      issuedBy: cert.issuedBy || 'TutorHat Academic Verification Board'
+    };
     this.state.certificates = [newCert, ...this.state.certificates];
 
     const tutor = this.getTutorById(cert.tutorId);
     if (tutor) {
       this.addNotification({
         userId: tutor.userId,
-        title: 'New Certificate Awarded!',
-        message: `You have been awarded certificate: "${cert.title}". Verification ID: ${verificationCode}`,
+        title: 'নতুন অফিসিয়াল সার্টিফিকেট প্রদান করা হয়েছে! 🎖️',
+        message: `অভিনন্দন! আপনাকে "${cert.title}" প্রশংসাপত্র ও এক্সপেরিয়েন্স সার্টিফিকেট প্রদান করা হয়েছে। ভেরিফিকেশন আইডি: ${verificationCode}। ড্যাশবোর্ড থেকে সার্টিফিকেট ডাউনলোড/প্রিন্ট করুন।`,
         type: 'system'
       });
     }
 
+    this.logActivity('CERTIFICATE_ISSUED', `Issued certificate "${cert.title}" to tutor ${cert.tutorName} (${verificationCode})`);
     this.saveState();
     return newCert;
+  }
+
+  public revokeCertificate(certId: string) {
+    this.updateCertificateStatus(certId, 'revoked');
+    this.logActivity('CERTIFICATE_REVOKED', `Certificate ${certId} was revoked`);
+    this.saveState();
+  }
+
+  public updateCertificateStatus(certId: string, status: 'active' | 'revoked') {
+    this.state.certificates = this.state.certificates.map(c => {
+      if (c.id === certId) {
+        return { ...c, status };
+      }
+      return c;
+    });
+    this.saveState();
+  }
+
+  public getUserById(userId: string): User | undefined {
+    return this.state.users.find(u => u.id === userId);
   }
 
   // Feature 2: Reviews & Ratings System
@@ -2348,6 +3059,219 @@ class Store {
       unreadMessages,
       activeNotices
     };
+  }
+
+  // =====================================================================
+  // FEATURE 6: IN-APP DIRECT CHAT & LIVE MESSAGING HUB
+  // =====================================================================
+  public getConversationsForUser(userId: string): ChatConversation[] {
+    return this.state.conversations.filter(c => c.participantIds.includes(userId));
+  }
+
+  public getMessagesForConversation(conversationId: string): ChatMessage[] {
+    return this.state.chatMessages.filter(m => m.conversationId === conversationId);
+  }
+
+  public getOrCreateConversation(
+    guardianUserId: string,
+    tutorIdOrUserId: string,
+    jobId?: string,
+    jobTitle?: string,
+    context?: string
+  ): ChatConversation {
+    // Find tutor profile or user
+    const tutor = this.getTutorById(tutorIdOrUserId) || this.state.tutors.find(t => t.userId === tutorIdOrUserId) || this.state.tutors[0];
+    const guardian = this.getUserById(guardianUserId) || this.state.users.find(u => u.id === guardianUserId);
+
+    const tutorUserId = tutor.userId || tutorIdOrUserId;
+
+    // Check if conversation already exists between these users
+    const existing = this.state.conversations.find(c => 
+      c.participantIds.includes(guardianUserId) && c.participantIds.includes(tutorUserId)
+    );
+
+    if (existing) {
+      return existing;
+    }
+
+    const newConv: ChatConversation = {
+      id: `conv_${Date.now()}`,
+      participantIds: [guardianUserId, tutorUserId],
+      guardianId: guardianUserId,
+      guardianName: guardian?.name || 'অভিভাবক',
+      guardianPhone: guardian?.phone || '',
+      tutorId: tutor.id,
+      tutorName: tutor.fullName || 'শিক্ষক',
+      tutorPhone: tutor.phone || '',
+      jobId: jobId || '',
+      jobTitle: jobTitle || '',
+      lastMessageText: 'চ্যাট সেশন শুরু হয়েছে',
+      lastMessageTime: new Date().toISOString(),
+      unreadCountGuardian: 0,
+      unreadCountTutor: 0,
+      status: 'active',
+      subjectOrContext: context || jobTitle || `${tutor.fullName} ও ${guardian?.name || 'অভিভাবক'} টিউশন আলোচনা`
+    };
+
+    this.state.conversations = [newConv, ...this.state.conversations];
+    this.saveState();
+    return newConv;
+  }
+
+  public sendChatMessage(params: {
+    conversationId: string;
+    senderId: string;
+    senderName: string;
+    senderRole: 'tutor' | 'guardian' | 'admin';
+    receiverId: string;
+    receiverName: string;
+    text: string;
+    messageType?: 'text' | 'template' | 'system' | 'proposal';
+    receiverRole?: 'tutor' | 'guardian' | 'admin';
+  }): ChatMessage {
+    const newMsg: ChatMessage = {
+      id: `msg_chat_${Date.now()}`,
+      conversationId: params.conversationId,
+      senderId: params.senderId,
+      senderName: params.senderName,
+      senderRole: params.senderRole,
+      receiverId: params.receiverId,
+      receiverName: params.receiverName,
+      text: params.text,
+      createdAt: new Date().toISOString(),
+      read: false,
+      messageType: params.messageType || 'text'
+    };
+
+    this.state.chatMessages = [...this.state.chatMessages, newMsg];
+
+    // Update conversation
+    this.state.conversations = this.state.conversations.map(c => {
+      if (c.id === params.conversationId) {
+        const isReceiverGuardian = params.receiverRole === 'guardian' || params.senderRole === 'tutor' || c.guardianId === params.receiverId;
+        return {
+          ...c,
+          lastMessageText: params.text,
+          lastMessageTime: newMsg.createdAt,
+          unreadCountGuardian: isReceiverGuardian ? c.unreadCountGuardian + 1 : c.unreadCountGuardian,
+          unreadCountTutor: !isReceiverGuardian ? c.unreadCountTutor + 1 : c.unreadCountTutor
+        };
+      }
+      return c;
+    });
+
+    // Notify receiver
+    this.addNotification({
+      userId: params.receiverId,
+      title: `নতুন মেসেজ: ${params.senderName}`,
+      message: params.text.length > 50 ? params.text.substring(0, 50) + '...' : params.text,
+      type: 'system'
+    });
+
+    this.logActivity('CHAT_MESSAGE_SENT', `Chat message sent from ${params.senderName} to ${params.receiverName}`);
+    this.saveState();
+    return newMsg;
+  }
+
+  public markConversationAsRead(conversationId: string, currentUserId: string) {
+    this.state.chatMessages = this.state.chatMessages.map(m => {
+      if (m.conversationId === conversationId && m.receiverId === currentUserId && !m.read) {
+        return { ...m, read: true };
+      }
+      return m;
+    });
+
+    this.state.conversations = this.state.conversations.map(c => {
+      if (c.id === conversationId) {
+        if (c.guardianId === currentUserId) {
+          return { ...c, unreadCountGuardian: 0 };
+        } else {
+          return { ...c, unreadCountTutor: 0 };
+        }
+      }
+      return c;
+    });
+
+    this.saveState();
+  }
+
+  public getAllConversations(): ChatConversation[] {
+    return this.state.conversations;
+  }
+
+  public deleteConversation(conversationId: string) {
+    this.state.conversations = this.state.conversations.filter(c => c.id !== conversationId);
+    this.state.chatMessages = this.state.chatMessages.filter(m => m.conversationId !== conversationId);
+    this.logActivity('CONVERSATION_DELETED', `Conversation ${conversationId} deleted by admin`);
+    this.saveState();
+  }
+
+  public getUnreadChatCountForUser(userId: string): number {
+    const userConvs = this.getConversationsForUser(userId);
+    return userConvs.reduce((acc, c) => {
+      if (c.guardianId === userId) return acc + (c.unreadCountGuardian || 0);
+      return acc + (c.unreadCountTutor || 0);
+    }, 0);
+  }
+
+  public broadcastSystemMessage(conversationId: string, text: string): ChatMessage {
+    const conv = this.state.conversations.find(c => c.id === conversationId);
+    return this.sendChatMessage({
+      conversationId,
+      senderId: 'admin_sys',
+      senderName: 'TutorHat Moderation',
+      senderRole: 'admin',
+      receiverId: conv?.guardianId || '',
+      receiverName: conv?.guardianName || 'User',
+      text,
+      messageType: 'system'
+    });
+  }
+
+  // =====================================================================
+  // FEATURE 6: STUDENT PROGRESS & MONTHLY EVALUATION REPORTS
+  // =====================================================================
+  public submitProgressReport(report: Omit<StudentProgressReport, 'id' | 'reportCode' | 'createdAt'>): StudentProgressReport {
+    const id = `rep_${Date.now()}`;
+    const reportCode = `TH-REP-${new Date().getFullYear()}-${Math.floor(100 + Math.random() * 900)}`;
+    const newReport: StudentProgressReport = {
+      ...report,
+      id,
+      reportCode,
+      createdAt: new Date().toISOString()
+    };
+
+    this.state.progressReports = [newReport, ...this.state.progressReports];
+
+    // Notify guardian
+    this.addNotification({
+      userId: report.guardianId,
+      title: `শিক্ষার্থী মাসিক অগ্রগতি রিপোর্ট: ${report.studentName}`,
+      message: `শিক্ষক ${report.tutorName} ${report.studentName}-এর ${report.month} মাসের একাডেমিক অগ্রগতি রিপোর্ট প্রকাশ করেছেন। গ্রেড: ${report.overallGrade}`,
+      type: 'confirmation'
+    });
+
+    this.logActivity('PROGRESS_REPORT_SUBMITTED', `Progress report submitted for ${report.studentName} (${reportCode})`);
+    this.saveState();
+    return newReport;
+  }
+
+  public getProgressReportsForTutor(tutorId: string): StudentProgressReport[] {
+    return this.state.progressReports.filter(r => r.tutorId === tutorId);
+  }
+
+  public getProgressReportsForGuardian(guardianId: string): StudentProgressReport[] {
+    return this.state.progressReports.filter(r => r.guardianId === guardianId);
+  }
+
+  public getAllProgressReports(): StudentProgressReport[] {
+    return this.state.progressReports;
+  }
+
+  public deleteProgressReport(reportId: string) {
+    this.state.progressReports = this.state.progressReports.filter(r => r.id !== reportId);
+    this.logActivity('PROGRESS_REPORT_DELETED', `Progress report ${reportId} deleted`);
+    this.saveState();
   }
 
   // Reset & Clear Demo Data (Section 43)

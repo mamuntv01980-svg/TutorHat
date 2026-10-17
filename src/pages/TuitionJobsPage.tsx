@@ -10,7 +10,8 @@ import {
   Share2, 
   CheckCircle2, 
   ArrowRight,
-  Filter
+  Filter,
+  MessageSquare
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { 
@@ -21,9 +22,13 @@ import {
   CLASS_LEVELS 
 } from '../constants/bangladeshData';
 import { TRANSLATIONS } from '../constants/translations';
+import { ChatBoxModal } from '../components/chat/ChatBoxModal';
+import { TuitionJob } from '../types';
 
 export const TuitionJobsPage: React.FC = () => {
   const { storeState, navigateTo, language, currentUser, activeTutorProfile, settings } = useApp();
+  const [selectedChatJob, setSelectedChatJob] = useState<TuitionJob | null>(null);
+  const [chatModalOpen, setChatModalOpen] = useState(false);
   const t = TRANSLATIONS[language];
 
   // Filter States
@@ -377,6 +382,18 @@ export const TuitionJobsPage: React.FC = () => {
                     <div className="flex items-center gap-2 w-full sm:w-auto">
                       <button
                         type="button"
+                        onClick={() => {
+                          setSelectedChatJob(job);
+                          setChatModalOpen(true);
+                        }}
+                        className="p-2.5 rounded-xl border border-blue-200 bg-blue-50/70 text-blue-900 hover:bg-blue-100 transition-colors"
+                        title={language === 'bn' ? 'অভিভাবকের সাথে সরাসরি চ্যাট করুন' : 'Direct Message Guardian'}
+                      >
+                        <MessageSquare className="w-4 h-4" />
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => handleShare(job.id)}
                         className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
                         title="Share circular link"
@@ -448,6 +465,21 @@ export const TuitionJobsPage: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Feature 6: In-App Chat Modal with Guardian */}
+      {selectedChatJob && (
+        <ChatBoxModal
+          isOpen={chatModalOpen}
+          onClose={() => {
+            setChatModalOpen(false);
+            setSelectedChatJob(null);
+          }}
+          targetGuardianId={selectedChatJob.guardianId}
+          targetGuardianName={selectedChatJob.guardianName}
+          jobId={selectedChatJob.id}
+          jobTitle={selectedChatJob.title}
+        />
       )}
 
     </div>

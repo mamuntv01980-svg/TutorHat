@@ -8,7 +8,8 @@ import {
   ShieldCheck, 
   Plus, 
   Trash2,
-  Send
+  Send,
+  Sparkles
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { store, calculateCvCompletion } from '../../services/store';
@@ -82,12 +83,20 @@ export const TutorProfileEdit: React.FC = () => {
   const [teachingExperienceYears, setTeachingExperienceYears] = useState(tutor.teachingExperienceYears || 1);
   const [teachingMethod, setTeachingMethod] = useState(tutor.teachingMethod || '');
   const [preferredClasses, setPreferredClasses] = useState<string[]>(tutor.preferredClasses || []);
+  const [customClassInput, setCustomClassInput] = useState('');
+  const [showCustomClass, setShowCustomClass] = useState(false);
   const [preferredSubjects, setPreferredSubjects] = useState<string[]>(tutor.preferredSubjects || []);
+  const [customSubjectInput, setCustomSubjectInput] = useState('');
+  const [showCustomSubject, setShowCustomSubject] = useState(false);
   const [preferredMediums, setPreferredMediums] = useState<string[]>(tutor.preferredMediums || []);
+  const [customMediumInput, setCustomMediumInput] = useState('');
+  const [showCustomMedium, setShowCustomMedium] = useState(false);
   const [categories, setCategories] = useState<string[]>(tutor.categories || []);
   const [onlineTeaching, setOnlineTeaching] = useState(tutor.onlineTeaching ?? true);
   const [homeTuition, setHomeTuition] = useState(tutor.homeTuition ?? true);
   const [coachingGroupTuition, setCoachingGroupTuition] = useState(tutor.coachingGroupTuition ?? false);
+  const [customTuitionType, setCustomTuitionType] = useState('');
+  const [showCustomTuitionType, setShowCustomTuitionType] = useState(false);
   const [availableDays, setAvailableDays] = useState<string[]>(tutor.availableDays || ['Saturday', 'Monday', 'Wednesday']);
   const [availableTime, setAvailableTime] = useState(tutor.availableTime || '5:00 PM - 8:00 PM');
   const [expectedSalary, setExpectedSalary] = useState(tutor.expectedSalary || 6000);
@@ -540,9 +549,80 @@ export const TutorProfileEdit: React.FC = () => {
             </div>
           </div>
 
+          {/* Tuition Modes Checkboxes with Customise (Requirement 2) */}
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+            <label className="font-semibold text-slate-900 block text-xs">
+              পাঠদানের মোড / পদ্ধতি (Tuition Modes) *
+            </label>
+            <div className="flex flex-wrap gap-4 items-center">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={homeTuition}
+                  onChange={(e) => setHomeTuition(e.target.checked)}
+                  className="accent-blue-900 rounded"
+                />
+                <span className="font-medium text-slate-800">Home Tuition (ছাত্র/ছাত্রীর বাসায়)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={onlineTeaching}
+                  onChange={(e) => setOnlineTeaching(e.target.checked)}
+                  className="accent-blue-900 rounded"
+                />
+                <span className="font-medium text-slate-800">Online Tuition (অনলাইন)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={coachingGroupTuition}
+                  onChange={(e) => setCoachingGroupTuition(e.target.checked)}
+                  className="accent-blue-900 rounded"
+                />
+                <span className="font-medium text-slate-800">Coaching / Batch (কোচিং বা ব্যাচ)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showCustomTuitionType}
+                  onChange={(e) => setShowCustomTuitionType(e.target.checked)}
+                  className="accent-amber-600 rounded"
+                />
+                <span className="font-bold text-amber-950 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Customise {customTuitionType ? '✓' : ''}</span>
+                </span>
+              </label>
+            </div>
+
+            {showCustomTuitionType && (
+              <div className="mt-2 p-2.5 bg-amber-50/70 border border-amber-300 rounded-xl space-y-1">
+                <label className="text-[11px] font-bold text-amber-950 block">কাস্টম পাঠদান পদ্ধতি লিখুন:</label>
+                <input
+                  type="text"
+                  value={customTuitionType}
+                  onChange={(e) => setCustomTuitionType(e.target.value)}
+                  placeholder="যেমন: সেন্টারে পড়ানো, স্পেশাল চাইল্ড কেয়ার, সাপ্তাহিক মক টেস্ট..."
+                  className="w-full p-2 bg-white border border-amber-300 rounded-lg text-xs"
+                />
+              </div>
+            )}
+          </div>
+
           {/* Preferred Classes */}
           <div>
-            <label className="font-semibold text-slate-900 block mb-2">Preferred Classes * (Choose at least one)</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="font-semibold text-slate-900 block">Preferred Classes * (Choose at least one)</label>
+              <button
+                type="button"
+                onClick={() => setShowCustomClass(!showCustomClass)}
+                className="text-[11px] font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 cursor-pointer"
+              >
+                <Sparkles className="w-3 h-3 text-amber-600" />
+                <span>+ Customise Class</span>
+              </button>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {CLASS_LEVELS.map((cls) => {
                 const selected = preferredClasses.includes(cls);
@@ -551,20 +631,61 @@ export const TutorProfileEdit: React.FC = () => {
                     key={cls}
                     type="button"
                     onClick={() => toggleArrayItem(preferredClasses, setPreferredClasses, cls)}
-                    className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
-                      selected ? 'bg-blue-900 text-white border-blue-900' : 'bg-slate-50 text-slate-700 border-slate-200'
+                    className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
+                      selected ? 'bg-blue-900 text-white border-blue-900 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
                     {selected ? '✓ ' : '+ '}{cls}
                   </button>
                 );
               })}
+              <button
+                type="button"
+                onClick={() => setShowCustomClass(!showCustomClass)}
+                className="px-3 py-1.5 rounded-xl border text-xs font-bold bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100 transition-all flex items-center gap-1 cursor-pointer"
+              >
+                <Sparkles className="w-3 h-3 text-amber-600" />
+                <span>Customise</span>
+              </button>
             </div>
+            {showCustomClass && (
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g. Admission Test / Pre-School / O-Level / BCS"
+                  value={customClassInput}
+                  onChange={(e) => setCustomClassInput(e.target.value)}
+                  className="flex-1 py-1.5 px-3 bg-amber-50/50 border border-amber-300 rounded-xl text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (customClassInput.trim() && !preferredClasses.includes(customClassInput.trim())) {
+                      setPreferredClasses([...preferredClasses, customClassInput.trim()]);
+                      setCustomClassInput('');
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-bold cursor-pointer"
+                >
+                  Add
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Preferred Subjects */}
           <div>
-            <label className="font-semibold text-slate-900 block mb-2">Preferred Subjects * (Choose at least one)</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="font-semibold text-slate-900 block">Preferred Subjects * (Choose at least one)</label>
+              <button
+                type="button"
+                onClick={() => setShowCustomSubject(!showCustomSubject)}
+                className="text-[11px] font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 cursor-pointer"
+              >
+                <Sparkles className="w-3 h-3 text-amber-600" />
+                <span>+ Customise Subject</span>
+              </button>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {SUBJECTS_LIST.map((sub) => {
                 const selected = preferredSubjects.includes(sub);
@@ -573,20 +694,61 @@ export const TutorProfileEdit: React.FC = () => {
                     key={sub}
                     type="button"
                     onClick={() => toggleArrayItem(preferredSubjects, setPreferredSubjects, sub)}
-                    className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
-                      selected ? 'bg-blue-900 text-white border-blue-900' : 'bg-slate-50 text-slate-700 border-slate-200'
+                    className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
+                      selected ? 'bg-blue-900 text-white border-blue-900 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
                     {selected ? '✓ ' : '+ '}{sub}
                   </button>
                 );
               })}
+              <button
+                type="button"
+                onClick={() => setShowCustomSubject(!showCustomSubject)}
+                className="px-3 py-1.5 rounded-xl border text-xs font-bold bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100 transition-all flex items-center gap-1 cursor-pointer"
+              >
+                <Sparkles className="w-3 h-3 text-amber-600" />
+                <span>Customise</span>
+              </button>
             </div>
+            {showCustomSubject && (
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g. Higher Math, Arabic Tajweed, Python, Fine Arts..."
+                  value={customSubjectInput}
+                  onChange={(e) => setCustomSubjectInput(e.target.value)}
+                  className="flex-1 py-1.5 px-3 bg-amber-50/50 border border-amber-300 rounded-xl text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (customSubjectInput.trim() && !preferredSubjects.includes(customSubjectInput.trim())) {
+                      setPreferredSubjects([...preferredSubjects, customSubjectInput.trim()]);
+                      setCustomSubjectInput('');
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-bold cursor-pointer"
+                >
+                  Add
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Preferred Mediums */}
           <div>
-            <label className="font-semibold text-slate-900 block mb-2">Preferred Mediums / Curriculums</label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="font-semibold text-slate-900 block">Preferred Mediums / Curriculums</label>
+              <button
+                type="button"
+                onClick={() => setShowCustomMedium(!showCustomMedium)}
+                className="text-[11px] font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 cursor-pointer"
+              >
+                <Sparkles className="w-3 h-3 text-amber-600" />
+                <span>+ Customise Medium</span>
+              </button>
+            </div>
             <div className="flex flex-wrap gap-1.5">
               {MEDIUMS.map((m) => {
                 const selected = preferredMediums.includes(m);
@@ -595,22 +757,58 @@ export const TutorProfileEdit: React.FC = () => {
                     key={m}
                     type="button"
                     onClick={() => toggleArrayItem(preferredMediums, setPreferredMediums, m)}
-                    className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
-                      selected ? 'bg-blue-900 text-white border-blue-900' : 'bg-slate-50 text-slate-700 border-slate-200'
+                    className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all cursor-pointer ${
+                      selected ? 'bg-blue-900 text-white border-blue-900 shadow-xs' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
                     {selected ? '✓ ' : '+ '}{m}
                   </button>
                 );
               })}
+              <button
+                type="button"
+                onClick={() => setShowCustomMedium(!showCustomMedium)}
+                className="px-3 py-1.5 rounded-xl border text-xs font-bold bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100 transition-all flex items-center gap-1 cursor-pointer"
+              >
+                <Sparkles className="w-3 h-3 text-amber-600" />
+                <span>Customise</span>
+              </button>
             </div>
+            {showCustomMedium && (
+              <div className="mt-2 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="e.g. Edexcel, Cambridge, IB, Madrasa Hifz..."
+                  value={customMediumInput}
+                  onChange={(e) => setCustomMediumInput(e.target.value)}
+                  className="flex-1 py-1.5 px-3 bg-amber-50/50 border border-amber-300 rounded-xl text-xs"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (customMediumInput.trim() && !preferredMediums.includes(customMediumInput.trim())) {
+                      setPreferredMediums([...preferredMediums, customMediumInput.trim()]);
+                      setCustomMediumInput('');
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-amber-600 text-white rounded-xl text-xs font-bold cursor-pointer"
+                >
+                  Add
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Preferred Areas */}
+          {/* Preferred Tutoring Areas - Requirement 3 */}
           <div>
-            <label className="font-semibold text-slate-900 block mb-2">
-              পছন্দের টিউশন এলাকা (Preferred Tutoring Areas) *
-            </label>
+            <div className="mb-2">
+              <label className="font-bold text-sm text-blue-950 block">
+                কোন কোন এলাকায় টিউশন করতে চান (Preferred Tutoring Areas) *
+              </label>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                অ্যাডমিন বা অভিভাবক এই এলাকায় কোনো নতুন টিউশন অফার প্রকাশ করলে আপনার কাছে সরাসরি স্বয়ংক্রিয় নোটিফিকেশন পৌঁছে যাবে।
+              </p>
+            </div>
             
             {/* Active Selected Areas */}
             <div className="flex flex-wrap gap-1.5 mb-3 min-h-[32px] p-2 bg-slate-50 border border-slate-200 rounded-xl">

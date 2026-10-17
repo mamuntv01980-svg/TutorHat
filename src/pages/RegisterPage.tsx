@@ -9,7 +9,8 @@ import {
   ShieldCheck, 
   BookOpen, 
   Calendar, 
-  Clock 
+  Clock,
+  Sparkles 
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { store } from '../services/store';
@@ -73,14 +74,23 @@ export const RegisterPage: React.FC = () => {
 
   // Step 5: Subjects & Classes
   const [preferredClasses, setPreferredClasses] = useState<string[]>(['Class 9 (SSC)', 'Class 10 (SSC)']);
+  const [customClass, setCustomClass] = useState('');
+  const [showCustomClass, setShowCustomClass] = useState(false);
   const [preferredSubjects, setPreferredSubjects] = useState<string[]>(['Mathematics', 'Physics']);
+  const [customSubject, setCustomSubject] = useState('');
+  const [showCustomSubject, setShowCustomSubject] = useState(false);
+  const [customMedium, setCustomMedium] = useState('');
+  const [showCustomMedium, setShowCustomMedium] = useState(false);
 
   // Step 6: Teaching Preferences
   const [preferredMediums, setPreferredMediums] = useState<string[]>(['Bangla Medium', 'English Version']);
   const [preferredAreas, setPreferredAreas] = useState<string[]>(['Dhanmondi']);
+  const [customArea, setCustomArea] = useState('');
   const [expectedSalary, setExpectedSalary] = useState(6000);
   const [homeTuition, setHomeTuition] = useState(true);
   const [onlineTeaching, setOnlineTeaching] = useState(true);
+  const [customTuitionType, setCustomTuitionType] = useState('');
+  const [showCustomTuitionType, setShowCustomTuitionType] = useState(false);
 
   // Step 7: Availability
   const [availableDays, setAvailableDays] = useState<string[]>(['Saturday', 'Monday', 'Wednesday']);
@@ -843,8 +853,20 @@ export const RegisterPage: React.FC = () => {
             {currentStep === 5 && (
               <div className="space-y-4">
                 <h3 className="font-bold text-sm text-blue-950 border-b pb-2">Step 5: Classes & Subjects</h3>
+                
+                {/* Classes */}
                 <div>
-                  <label className="font-semibold block mb-1.5">Select Preferred Classes / Student Levels *</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="font-semibold block">Select Preferred Classes / Student Levels *</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomClass(!showCustomClass)}
+                      className="text-[11px] font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-600" />
+                      <span>+ Customise Class</span>
+                    </button>
+                  </div>
                   <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-200">
                     {CLASS_LEVELS.map(c => {
                       const sel = preferredClasses.includes(c);
@@ -853,7 +875,7 @@ export const RegisterPage: React.FC = () => {
                           key={c}
                           type="button"
                           onClick={() => toggleItem(preferredClasses, setPreferredClasses, c)}
-                          className={`px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+                          className={`px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
                             sel ? 'bg-blue-900 text-white border-blue-900 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                           }`}
                         >
@@ -862,10 +884,44 @@ export const RegisterPage: React.FC = () => {
                       );
                     })}
                   </div>
+                  {showCustomClass && (
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. Admission Test, O-Level, Madrasa, Special Care..."
+                        value={customClass}
+                        onChange={(e) => setCustomClass(e.target.value)}
+                        className="flex-1 py-1 px-2.5 bg-amber-50/50 border border-amber-300 rounded-lg text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (customClass.trim() && !preferredClasses.includes(customClass.trim())) {
+                            setPreferredClasses([...preferredClasses, customClass.trim()]);
+                            setCustomClass('');
+                          }
+                        }}
+                        className="px-3 py-1 bg-amber-600 text-white rounded-lg text-xs font-bold cursor-pointer"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  )}
                 </div>
 
+                {/* Subjects */}
                 <div>
-                  <label className="font-semibold block mb-1.5">Select Preferred Subjects (সকল সাধারণ ও ইসলামি বিষয়) *</label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="font-semibold block">Select Preferred Subjects (সকল সাধারণ ও ইসলামি বিষয়) *</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomSubject(!showCustomSubject)}
+                      className="text-[11px] font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-600" />
+                      <span>+ Customise Subject</span>
+                    </button>
+                  </div>
                   <div className="flex flex-wrap gap-1.5 max-h-48 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-200">
                     {SUBJECTS_LIST.map(s => {
                       const sel = preferredSubjects.includes(s);
@@ -874,7 +930,7 @@ export const RegisterPage: React.FC = () => {
                           key={s}
                           type="button"
                           onClick={() => toggleItem(preferredSubjects, setPreferredSubjects, s)}
-                          className={`px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors ${
+                          className={`px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
                             sel ? 'bg-blue-900 text-white border-blue-900 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                           }`}
                         >
@@ -883,7 +939,86 @@ export const RegisterPage: React.FC = () => {
                       );
                     })}
                   </div>
+                  {showCustomSubject && (
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. Higher Math, Arabic Tajweed, Python Programming, Art..."
+                        value={customSubject}
+                        onChange={(e) => setCustomSubject(e.target.value)}
+                        className="flex-1 py-1 px-2.5 bg-amber-50/50 border border-amber-300 rounded-lg text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (customSubject.trim() && !preferredSubjects.includes(customSubject.trim())) {
+                            setPreferredSubjects([...preferredSubjects, customSubject.trim()]);
+                            setCustomSubject('');
+                          }
+                        }}
+                        className="px-3 py-1 bg-amber-600 text-white rounded-lg text-xs font-bold cursor-pointer"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  )}
                 </div>
+
+                {/* Mediums with Customise (Requirement 2) */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="font-semibold block">Select Preferred Medium (কারিকুলাম / মাধ্যম) *</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowCustomMedium(!showCustomMedium)}
+                      className="text-[11px] font-bold text-amber-700 hover:text-amber-800 flex items-center gap-1 cursor-pointer"
+                    >
+                      <Sparkles className="w-3 h-3 text-amber-600" />
+                      <span>+ Customise Medium</span>
+                    </button>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-1 bg-slate-50 rounded-xl border border-slate-200">
+                    {MEDIUMS.map(m => {
+                      const sel = preferredMediums.includes(m);
+                      return (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => toggleItem(preferredMediums, setPreferredMediums, m)}
+                          className={`px-2.5 py-1 rounded-lg border text-xs font-medium transition-colors cursor-pointer ${
+                            sel ? 'bg-blue-900 text-white border-blue-900 shadow-xs' : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                          }`}
+                        >
+                          {sel ? '✓ ' : '+ '}{m}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {showCustomMedium && (
+                    <div className="mt-2 flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="e.g. Cambridge IGCSE, Qawmi Hifz, Special Child Care..."
+                        value={customMedium}
+                        onChange={(e) => setCustomMedium(e.target.value)}
+                        className="flex-1 py-1 px-2.5 bg-amber-50/50 border border-amber-300 rounded-lg text-xs"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (customMedium.trim() && !preferredMediums.includes(customMedium.trim())) {
+                            setPreferredMediums([...preferredMediums, customMedium.trim()]);
+                            setCustomMedium('');
+                          }
+                        }}
+                        className="px-3 py-1 bg-amber-600 text-white rounded-lg text-xs font-bold cursor-pointer"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  )}
+                </div>
+
               </div>
             )}
 
@@ -903,33 +1038,135 @@ export const RegisterPage: React.FC = () => {
                     className="w-full p-2.5 bg-slate-50 border rounded-xl font-mono text-sm font-bold"
                   />
                 </div>
-                <div className="flex gap-4 pt-1">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={homeTuition}
-                      onChange={e => setHomeTuition(e.target.checked)}
-                      className="accent-blue-900 rounded"
-                    />
-                    <span>Home Tuition (ছাত্র/ছাত্রীর বাসায়)</span>
+                
+                <div>
+                  <label className="font-semibold block mb-1.5 text-xs text-slate-800">
+                    পাঠদানের মোড (Tuition Modes) *
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={onlineTeaching}
-                      onChange={e => setOnlineTeaching(e.target.checked)}
-                      className="accent-blue-900 rounded"
-                    />
-                    <span>Online Tuition</span>
-                  </label>
+                  <div className="flex flex-wrap gap-4 pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={homeTuition}
+                        onChange={e => setHomeTuition(e.target.checked)}
+                        className="accent-blue-900 rounded"
+                      />
+                      <span>Home Tuition (ছাত্র/ছাত্রীর বাসায়)</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={onlineTeaching}
+                        onChange={e => setOnlineTeaching(e.target.checked)}
+                        className="accent-blue-900 rounded"
+                      />
+                      <span>Online Tuition</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={showCustomTuitionType}
+                        onChange={e => setShowCustomTuitionType(e.target.checked)}
+                        className="accent-amber-600 rounded"
+                      />
+                      <span className="font-bold text-amber-950 flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Customise</span>
+                      </span>
+                    </label>
+                  </div>
+
+                  {showCustomTuitionType && (
+                    <div className="mt-2.5 p-2.5 bg-amber-50/70 border border-amber-300 rounded-xl space-y-1">
+                      <label className="text-[11px] font-bold text-amber-950 block">কাস্টম পাঠদান পদ্ধতি লিখুন:</label>
+                      <input
+                        type="text"
+                        value={customTuitionType}
+                        onChange={(e) => setCustomTuitionType(e.target.value)}
+                        placeholder="যেমন: গ্রুপ কোচিং, সেন্টারে পড়ানো, স্পেশাল চাইল্ড কেয়ার..."
+                        className="w-full p-2 bg-white border border-amber-300 rounded-lg text-xs"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {/* Step 7: Availability */}
+            {/* Step 7: Availability & Preferred Tutoring Areas (Requirement 3) */}
             {currentStep === 7 && (
               <div className="space-y-4">
-                <h3 className="font-bold text-sm text-blue-950 border-b pb-2">Step 7: Schedule & Availability</h3>
+                <h3 className="font-bold text-sm text-blue-950 border-b pb-2">Step 7: Schedule & Tutoring Areas</h3>
+                
+                {/* Requirement 3: কোন কোন এলাকায় টিউশন করতে চান */}
+                <div className="p-3.5 bg-blue-50/80 border border-blue-200 rounded-2xl space-y-2">
+                  <div>
+                    <label className="font-bold text-xs text-blue-950 block">
+                      কোন কোন এলাকায় টিউশন করতে চান (Preferred Tutoring Areas) *
+                    </label>
+                    <p className="text-[11px] text-blue-800 mt-0.5">
+                      অ্যাডমিন বা কোনো অভিভাবক এই এলাকায় নতুন টিউশন অফার পোস্ট করলে আপনি সাথে সাথে স্বয়ংক্রিয় নোটিফিকেশন পাবেন।
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 min-h-[30px] p-2 bg-white rounded-xl border border-blue-200">
+                    {preferredAreas.map(a => (
+                      <span key={a} className="inline-flex items-center gap-1 bg-blue-900 text-white px-2 py-0.5 rounded-lg text-xs font-semibold">
+                        <span>{a}</span>
+                        <button
+                          type="button"
+                          onClick={() => setPreferredAreas(preferredAreas.filter(x => x !== a))}
+                          className="hover:text-rose-200 font-bold ml-0.5"
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                    {preferredAreas.length === 0 && (
+                      <span className="text-xs text-slate-400 italic">কমপক্ষে একটি এলাকা যুক্ত করুন</span>
+                    )}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="পছন্দের এলাকার নাম লিখুন (যেমন: Dhanmondi, Mirpur, Uttara...)"
+                      value={customArea}
+                      onChange={e => setCustomArea(e.target.value)}
+                      className="flex-1 py-1.5 px-3 bg-white border border-blue-300 rounded-xl text-xs"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (customArea.trim() && !preferredAreas.includes(customArea.trim())) {
+                          setPreferredAreas([...preferredAreas, customArea.trim()]);
+                          setCustomArea('');
+                        }
+                      }}
+                      className="px-3.5 py-1.5 bg-blue-900 text-white rounded-xl text-xs font-bold cursor-pointer"
+                    >
+                      + Add Area
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    <span className="text-[10px] text-slate-500 self-center mr-1">Quick Select:</span>
+                    {DHAKA_AREAS.slice(0, 8).map(a => (
+                      <button
+                        key={a}
+                        type="button"
+                        onClick={() => {
+                          if (!preferredAreas.includes(a)) setPreferredAreas([...preferredAreas, a]);
+                        }}
+                        className={`text-[10px] px-2 py-0.5 rounded-md border transition-colors ${
+                          preferredAreas.includes(a) ? 'bg-blue-100 text-blue-900 border-blue-300 font-bold' : 'bg-white text-slate-600 border-slate-200'
+                        }`}
+                      >
+                        + {a}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div>
                   <label className="font-semibold block mb-1">Available Daily Time</label>
                   <input

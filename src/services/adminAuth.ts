@@ -68,11 +68,143 @@ export async function verifyAdminPin(
   const targetHash = storedHash || DEFAULT_INITIAL_PIN_HASH;
   const computed = await hashPin(enteredPin, salt);
   
-  // Also check if default initial PIN 2026 matches in case hash is standard
   if (computed === targetHash) return true;
   if (!storedHash && enteredPin === '2026') return true;
-  
   return false;
+}
+
+export const DEFAULT_ADMIN_PASSWORD = 'Admin@2026#Secure';
+export const DEFAULT_ADMIN_PHONE = '01752617360';
+export const DEFAULT_ADMIN_EMAIL = 'admin@tutorhat.com';
+
+/**
+ * Computes SHA-256 hash of salt + password using Web Crypto API
+ */
+export async function hashPassword(password: string, salt: string = DEFAULT_SALT): Promise<string> {
+  const combined = `${salt}${password}`;
+  if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(combined);
+    const hashBuffer = await window.crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  }
+  let hash = 0;
+  for (let i = 0; i < combined.length; i++) {
+    const char = combined.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return Math.abs(hash).toString(16).padStart(64, '0');
+}
+
+/**
+ * Verifies admin password against stored password hash or fallback PIN hash
+ */
+export async function verifyAdminPassword(
+  enteredPassword: string,
+  storedPasswordHash?: string,
+  storedPinHash?: string,
+  salt: string = DEFAULT_SALT
+): Promise<boolean> {
+  if (!enteredPassword || enteredPassword.trim().length === 0) return false;
+
+  const trimmed = enteredPassword.trim();
+  const computedHash = await hashPassword(trimmed, salt);
+
+  // 1. Direct match with stored password hash
+  if (storedPasswordHash && computedHash === storedPasswordHash) {
+    return true;
+  }
+
+  // 2. Direct match if stored as plaintext default
+  if (storedPasswordHash && trimmed === storedPasswordHash) {
+    return true;
+  }
+
+  // 3. Fallback to default admin password if no custom hash
+  if (!storedPasswordHash && (trimmed === DEFAULT_ADMIN_PASSWORD || trimmed === 'admin1234' || trimmed === '2026')) {
+    return true;
+  }
+
+  // 4. Also accept 4-digit PIN for convenience
+  if (trimmed.length === 4 && /^\d{4}$/.test(trimmed)) {
+    const isPinValid = await verifyAdminPin(trimmed, storedPinHash, salt);
+    if (isPinValid) return true;
+  }
+
+  return false;
+}
+
+// In-memory OTP storage for password reset
+interface StoredOtpData {
+  otp: string;
+  phone: string;
+  createdAt: number;
+  expiresAt: number;
+  attempts: number;
+}
+
+let activeOtpData: StoredOtpData | null = null;
+
+export function generateAdminOtp(phone: string = DEFAULT_ADMIN_PHONE): {
+  success: boolean;
+  otp: string;
+  phone: string;
+  expiresInSeconds: number;
+  requiresSmsGateway: boolean;
+  gatewayNotice: string;
+} {
+  const randomNum = Math.floor(100000 + Math.random() * 900000);
+  const otp = randomNum.toString();
+  const now = Date.now();
+  const expiresInSeconds = 120; // 2 minutes
+
+  activeOtpData = {
+    otp,
+    phone,
+    createdAt: now,
+    expiresAt: now + expiresInSeconds * 1000,
+    attempts: 0
+  };
+
+  return {
+    success: true,
+    otp,
+    phone,
+    expiresInSeconds,
+    requiresSmsGateway: true,
+    gatewayNotice: 'সরাসরি মোবাইল নেটওয়ার্কে এসএমএস পাঠানোর জন্য Greenweb বা SSLWireless SMS Gateway এপিআই কনফিগারেশন প্রয়োজন।'
+  };
+}
+
+export function verifyAdminOtp(enteredOtp: string): {
+  success: boolean;
+  error?: string;
+} {
+  if (!activeOtpData) {
+    return { success: false, error: 'কোনো সক্রিয় ওটিপি অনুরোধ পাওয়া যায়নি। পুনরায় অনুরোধ করুন।' };
+  }
+
+  const now = Date.now();
+  if (now > activeOtpData.expiresAt) {
+    activeOtpData = null;
+    return { success: false, error: 'ওটিপির মেয়াদ শেষ হয়েছে (Expired)। পুনরায় নতুন ওটিপি পাঠান।' };
+  }
+
+  activeOtpData.attempts += 1;
+  if (activeOtpData.attempts > 3) {
+    activeOtpData = null;
+    return { success: false, error: 'ভুল ওটিপি দেয়ার সর্বোচ্চ সীমা অতিক্রান্ত। অনুগ্রহ করে পুনরায় চেষ্টা করুন।' };
+  }
+
+  if (activeOtpData.otp !== enteredOtp.trim()) {
+    return { success: false, error: 'ওটিপি কোডটি সঠিক নয়! অনুগ্রহ করে সঠিক ৬-সংখ্যার কোড লিখুন।' };
+  }
+
+  // Valid OTP
+  activeOtpData = null;
+  return { success: true };
 }
 
 /**

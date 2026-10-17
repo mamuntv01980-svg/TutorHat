@@ -92,7 +92,7 @@ export const TutorReviewsSection: React.FC<TutorReviewsSectionProps> = ({
               <Sparkles className="w-3 h-3 text-amber-600" />
               {language === 'bn' ? 'যাচাইকৃত মূল্যায়ন' : 'Verified Reviews'}
             </span>
-            <span className="text-xs text-slate-400 font-medium">ফিচার ২</span>
+            <span className="text-xs text-slate-400 font-medium">অভিভাবক রেটিং</span>
           </div>
           <h3 className="text-xl font-black text-blue-950 mt-1 flex items-center gap-2">
             <span>{language === 'bn' ? 'অভিভাবক ও শিক্ষার্থীদের মতামত' : 'Ratings & Reviews'}</span>

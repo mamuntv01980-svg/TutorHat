@@ -8,6 +8,8 @@ interface WhatsAppButtonProps {
   showNumber?: boolean;
   variant?: 'green' | 'outline' | 'compact' | 'floating';
   customMessage?: string;
+  message?: string;
+  phoneNumber?: string;
 }
 
 export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
@@ -15,19 +17,27 @@ export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
   showIcon = true,
   showNumber = false,
   variant = 'green',
-  customMessage
+  customMessage,
+  message,
+  phoneNumber
 }) => {
   const { settings, language } = useApp();
   const label = language === 'bn' ? 'হোয়াটসঅ্যাপ চ্যাট' : 'WhatsApp Chat';
   
   // Clean international format without '+' or spaces for wa.me link
-  const intlClean = (settings.whatsAppIntl || settings.publicPhone || '01610582917').replace(/[^0-9]/g, '');
-  const messageText = encodeURIComponent(
-    customMessage || (language === 'bn' 
-      ? 'আসসালামু আলাইকুম! আমি TutorHat-এর সার্ভিস সম্পর্কে জানতে চাই।' 
-      : 'Hello! I would like to inquire about TutorHat services.')
-  );
+  const rawNum = phoneNumber || settings.whatsAppIntl || settings.publicPhone || '01610582917';
+  const cleanDigits = rawNum.replace(/[^0-9]/g, '');
+  const intlClean = cleanDigits.startsWith('880') 
+    ? cleanDigits 
+    : cleanDigits.startsWith('0') 
+    ? `88${cleanDigits}` 
+    : cleanDigits;
 
+  const msg = message || customMessage || (language === 'bn' 
+    ? 'আসসালামু আলাইকুম! আমি TutorHat-এর সার্ভিস সম্পর্কে জানতে চাই।' 
+    : 'Hello! I would like to inquire about TutorHat services.');
+
+  const messageText = encodeURIComponent(msg);
   const url = `https://wa.me/${intlClean}?text=${messageText}`;
 
   if (variant === 'floating') {
