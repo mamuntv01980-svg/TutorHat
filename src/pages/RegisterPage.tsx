@@ -218,7 +218,15 @@ export const RegisterPage: React.FC = () => {
           availableTime,
           homeTuition,
           onlineTeaching,
-          preferredStudentGender
+          preferredStudentGender,
+          verificationStatus: 'pending'
+        });
+
+        store.addNotification({
+          userId: 'user_admin_01',
+          title: 'নতুন টিউটর সিভি আবেদন (New Tutor CV)',
+          message: `${fullName} (${university || department || 'টিচার'}) তার সিভি পূরণ করে অনুমোদনের জন্য পাঠিয়েছেন।`,
+          type: 'verification'
         });
       }
     }

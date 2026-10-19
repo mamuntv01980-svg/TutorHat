@@ -57,8 +57,8 @@ export const FindTutorPage: React.FC = () => {
   // Filter tutors based on criteria
   const filteredTutors = useMemo(() => {
     return storeState.tutors.filter((tutor) => {
-      // Respect admin verification requirement if enabled
-      if (storeState.settings.requireTutorVerificationToPublish && tutor.verificationStatus !== 'verified') {
+      // Strictly require admin verification: pending/draft tutors only appear after admin approves
+      if (tutor.verificationStatus !== 'verified') {
         return false;
       }
 

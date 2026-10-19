@@ -139,12 +139,30 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
     setIsVerifying(true);
 
     try {
-      // Validate credentials against stored adminSecurity
+      // 1. Central server-side verification (enables login from any mobile phone)
+      let serverVerified = false;
+      try {
+        const res = await fetch('/api/admin/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ identifier: identifier.trim(), password: password.trim() })
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success) {
+            serverVerified = true;
+          }
+        }
+      } catch {
+        // offline / local fallback
+      }
+
+      // 2. Validate credentials against stored adminSecurity
       const storedPasswordHash = settings.adminSecurity?.adminPasswordHash;
       const storedPinHash = settings.adminSecurity?.adminPinHash;
       const salt = settings.adminSecurity?.adminPinSalt || 'tutorhat_sec_salt_';
 
-      const isPasswordValid = await verifyAdminPassword(
+      const isPasswordValid = serverVerified || await verifyAdminPassword(
         password.trim(),
         storedPasswordHash,
         storedPinHash,
@@ -156,26 +174,27 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
       const normalizedPhone = registeredPhone.toLowerCase();
       const normalizedEmail = registeredEmail.toLowerCase();
       const isIdentifierValid =
+        serverVerified ||
         normalizedInput === normalizedPhone ||
         normalizedInput === normalizedEmail ||
         normalizedInput === 'admin' ||
         normalizedInput === 'admin@tutorhat.com' ||
         normalizedInput === '01752617360';
 
-      if (isPasswordValid && isIdentifierValid) {
+      if (serverVerified || (isPasswordValid && isIdentifierValid)) {
         // Success
         resetFailedAttempts();
         const existingAdmin = store.getState().users.find(u => u.role === 'admin');
         const adminId = existingAdmin ? existingAdmin.id : 'user_admin_01';
 
-        createAdminSession(adminId, 'pin');
+        createAdminSession(adminId, 'password');
         setAuthSuccess(true);
         setSuccessMessage('পাসওয়ার্ড যাচাই সফল হয়েছে! অ্যাডমিন ড্যাশবোর্ডে প্রবেশ করানো হচ্ছে...');
 
         setTimeout(() => {
           loginAs('admin', adminId);
           if (onSuccess) onSuccess();
-        }, 600);
+        }, 500);
       } else {
         // Record failed attempt
         const updatedLockout = recordFailedAttempt();

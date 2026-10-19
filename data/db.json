@@ -1,0 +1,47 @@
+{
+  "requests": [],
+  "jobs": [],
+  "applications": [],
+  "tutors": [],
+  "users": [
+    {
+      "id": "user_admin_01",
+      "name": "Super Admin",
+      "email": "admin@tutorhat.com",
+      "phone": "01752617360",
+      "role": "admin",
+      "gender": "male",
+      "status": "active",
+      "createdAt": "2026-10-18T08:23:06.438Z"
+    }
+  ],
+  "demos": [],
+  "confirmations": [],
+  "attendance": [],
+  "payments": [],
+  "certificates": [],
+  "reviews": [],
+  "settings": {
+    "siteName": "TutorHat",
+    "tagline": "Smart Tutoring & Education Ecosystem Bangladesh",
+    "supportPhone": "01752617360",
+    "supportEmail": "support@tutorhat.com",
+    "serviceFeePercentage": 0,
+    "requireTutorVerificationToPublish": true,
+    "allowDirectGuardianTutorCall": false,
+    "defaultCurrency": "৳",
+    "socialLinks": {
+      "facebook": "https://facebook.com/tutorhatbd",
+      "whatsapp": "https://wa.me/8801752617360"
+    }
+  },
+  "adminSecurity": {
+    "primaryAdminPhone": "01752617360",
+    "primaryAdminEmail": "admin@tutorhat.com",
+    "adminPasswordHash": "",
+    "adminPinHash": "de2d3061d2ebb9c5031fd1082ada07b42652451de2e9b2ae9a33175b894d5482",
+    "adminPinSalt": "tutorhat_sec_salt_",
+    "twoFactorEnabled": false
+  },
+  "lastUpdated": "2026-10-18T08:35:00.000Z"
+}

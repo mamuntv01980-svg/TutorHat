@@ -120,6 +120,12 @@ export const AdminDashboard: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<AdminTab>('jobs');
 
+  // Pending Approvals Calculation (Requirements 2 & 3)
+  const pendingRequests = useMemo(() => storeState.requests.filter(r => r.status === 'pending'), [storeState.requests]);
+  const pendingTutors = useMemo(() => storeState.tutors.filter(t => t.verificationStatus === 'pending' || t.verificationStatus === 'draft'), [storeState.tutors]);
+  const pendingApplications = useMemo(() => storeState.applications.filter(a => a.status === 'applied'), [storeState.applications]);
+  const totalPending = pendingRequests.length + pendingTutors.length + pendingApplications.length;
+
   // Admin Management State (Step 4)
   const adminUsers = useMemo(() => storeState.users.filter(u => u.role === 'admin'), [storeState.users]);
   const [adminSearch, setAdminSearch] = useState('');
@@ -930,14 +936,163 @@ export const AdminDashboard: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
         
+        {/* ========================================================= */}
+        {/* URGENT PENDING APPROVALS ALERT & QUICK ACTION CENTER     */}
+        {/* ========================================================= */}
+        {totalPending > 0 && (
+          <div className="p-5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-50 border-2 border-amber-300 shadow-sm space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-amber-200">
+              <div className="flex items-center gap-3">
+                <span className="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                  ⚡
+                </span>
+                <div>
+                  <h3 className="font-bold text-base text-blue-950 flex items-center gap-2">
+                    <span>অপেক্ষমাণ অনুমোদন কন্ট্রোল সেন্টার (Pending Approvals Center)</span>
+                    <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-xs font-black animate-pulse">
+                      {totalPending} টি নতুন আবেদন
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-600">
+                    গার্ডিয়ান টিউশন রিকোয়েস্ট ও টিউটর সিভি আবেদন এখানে যাচাই করে সরাসরি অনুমোদন করুন।
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {pendingRequests.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('requests')}
+                    className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold rounded-lg text-xs cursor-pointer transition shadow-2xs"
+                  >
+                    রিকোয়েস্ট ({pendingRequests.length})
+                  </button>
+                )}
+                {pendingTutors.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveTab('tutors');
+                      setTutorVerificationFilter('pending');
+                    }}
+                    className="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-white font-bold rounded-lg text-xs cursor-pointer transition shadow-2xs"
+                  >
+                    সিভি আবেদন ({pendingTutors.length})
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Quick-action Pending Lists */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              {/* 1. Pending Guardian Requests */}
+              <div className="bg-white/90 backdrop-blur-xs p-4 rounded-xl border border-amber-200 space-y-2">
+                <div className="flex items-center justify-between font-bold text-blue-950 pb-1 border-b border-slate-100">
+                  <span className="flex items-center gap-1.5">
+                    <span>📋 অভিভাবক রিকোয়েস্ট</span>
+                    <span className="bg-amber-100 text-amber-900 px-1.5 py-0.2 rounded-full text-[10px]">
+                      {pendingRequests.length}
+                    </span>
+                  </span>
+                  <span className="text-[11px] text-slate-500">অনুমোদনের পর জব বোর্ডে যাবে</span>
+                </div>
+
+                {pendingRequests.length === 0 ? (
+                  <p className="text-slate-400 py-3 text-center italic">কোনো পেন্ডিং অভিভাবক রিকোয়েস্ট নেই।</p>
+                ) : (
+                  <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                    {pendingRequests.slice(0, 3).map(req => (
+                      <div key={req.id} className="p-2.5 rounded-lg bg-amber-50/60 border border-amber-200/80 flex items-start justify-between gap-2">
+                        <div className="space-y-0.5 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-blue-950">{req.guardianName}</span>
+                            <span className="text-[10px] text-slate-500 font-mono">({req.phone})</span>
+                          </div>
+                          <p className="text-[11px] text-slate-700">
+                            <strong>{req.studentClass}</strong> ({req.medium}) · {req.area} · বাজেট: {settings.defaultCurrency}{req.monthlyBudget}
+                          </p>
+                          <p className="text-[10px] text-slate-500 truncate">
+                            বিষয়: {req.subjects.join(', ')}
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            store.convertRequestToJob(req.id);
+                            showAdminToast(`✓ অভিভাবক রিকোয়েস্ট [${req.id}] সফলভাবে অনুমোদন ও সার্কুলার বোর্ডে প্রকাশ করা হয়েছে!`);
+                          }}
+                          className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] shrink-0 cursor-pointer shadow-xs flex items-center gap-1"
+                          title="Approve & Publish to Job Board"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>অনুমোদন ও প্রকাশ</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 2. Pending Tutor CV Registrations */}
+              <div className="bg-white/90 backdrop-blur-xs p-4 rounded-xl border border-amber-200 space-y-2">
+                <div className="flex items-center justify-between font-bold text-blue-950 pb-1 border-b border-slate-100">
+                  <span className="flex items-center gap-1.5">
+                    <span>🎓 টিউটর সিভি আবেদন</span>
+                    <span className="bg-blue-100 text-blue-900 px-1.5 py-0.2 rounded-full text-[10px]">
+                      {pendingTutors.length}
+                    </span>
+                  </span>
+                  <span className="text-[11px] text-slate-500">অনুমোদনের পর ওয়েবসাইটে দেখাবে</span>
+                </div>
+
+                {pendingTutors.length === 0 ? (
+                  <p className="text-slate-400 py-3 text-center italic">কোনো পেন্ডিং টিউটর সিভি নেই।</p>
+                ) : (
+                  <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
+                    {pendingTutors.slice(0, 3).map(tut => (
+                      <div key={tut.id} className="p-2.5 rounded-lg bg-blue-50/60 border border-blue-200/80 flex items-start justify-between gap-2">
+                        <div className="space-y-0.5 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-blue-950">{tut.fullName}</span>
+                            <span className="text-[10px] text-slate-500 font-mono">({tut.phone})</span>
+                          </div>
+                          <p className="text-[11px] text-slate-700">
+                            <strong>{tut.university || 'বিশ্ববিদ্যালয়'}</strong> ({tut.department || 'বিভাগ'}) · এলাকা: {tut.district}
+                          </p>
+                          <p className="text-[10px] text-slate-500">
+                            পারিশ্রমিক: {settings.defaultCurrency}{tut.expectedSalary} · সিভি: {tut.completionPercentage || 80}%
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            store.setTutorVerificationStatus(tut.id, 'verified');
+                            showAdminToast(`✓ টিউটর ${tut.fullName}-এর সিভি অনুমোদন ও প্রোফাইল ভেরিফাই করা হয়েছে!`);
+                          }}
+                          className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] shrink-0 cursor-pointer shadow-xs flex items-center gap-1"
+                          title="Approve CV & Verify Tutor"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>সিভি অনুমোদন</span>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Navigation Tabs Bar with Badges */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 text-xs font-semibold scrollbar-none">
           {[
             { id: 'jobs', label: `Tuition Jobs (${storeState.jobs.length})` },
-            { id: 'requests', label: `Guardian Requests (${storeState.requests.length})` },
-            { id: 'tutors', label: `Tutors (${storeState.tutors.length})` },
+            { id: 'requests', label: `Guardian Requests (${storeState.requests.length})`, pending: pendingRequests.length },
+            { id: 'tutors', label: `Tutors (${storeState.tutors.length})`, pending: pendingTutors.length },
             { id: 'guardians', label: `Guardians (${guardians.length})` },
-            { id: 'applications', label: `Applications (${storeState.applications.length})` },
+            { id: 'applications', label: `Applications (${storeState.applications.length})`, pending: pendingApplications.length },
             { id: 'demos', label: `Demo Classes (${storeState.demos.length})` },
             { id: 'confirmations', label: `Confirmations (${storeState.confirmations.length})` },
             { id: 'chats', label: `Live Chats (${storeState.conversations?.length || 0})` },
@@ -956,13 +1111,18 @@ export const AdminDashboard: React.FC = () => {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id as AdminTab)}
-              className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-3.5 py-2 rounded-xl transition-all whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                 activeTab === tab.id
                   ? 'bg-blue-900 text-white shadow-xs font-bold'
                   : 'bg-white text-slate-700 border border-slate-200 hover:bg-slate-50'
               }`}
             >
-              {tab.label}
+              <span>{tab.label}</span>
+              {tab.pending !== undefined && tab.pending > 0 && (
+                <span className="bg-amber-400 text-slate-950 font-black px-1.5 py-0.2 rounded-full text-[10px] animate-pulse">
+                  {tab.pending} পেন্ডিং
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -1611,9 +1771,9 @@ export const AdminDashboard: React.FC = () => {
                       : 'text-amber-800 hover:text-amber-950'
                   }`}
                 >
-                  <span>অপেক্ষমাণ KYC</span>
+                  <span>অপেক্ষমাণ KYC ও নতুন সিভি</span>
                   <span className="bg-amber-200 text-amber-950 px-1.5 py-0.2 rounded-full text-[10px]">
-                    {storeState.tutors.filter(t => t.verificationStatus === 'pending').length}
+                    {pendingTutors.length}
                   </span>
                 </button>
                 <button
@@ -1645,6 +1805,9 @@ export const AdminDashboard: React.FC = () => {
               {storeState.tutors
                 .filter(tut => {
                   if (tutorVerificationFilter === 'all') return true;
+                  if (tutorVerificationFilter === 'pending') {
+                    return tut.verificationStatus === 'pending' || tut.verificationStatus === 'draft';
+                  }
                   return tut.verificationStatus === tutorVerificationFilter;
                 })
                 .map((tutor) => (
@@ -1753,10 +1916,14 @@ export const AdminDashboard: React.FC = () => {
                     {tutor.verificationStatus !== 'verified' && (
                       <button
                         type="button"
-                        onClick={() => store.setTutorVerificationStatus(tutor.id, 'verified')}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold cursor-pointer"
+                        onClick={() => {
+                          store.setTutorVerificationStatus(tutor.id, 'verified');
+                          showAdminToast(`✓ টিউটর ${tutor.fullName}-এর আবেদন অনুমোদিত ও প্রোফাইল ভেরিফাই করা হয়েছে।`);
+                        }}
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold cursor-pointer flex items-center gap-1 shadow-xs"
                       >
-                        ✓ কুইক ভেরিফাই
+                        <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                        <span>✓ অনুমোদন ও ভেরিফাই</span>
                       </button>
                     )}
 
@@ -1826,14 +1993,12 @@ export const AdminDashboard: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => {
-                      if (window.confirm('আপনি কি সমস্ত অভিভাবক রিকোয়েস্ট ও টিউটর আবেদন খালি করতে চান?')) {
-                        store.clearAllRequestsAndApplications();
-                        showAdminToast('✓ সমস্ত রিকোয়েস্ট ও আবেদন সফলভাবে মুছে ফেলা হয়েছে।');
-                      }
+                      store.clearAllRequestsAndApplications();
+                      showAdminToast('✓ সমস্ত রিকোয়েস্ট, টিউশন অফার ও আবেদন সফলভাবে মুছে শূন্য করা হয়েছে।');
                     }}
                     className="text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded-full font-semibold cursor-pointer transition"
                   >
-                    সকল রিকোয়েস্ট মুছুন
+                    সকল রিকোয়েস্ট ও আবেদন মুছুন
                   </button>
                 )}
               </div>
@@ -1913,11 +2078,12 @@ export const AdminDashboard: React.FC = () => {
                         type="button"
                         onClick={() => {
                           store.convertRequestToJob(req.id);
-                          showAdminToast(`✓ রিকোয়েস্ট [${req.id}] সরাসরি লাইভ জবে কনভার্ট ও প্রকাশিত হয়েছে।`);
+                          showAdminToast(`✓ অভিভাবক রিকোয়েস্ট [${req.id}] সফলভাবে অনুমোদন ও লাইভ জবে প্রকাশিত হয়েছে।`);
                         }}
-                        className="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-white rounded-lg font-bold cursor-pointer transition shadow-xs text-xs"
+                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold cursor-pointer transition shadow-xs text-xs flex items-center gap-1.5"
                       >
-                        Convert to Live Job
+                        <CheckCircle2 className="w-3.5 h-3.5 text-white" />
+                        <span>অনুমোদন ও লাইভ সার্কুলার প্রকাশ (Approve & Publish)</span>
                       </button>
                     )}
 

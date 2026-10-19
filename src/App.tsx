@@ -10,7 +10,6 @@ import { Header } from './components/layout/Header';
 import { Footer } from './components/layout/Footer';
 import { BottomNavigation } from './components/layout/BottomNavigation';
 import { WhatsAppButton } from './components/common/WhatsAppButton';
-import { FloatingChatButton } from './components/chat/FloatingChatButton';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 // Pages
@@ -101,9 +100,6 @@ const AppContent: React.FC = () => {
       
       {/* Floating WhatsApp Quick Action Button for Mobile & Desktop */}
       <WhatsAppButton variant="floating" showIcon={true} />
-
-      {/* Feature 6: Floating Direct In-App Live Chat Action Button */}
-      <FloatingChatButton />
     </div>
   );
 };

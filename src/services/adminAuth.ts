@@ -30,7 +30,7 @@ interface AdminSessionData {
   adminId: string;
   authenticatedAt: number;
   expiresAt: number;
-  method: 'pin' | 'biometric';
+  method: 'pin' | 'biometric' | 'password';
 }
 
 /**
@@ -299,7 +299,7 @@ export function resetFailedAttempts(): void {
 /**
  * Creates and stores a secure session in sessionStorage
  */
-export function createAdminSession(adminId: string, method: 'pin' | 'biometric'): void {
+export function createAdminSession(adminId: string, method: 'pin' | 'biometric' | 'password'): void {
   const now = Date.now();
   // Valid for 2 hours of inactivity
   const sessionData: AdminSessionData = {

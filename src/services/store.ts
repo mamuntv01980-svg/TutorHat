@@ -439,118 +439,9 @@ const INITIAL_TUTORS: TutorProfile[] = [
   }
 ];
 
-// Empty initial requests and applications so the platform starts completely fresh for real users
+// Empty initial jobs, requests and applications so the platform starts completely fresh for real users
 const INITIAL_REQUESTS: TuitionRequest[] = [];
-
-const INITIAL_JOBS: TuitionJob[] = [
-  {
-    id: 'JOB-2026-101',
-    title: 'Class 9 (SSC) Science Tutor Needed in Mirpur DOHS',
-    category: 'Bangla Medium',
-    classLevel: 'Class 9 (SSC)',
-    medium: 'Bangla Medium',
-    subjects: ['Higher Mathematics', 'Physics', 'Chemistry'],
-    district: 'Dhaka',
-    area: 'Mirpur DOHS',
-    daysPerWeek: 4,
-    preferredTime: '5:30 PM',
-    teachingType: 'home',
-    salary: 7500,
-    tutorGenderPreference: 'male',
-    studentGender: 'male',
-    description: 'Looking for a dedicated BUET / DU science background tutor for a Class 9 SSC student. 4 days a week, 1.5 hours per class. Weekly chapter tests required.',
-    postedDate: '2026-03-02',
-    deadline: '2026-03-25',
-    status: 'published',
-    totalApplications: 0
-  },
-  {
-    id: 'JOB-2026-102',
-    title: 'O Level Cambridge Physics & Math Tutor in Dhanmondi',
-    category: 'English Medium',
-    classLevel: 'O Level (Standard)',
-    medium: 'English Medium (Cambridge / Edexcel)',
-    subjects: ['Mathematics', 'Physics'],
-    district: 'Dhaka',
-    area: 'Dhanmondi',
-    daysPerWeek: 3,
-    preferredTime: '6:00 PM',
-    teachingType: 'home',
-    salary: 9000,
-    tutorGenderPreference: 'any',
-    studentGender: 'female',
-    description: 'Need an experienced tutor who is well-versed in Cambridge IGCSE syllabus and past paper solving. Candidate must have excellent English communication.',
-    postedDate: '2026-03-03',
-    deadline: '2026-03-28',
-    status: 'published',
-    totalApplications: 0
-  },
-  {
-    id: 'JOB-2026-103',
-    title: 'Quran with Tajweed & Arabic Learning in Mohammadpur',
-    category: 'Arabic & Quran',
-    classLevel: 'Class 5 (PEC)',
-    medium: 'Quran & Arabic Learning',
-    subjects: ['Holy Quran & Tajweed', 'Islamic Studies'],
-    district: 'Dhaka',
-    area: 'Mohammadpur',
-    daysPerWeek: 5,
-    preferredTime: '7:30 AM',
-    teachingType: 'home',
-    salary: 5500,
-    tutorGenderPreference: 'male',
-    studentGender: 'male',
-    description: 'Seeking a knowledgeable Hafez/Maulana to teach morning Quran recitation with accurate Makhraj, Daily Duas, and basics of Salah for two young boys.',
-    postedDate: '2026-03-04',
-    deadline: '2026-03-30',
-    status: 'published',
-    totalApplications: 0
-  },
-  {
-    id: 'JOB-2026-104',
-    title: 'HSC 2nd Year Biology & Chemistry Online Tuition',
-    category: 'Bangla Medium',
-    classLevel: 'HSC 2nd Year',
-    medium: 'Bangla Medium',
-    subjects: ['Biology', 'Chemistry'],
-    district: 'Dhaka',
-    area: 'Online / Remote',
-    daysPerWeek: 3,
-    preferredTime: '8:00 PM',
-    teachingType: 'online',
-    salary: 6000,
-    tutorGenderPreference: 'any',
-    studentGender: 'female',
-    description: 'Online classes via Zoom/Google Meet. Focus on medical admission syllabus foundation and board questions for upcoming HSC exams.',
-    postedDate: '2026-03-05',
-    deadline: '2026-04-05',
-    status: 'published',
-    totalApplications: 0
-  },
-  {
-    id: 'JOB-2026-105',
-    title: 'Class 7 English Version All Subjects in Uttara Sector 11',
-    category: 'English Version',
-    classLevel: 'Class 7',
-    medium: 'English Version',
-    subjects: ['Mathematics', 'General Science', 'English (1st & 2nd Paper)'],
-    district: 'Dhaka',
-    area: 'Uttara',
-    daysPerWeek: 4,
-    preferredTime: '4:30 PM',
-    teachingType: 'home',
-    salary: 8000,
-    tutorGenderPreference: 'female',
-    studentGender: 'female',
-    description: 'Female tutor needed from DU, BRAC, or NSU for Class 7 English Version student. Friendly guidance and continuous monitoring.',
-    postedDate: '2026-03-06',
-    deadline: '2026-04-10',
-    status: 'published',
-    totalApplications: 0
-  }
-];
-
-// Empty initial applications so the platform starts completely fresh
+const INITIAL_JOBS: TuitionJob[] = [];
 const INITIAL_APPLICATIONS: JobApplication[] = [];
 
 const INITIAL_DEMOS: DemoClass[] = [
@@ -1176,7 +1067,7 @@ const INITIAL_PROGRESS_REPORTS: StudentProgressReport[] = [
   }
 ];
 
-const STORAGE_KEY = 'tutorhat_data_v7';
+const STORAGE_KEY = 'tutorhat_data_v8';
 
 export interface StoreState {
   settings: SystemSettings;
@@ -1201,7 +1092,7 @@ export interface StoreState {
   conversations: ChatConversation[];
   chatMessages: ChatMessage[];
   progressReports: StudentProgressReport[];
-  _freshCleanV7?: boolean;
+  _freshCleanV8?: boolean;
 }
 
 export function calculateCvCompletion(tutor?: Partial<TutorProfile> | null): { percent: number; missing: string[] } {
@@ -1278,20 +1169,99 @@ class Store {
 
   constructor() {
     this.state = this.loadState();
-    // Guarantee fresh clean state is persisted to v7
-    this.state._freshCleanV7 = true;
+    // Guarantee fresh clean state is persisted to v8
+    this.state._freshCleanV8 = true;
     this.saveState();
+
+    if (typeof window !== 'undefined') {
+      this.syncWithServer();
+      setInterval(() => this.syncWithServer(), 3000);
+      window.addEventListener('focus', () => this.syncWithServer());
+    }
+  }
+
+  public async syncWithServer(): Promise<void> {
+    try {
+      const res = await fetch('/api/sync');
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data) {
+          const s = json.data;
+          let changed = false;
+
+          if (Array.isArray(s.requests)) {
+            this.state.requests = s.requests;
+            changed = true;
+          }
+          if (Array.isArray(s.jobs)) {
+            this.state.jobs = s.jobs;
+            changed = true;
+          }
+          if (Array.isArray(s.applications)) {
+            this.state.applications = s.applications;
+            changed = true;
+          }
+          if (Array.isArray(s.tutors)) {
+            const serverTutors: TutorProfile[] = s.tutors;
+            const mergedTutors = [...this.state.tutors];
+            for (const st of serverTutors) {
+              const idx = mergedTutors.findIndex(t => t.id === st.id || t.userId === st.userId);
+              if (idx >= 0) {
+                mergedTutors[idx] = { ...mergedTutors[idx], ...st };
+              } else {
+                mergedTutors.unshift(st);
+              }
+            }
+            this.state.tutors = mergedTutors;
+            changed = true;
+          }
+          if (Array.isArray(s.users)) {
+            const serverUsers = s.users;
+            const mergedUsers = [...this.state.users];
+            for (const su of serverUsers) {
+              const idx = mergedUsers.findIndex(u => u.id === su.id || (u.phone && su.phone && u.phone === su.phone));
+              if (idx >= 0) {
+                mergedUsers[idx] = { ...mergedUsers[idx], ...su };
+              } else {
+                mergedUsers.push(su);
+              }
+            }
+            this.state.users = mergedUsers;
+            changed = true;
+          }
+          if (s.adminSecurity) {
+            this.state.settings = {
+              ...this.state.settings,
+              adminSecurity: {
+                ...this.state.settings.adminSecurity,
+                ...s.adminSecurity
+              }
+            };
+            changed = true;
+          }
+
+          if (changed) {
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(this.state));
+            } catch {}
+            this.notify();
+          }
+        }
+      }
+    } catch {
+      // offline / local fallback
+    }
   }
 
   private loadState(): StoreState {
     try {
       let data = localStorage.getItem(STORAGE_KEY);
       if (!data) {
-        data = localStorage.getItem('tutorhat_data_v6') || localStorage.getItem('tutorhat_data_v5');
+        data = localStorage.getItem('tutorhat_data_v7') || localStorage.getItem('tutorhat_data_v6');
       }
       if (data) {
         const parsed = JSON.parse(data);
-        const isFreshClean = parsed._freshCleanV7 === true;
+        const isFreshClean = parsed._freshCleanV8 === true;
         return {
           settings: {
             ...DEFAULT_SETTINGS,
@@ -1319,13 +1289,11 @@ class Store {
                 };
               })
             : INITIAL_TUTORS,
-          // Clear all demo guardian requests and tutor applications so user starts fresh
+          // Clear all demo guardian requests, tuition jobs, and tutor applications so user starts completely fresh
           requests: isFreshClean && Array.isArray(parsed.requests) ? parsed.requests : [],
-          jobs: (Array.isArray(parsed.jobs) && parsed.jobs.length > 0) 
-            ? parsed.jobs.map((j: TuitionJob) => ({ ...j, totalApplications: isFreshClean ? (j.totalApplications || 0) : 0 })) 
-            : INITIAL_JOBS,
+          jobs: isFreshClean && Array.isArray(parsed.jobs) ? parsed.jobs : [],
           applications: isFreshClean && Array.isArray(parsed.applications) ? parsed.applications : [],
-          _freshCleanV7: true,
+          _freshCleanV8: true,
           demos: Array.isArray(parsed.demos) ? parsed.demos : INITIAL_DEMOS,
           confirmations: Array.isArray(parsed.confirmations) ? parsed.confirmations : INITIAL_CONFIRMATIONS,
           attendance: Array.isArray(parsed.attendance) ? parsed.attendance : INITIAL_ATTENDANCE,
@@ -1424,6 +1392,14 @@ class Store {
     }
     this.logActivity('SETTINGS_UPDATED', 'Updated central platform configuration.');
     this.saveState();
+
+    if (newSettings.adminSecurity) {
+      fetch('/api/admin/security', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newSettings.adminSecurity)
+      }).catch(() => {});
+    }
   }
 
   // Users & Auth
@@ -1477,16 +1453,29 @@ class Store {
         expectedSalary: 5000,
         preferredStudentGender: 'any',
         preferredClassLevel: '',
-        verificationStatus: 'draft',
+        verificationStatus: 'pending',
         completionPercentage: 20,
         rating: 5.0,
         totalReviews: 0
       };
-      this.state.tutors = [...this.state.tutors, newTutor];
+      this.state.tutors = [newTutor, ...this.state.tutors];
+
+      fetch('/api/tutors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTutor)
+      }).catch(() => {});
     }
 
     this.logActivity('USER_REGISTERED', `Created account ${newUser.name} as ${newUser.role}`);
     this.saveState();
+
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newUser)
+    }).catch(() => {});
+
     return newUser;
   }
 
@@ -1547,6 +1536,15 @@ class Store {
       return t;
     });
     this.saveState();
+
+    const currentTutor = this.getTutorById(tutorId);
+    if (currentTutor) {
+      fetch('/api/tutors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentTutor)
+      }).catch(() => {});
+    }
   }
 
   public submitTutorForVerification(tutorId: string) {
@@ -1607,6 +1605,15 @@ class Store {
 
     this.logActivity('TUTOR_VERIFICATION_STATUS', `Tutor ${tutor.fullName} status updated to ${status}`);
     this.saveState();
+
+    const updatedTutor = this.getTutorById(tutorId);
+    if (updatedTutor) {
+      fetch('/api/tutors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedTutor)
+      }).catch(() => {});
+    }
   }
 
   // Feature 1: Tutor KYC Document Submission & Review
@@ -1721,6 +1728,14 @@ class Store {
 
     this.logActivity('TUITION_REQUEST_SUBMITTED', `New requirement ${id} submitted by ${newReq.guardianName}`);
     this.saveState();
+
+    // Central server sync for multi-device delivery to Admin
+    fetch('/api/requests', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newReq)
+    }).catch(() => {});
+
     return newReq;
   }
 
@@ -1769,6 +1784,14 @@ class Store {
 
     this.logActivity('REQUEST_CONVERTED_TO_JOB', `Converted request ${requestId} to job ${jobId}`);
     this.saveState();
+
+    // Central server sync
+    fetch(`/api/requests/${requestId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'converted_to_job', createdJob: newJob })
+    }).catch(() => {});
+
     return newJob;
   }
 
@@ -1776,12 +1799,22 @@ class Store {
     this.state.requests = this.state.requests.map(r => r.id === requestId ? { ...r, ...updates } : r);
     this.logActivity('REQUEST_UPDATED', `Updated tuition requirement ${requestId}`, performedBy);
     this.saveState();
+
+    fetch(`/api/requests/${requestId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    }).catch(() => {});
   }
 
   public deleteTuitionRequest(requestId: string, performedBy: string = 'Admin') {
     this.state.requests = this.state.requests.filter(r => r.id !== requestId);
     this.logActivity('REQUEST_DELETED', `Deleted tuition requirement ${requestId}`, performedBy);
     this.saveState();
+
+    fetch(`/api/requests/${requestId}`, {
+      method: 'DELETE'
+    }).catch(() => {});
   }
 
   // Automatic Notification to matching tutors based on their preferred areas (Requirement 3)
@@ -1950,6 +1983,13 @@ class Store {
 
     this.logActivity('APPLICATION_SUBMITTED', `${tutor.fullName} applied for job ${job.id}`);
     this.saveState();
+
+    fetch('/api/applications', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newApp)
+    }).catch(() => {});
+
     return newApp;
   }
 
@@ -1976,12 +2016,24 @@ class Store {
     }
 
     this.saveState();
+
+    fetch(`/api/applications/${appId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status, adminNote, guardianNote })
+    }).catch(() => {});
   }
 
   public editApplication(appId: string, updates: Partial<JobApplication>, performedBy: string = 'Admin') {
     this.state.applications = this.state.applications.map(a => a.id === appId ? { ...a, ...updates } : a);
     this.logActivity('APPLICATION_EDITED', `Updated application ${appId}`, performedBy);
     this.saveState();
+
+    fetch(`/api/applications/${appId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    }).catch(() => {});
   }
 
   public deleteApplication(appId: string, performedBy: string = 'Admin') {
@@ -1996,16 +2048,24 @@ class Store {
       });
       this.logActivity('APPLICATION_DELETED', `Deleted application ${appId} for job ${app.jobId}`, performedBy);
       this.saveState();
+
+      fetch(`/api/applications/${appId}`, {
+        method: 'DELETE'
+      }).catch(() => {});
     }
   }
 
   public clearAllRequestsAndApplications(performedBy: string = 'Admin') {
     this.state.requests = [];
+    this.state.jobs = [];
     this.state.applications = [];
-    this.state.jobs = this.state.jobs.map(j => ({ ...j, totalApplications: 0 }));
-    this.logActivity('DATA_RESET', `Cleared all demo guardian requests and tutor applications`, performedBy);
+    this.logActivity('DATA_RESET', `Cleared all demo guardian requests, tuition circulars and tutor applications`, performedBy);
     this.saveState();
     this.notify();
+
+    fetch('/api/reset-demo', {
+      method: 'POST'
+    }).catch(() => {});
   }
 
   // Shortlisting
