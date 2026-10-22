@@ -200,15 +200,65 @@ export const TutorProfileEdit: React.FC = () => {
   };
 
   const handleSubmitForVerification = () => {
-    if (completionCalc.percent < 100) {
-      setErrorMsg(`Profile must be 100% complete before verification. Missing: ${completionCalc.missing.join(', ')}`);
+    if (!fullName.trim() || !phone.trim()) {
+      setErrorMsg('অনুগ্রহ করে আপনার নাম এবং মোবাইল নম্বর সঠিকভাবে পূরণ করুন।');
       return;
     }
 
     try {
+      // First save all current fields
+      store.updateTutorProfile(tutor.id, {
+        fullName,
+        gender,
+        dateOfBirth,
+        phone,
+        email,
+        currentAddress,
+        permanentAddress,
+        district,
+        area,
+        preferredAreas,
+        aboutMe,
+        tutorCategory,
+        madrasaDetails: {
+          category: tutorCategory,
+          isHafiz,
+          qiratTajweedCertificate,
+          madrasaBoard,
+          highestSanadOrDegree,
+          sanadPassingYear,
+          sanadDivisionOrGpa,
+          specializationDept,
+          currentKhidmatOrInstitution: currentKhidmatOrInstitution || university
+        },
+        university: tutorCategory === 'qawmi_madrasa' ? (currentKhidmatOrInstitution || university) : university,
+        department: tutorCategory === 'qawmi_madrasa' ? (specializationDept || highestSanadOrDegree) : department,
+        programDegree: tutorCategory === 'qawmi_madrasa' ? highestSanadOrDegree : programDegree,
+        admissionYear,
+        currentYearSemester,
+        ssc: { schoolOrCollege: sscSchool, board: sscBoard, gpa: sscGpa, passingYear: sscYear },
+        hsc: { schoolOrCollege: hscCollege, board: hscBoard, gpa: hscGpa, passingYear: hscYear },
+        teachingExperienceYears: Number(teachingExperienceYears),
+        teachingMethod,
+        preferredClasses,
+        preferredSubjects,
+        preferredMediums,
+        categories,
+        onlineTeaching,
+        homeTuition,
+        coachingGroupTuition,
+        availableDays,
+        availableTime,
+        expectedSalary: Number(expectedSalary),
+        preferredStudentGender,
+        verificationStatus: 'pending'
+      });
+
       store.submitTutorForVerification(tutor.id);
-      alert('Your CV has been submitted to TutorHat Admin for official verification!');
-      navigateTo('tutor-dashboard');
+      setSavedSuccess(true);
+      setTimeout(() => {
+        navigateTo('tutor-dashboard');
+      }, 1200);
     } catch (err: any) {
       setErrorMsg(err.message);
     }
@@ -905,23 +955,19 @@ export const TutorProfileEdit: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4">
           <button
             type="submit"
-            className="w-full sm:w-auto px-8 py-3.5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 min-h-[44px]"
+            className="w-full sm:w-auto px-6 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl border border-slate-300 flex items-center justify-center gap-2 min-h-[44px] cursor-pointer"
           >
-            <Save className="w-4 h-4" />
-            <span>Save Profile Draft</span>
+            <Save className="w-4 h-4 text-slate-600" />
+            <span>খসড়া সংরক্ষণ (Save Draft)</span>
           </button>
 
           <button
             type="button"
             onClick={handleSubmitForVerification}
-            className={`w-full sm:w-auto px-8 py-3.5 rounded-xl text-xs font-bold shadow-md flex items-center justify-center gap-2 min-h-[44px] ${
-              completionCalc.percent === 100
-                ? 'bg-emerald-600 hover:bg-emerald-700 text-white'
-                : 'bg-slate-200 text-slate-500 cursor-not-allowed'
-            }`}
+            className="w-full sm:w-auto px-8 py-3.5 rounded-xl text-xs font-bold shadow-md flex items-center justify-center gap-2 min-h-[44px] bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer transition active:scale-95"
           >
-            <ShieldCheck className="w-4 h-4" />
-            <span>Submit for Admin Verification ({completionCalc.percent}%)</span>
+            <ShieldCheck className="w-4 h-4 text-white" />
+            <span>✓ সম্পূর্ণ সিভি সংরক্ষণ ও অনুমোদনের জন্য পাঠান ({completionCalc.percent}%)</span>
           </button>
         </div>
 

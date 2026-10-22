@@ -47,7 +47,7 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
   onCancel,
   isModal = false
 }) => {
-  const { loginAs, settings, language } = useApp();
+  const { loginAs, settings, language, navigateTo } = useApp();
 
   // Mode: 'login' | 'forgot_password' | 'set_new_password'
   const [authView, setAuthView] = useState<'login' | 'forgot_password' | 'set_new_password'>('login');
@@ -514,6 +514,19 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
                     পাসওয়ার্ড ভুলে গেছেন? (Forgot Password?)
                   </button>
                 </div>
+
+                {!isModal && (
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-center">
+                    <button
+                      type="button"
+                      onClick={() => navigateTo('home')}
+                      className="text-xs text-slate-500 hover:text-blue-900 font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>মূল ওয়েবসাইটে ফিরে যান</span>
+                    </button>
+                  </div>
+                )}
 
               </form>
           </div>

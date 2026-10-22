@@ -1551,20 +1551,22 @@ class Store {
     const tutor = this.getTutorById(tutorId);
     if (!tutor) return;
     const calc = calculateCvCompletion(tutor);
-    if (calc.percent < 100) {
-      throw new Error(`Profile is ${calc.percent}% complete. Please fill: ${calc.missing.join(', ')}`);
-    }
 
     this.updateTutorProfile(tutorId, {
-      verificationStatus: 'pending'
+      verificationStatus: 'pending',
+      verificationSubmittedDate: new Date().toISOString(),
+      completionPercentage: calc.percent
     });
 
     this.addNotification({
       userId: 'user_admin_01',
-      title: 'Tutor Verification Request',
-      message: `${tutor.fullName} has submitted their CV for verification.`,
+      title: 'নতুন টিউটর সিভি আবেদন (New Tutor CV)',
+      message: `${tutor.fullName} (${tutor.university || tutor.institution || 'টিউটর'}) তার সিভি পূরণ করে অনুমোদনের জন্য পাঠিয়েছেন। সম্পন্ন: ${calc.percent}%`,
       type: 'verification'
     });
+
+    this.logActivity('TUTOR_CV_SUBMITTED', `Tutor ${tutor.fullName} submitted CV for verification (${calc.percent}% complete)`);
+    this.syncWithServer().catch(() => {});
   }
 
   public setTutorVerificationStatus(
@@ -1734,6 +1736,8 @@ class Store {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newReq)
+    }).then(() => {
+      this.syncWithServer().catch(() => {});
     }).catch(() => {});
 
     return newReq;
@@ -1790,6 +1794,8 @@ class Store {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'converted_to_job', createdJob: newJob })
+    }).then(() => {
+      this.syncWithServer().catch(() => {});
     }).catch(() => {});
 
     return newJob;

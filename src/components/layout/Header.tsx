@@ -38,10 +38,10 @@ export const Header: React.FC = () => {
   const t = TRANSLATIONS[language];
 
   const navLinks: { label: string; view: AppView }[] = [
-    { label: t.findTutor, view: 'find-tutor' },
-    { label: t.tuitionJobs, view: 'tuition-jobs' },
+    { label: language === 'bn' ? 'টিউটর প্রয়োজন?' : 'Need a Tutor?', view: 'request-tutor' },
+    { label: language === 'bn' ? 'টিউশন প্রয়োজন?' : 'Need Tuition?', view: 'tuition-jobs' },
+    { label: language === 'bn' ? 'টিউটর খুঁজুন' : 'Find Tutors', view: 'find-tutor' },
     { label: language === 'bn' ? 'ফি ক্যালকুলেটর' : 'Fee Calculator', view: 'fee-calculator' },
-    { label: t.becomeTutor, view: 'become-a-tutor' },
     { label: t.howItWorks, view: 'how-it-works' },
     { label: t.contact, view: 'contact' }
   ];

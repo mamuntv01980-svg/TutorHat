@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Rounded Base (Safe area padding for maskable) -->
+  <rect width="512" height="512" rx="112" fill="#09101d"/>
+  
+  <!-- Outer Subtle Radial Glow Ring -->
+  <circle cx="256" cy="256" r="210" stroke="#f59e0b" stroke-width="6" stroke-opacity="0.25"/>
+  <circle cx="256" cy="256" r="195" stroke="#38bdf8" stroke-width="3" stroke-opacity="0.3"/>
+
+  <!-- Admin Shield Body -->
+  <path d="M256 90 L390 148 C390 280 330 366 256 414 C182 366 122 280 122 148 L256 90 Z" 
+        fill="url(#adminShieldGrad)" 
+        stroke="#f59e0b" 
+        stroke-width="12" 
+        stroke-linejoin="round"/>
+
+  <!-- Inner Shield Trim -->
+  <path d="M256 116 L366 166 C366 268 316 342 256 384 C196 342 146 268 146 166 L256 116 Z" 
+        fill="#0b1329" 
+        stroke="#fbbf24" 
+        stroke-width="4" 
+        stroke-opacity="0.6"/>
+
+  <!-- Crown / Mortarboard Hybrid for TutorHat Admin Crest -->
+  <!-- Mortarboard Top -->
+  <path d="M256 165 L180 206 L256 248 L332 206 Z" fill="#fbbf24"/>
+  <path d="M256 182 L198 212 L256 240 L314 212 Z" fill="#09101d"/>
+  
+  <!-- Golden Tassel -->
+  <path d="M308 216 V274" stroke="#f59e0b" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="308" cy="282" r="8" fill="#d97706"/>
+
+  <!-- Golden Security Keyhole / Star in Center -->
+  <circle cx="256" cy="280" r="18" fill="#fbbf24"/>
+  <path d="M250 292 L246 332 H266 L262 292 Z" fill="#fbbf24"/>
+
+  <!-- Star Embellishment -->
+  <polygon points="256,264 260,274 270,275 262,282 264,292 256,286 248,292 250,282 242,275 252,274" fill="#09101d"/>
+
+  <!-- Lower Banner: ADMIN -->
+  <rect x="156" y="342" width="200" height="42" rx="10" fill="#f59e0b" stroke="#ffffff" stroke-width="2"/>
+  <text x="256" y="371" font-family="Arial, Helvetica, sans-serif" font-size="22" font-weight="900" fill="#09101d" text-anchor="middle" letter-spacing="4">ADMIN</text>
+
+  <!-- Gradients -->
+  <defs>
+    <linearGradient id="adminShieldGrad" x1="122" y1="90" x2="390" y2="414" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1e3a8a"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#020617"/>
+    </linearGradient>
+  </defs>
+</svg>

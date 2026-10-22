@@ -2,6 +2,7 @@ import React from 'react';
 import { 
   Search, 
   UserPlus, 
+  PlusCircle,
   CheckCircle2, 
   ShieldCheck, 
   MapPin, 
@@ -62,24 +63,39 @@ export const HomePage: React.FC = () => {
                   : 'Connect with trusted tutors for school, college, university, Quran, Arabic and more across Bangladesh.'}
               </p>
 
-              {/* CTAs */}
+              {/* CTAs: 1. টিউটর প্রয়োজন? (Request Tutor) | 2. টিউশন প্রয়োজন? (Tuition Jobs) | 3. টিউটর খুঁজুন (Find Tutors) */}
               <div className="flex flex-wrap items-center gap-3 pt-2">
+                {/* ১. টিউটর প্রয়োজন? (অভিভাবকের জন্য - সরাসরি টিউটর রিকোয়েস্ট ফর্ম পেজ) */}
+                <button
+                  type="button"
+                  onClick={() => navigateTo('request-tutor')}
+                  className="px-5 sm:px-6 py-3.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold text-sm shadow-md shadow-blue-900/15 flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer min-h-[48px]"
+                  title="অভিভাবকদের জন্য: নতুন টিউটর রিকোয়েস্ট পাঠান"
+                >
+                  <PlusCircle className="w-4 h-4 text-amber-300" />
+                  <span>{language === 'bn' ? '১. টিউটর প্রয়োজন?' : '1. Need a Tutor?'}</span>
+                </button>
+
+                {/* ২. টিউশন প্রয়োজন? (টিউটরদের জন্য - সরাসরি টিউশন সার্কুলার / জবস বোর্ড) */}
+                <button
+                  type="button"
+                  onClick={() => navigateTo('tuition-jobs')}
+                  className="px-5 sm:px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-md shadow-emerald-600/15 flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer min-h-[48px]"
+                  title="শিক্ষকদের জন্য: লাইভ টিউশন সার্কুলার ও আবেদন"
+                >
+                  <Briefcase className="w-4 h-4 text-white" />
+                  <span>{language === 'bn' ? '২. টিউশন প্রয়োজন?' : '2. Need Tuition?'}</span>
+                </button>
+
+                {/* ৩. টিউটর খুঁজুন (সরাসরি ভেরিফাইড শিক্ষক ডিরেক্টরি অনুসন্ধান) */}
                 <button
                   type="button"
                   onClick={() => navigateTo('find-tutor')}
-                  className="px-6 py-3.5 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-semibold text-sm shadow-md shadow-blue-900/10 flex items-center gap-2 transition-all active:scale-[0.98] min-h-[48px]"
+                  className="px-5 sm:px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-blue-950 font-bold text-sm border-2 border-slate-300 hover:border-slate-400 shadow-xs flex items-center gap-2 transition-all active:scale-[0.98] cursor-pointer min-h-[48px]"
+                  title="ভেরিফাইড শিক্ষকদের প্রোফাইল খুঁজুন"
                 >
-                  <Search className="w-4 h-4" />
-                  <span>{t.findTutor}</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => navigateTo('become-a-tutor')}
-                  className="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-blue-950 font-semibold text-sm border border-slate-300 shadow-xs flex items-center gap-2 transition-all active:scale-[0.98] min-h-[48px]"
-                >
-                  <GraduationCap className="w-4 h-4 text-blue-700" />
-                  <span>{t.becomeTutor}</span>
+                  <Search className="w-4 h-4 text-blue-900" />
+                  <span>{language === 'bn' ? '৩. টিউটর খুঁজুন' : '3. Find Tutors'}</span>
                 </button>
               </div>
 

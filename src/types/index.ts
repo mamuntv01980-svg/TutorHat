@@ -98,6 +98,7 @@ export interface TutorProfile {
   rating: number;
   totalReviews: number;
   featured?: boolean;
+  createdAt?: string;
 
   // KYC & Trust Verification Documents
   nidNumber?: string;

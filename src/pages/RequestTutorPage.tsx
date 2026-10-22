@@ -28,8 +28,8 @@ export const RequestTutorPage: React.FC = () => {
   const t = TRANSLATIONS[language];
 
   // Form State
-  const [guardianName, setGuardianName] = useState(currentUser?.name || '');
-  const [phone, setPhone] = useState(currentUser?.phone || '');
+  const [guardianName, setGuardianName] = useState(currentUser?.role === 'guardian' ? (currentUser.name || '') : '');
+  const [phone, setPhone] = useState(currentUser?.role === 'guardian' ? (currentUser.phone || '') : '');
   const [location, setLocation] = useState('Dhaka');
   const [area, setArea] = useState('Dhanmondi');
   const [studentClass, setStudentClass] = useState('Class 8 (JSC)');

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   ShieldCheck, 
   Users, 
@@ -94,9 +94,29 @@ import { CertificateViewModal } from '../../components/tuition/CertificateViewMo
 import { IssueCertificateModal } from '../../components/tuition/IssueCertificateModal';
 import { ChatHubSection } from '../../components/chat/ChatHubSection';
 import { StudentProgressReportModal } from '../../components/progress/StudentProgressReportModal';
+import { AdminInstallModal } from '../../components/admin/AdminInstallModal';
 
 export const AdminDashboard: React.FC = () => {
   const { storeState, settings, currentUser, loginAs, logout, language, navigateTo } = useApp();
+
+  // PWA Standalone App Installation
+  const [installModalOpen, setInstallModalOpen] = useState(false);
+  const [deferredInstallPrompt, setDeferredInstallPrompt] = useState<any>(null);
+  const [isStandaloneApp, setIsStandaloneApp] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone === true;
+    setIsStandaloneApp(standalone);
+
+    const handleBeforeInstall = (e: any) => {
+      e.preventDefault();
+      setDeferredInstallPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
 
   type AdminTab = 
     | 'jobs' 
@@ -118,7 +138,40 @@ export const AdminDashboard: React.FC = () => {
     | 'admins'
     | 'settings';
 
-  const [activeTab, setActiveTab] = useState<AdminTab>('jobs');
+  const [activeTab, setActiveTab] = useState<AdminTab>('requests');
+  const [requestStatusFilter, setRequestStatusFilter] = useState<'all' | 'pending' | 'converted_to_job' | 'rejected'>('all');
+  const [requestSubView, setRequestSubView] = useState<'requests' | 'tutors'>('requests');
+
+  // Format request / application submission age in Bengali (Requirement: এতদিন আগে গার্ডিয়ান রিকোয়েস্ট করেছেন)
+  const formatRequestAge = (isoString?: string) => {
+    if (!isoString) return 'সম্প্রতি রিকোয়েস্ট করেছেন';
+    try {
+      const date = new Date(isoString);
+      const now = new Date();
+      const diffMs = Math.max(0, now.getTime() - date.getTime());
+      const diffMins = Math.floor(diffMs / (1000 * 60));
+      const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+      const formattedDate = date.toLocaleDateString('bn-BD', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+      const formattedTime = date.toLocaleTimeString('bn-BD', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+
+      if (diffMins < 5) return `⚡ এইমাত্র রিকোয়েস্ট করেছেন (${formattedTime})`;
+      if (diffMins < 60) return `⚡ ${diffMins} মিনিট আগে রিকোয়েস্ট করেছেন (${formattedTime})`;
+      if (diffHours < 24) return `⚡ ${diffHours} ঘণ্টা আগে রিকোয়েস্ট করেছেন (${formattedTime})`;
+      if (diffDays === 1) return `📅 ১ দিন আগে (গতকাল) রিকোয়েস্ট করেছেন (${formattedDate})`;
+      return `📅 ${diffDays} দিন আগে রিকোয়েস্ট করেছেন (${formattedDate})`;
+    } catch {
+      return 'পূর্বে রিকোয়েস্ট করেছেন';
+    }
+  };
 
   // Pending Approvals Calculation (Requirements 2 & 3)
   const pendingRequests = useMemo(() => storeState.requests.filter(r => r.status === 'pending'), [storeState.requests]);
@@ -894,40 +947,85 @@ export const AdminDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-100/70 pb-20">
       
-      {/* Admin Top Header */}
-      <div className="bg-blue-950 text-white sticky top-16 z-30 shadow-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
-            <div className="flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-amber-400" />
-              <span className="font-bold text-sm tracking-wide">TutorHat Administration Console</span>
+      {/* Admin Top Header (Optimized for Standalone PWA & Desktop) */}
+      <div className="bg-slate-950 text-white sticky top-0 z-30 shadow-lg border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-14 gap-2">
+            
+            {/* Left: Admin Crest & Title */}
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-lg bg-slate-900 border border-amber-400/40 p-0.5 shrink-0 shadow-xs flex items-center justify-center">
+                <img src="/icon-admin.svg" alt="TutorHat Admin" className="w-full h-full object-contain" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-sm tracking-wide text-white truncate">TutorHat Admin</span>
+                  <span className="hidden sm:inline-flex px-1.5 py-0.5 rounded-md bg-amber-400/15 text-amber-300 text-[10px] font-black border border-amber-400/30">
+                    CONSOLE
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 text-xs text-slate-300">
-              <span className="hidden md:inline">Active: <strong className="text-white">{currentUser.name}</strong></span>
+
+            {/* Right: Actions, Install App, Website Link, Export, Logout */}
+            <div className="flex items-center gap-1.5 sm:gap-2.5 text-xs text-slate-300">
               
+              {/* Standalone Admin App Install Trigger */}
+              <button
+                type="button"
+                onClick={() => setInstallModalOpen(true)}
+                className={`py-1.5 px-2.5 sm:px-3 font-bold rounded-xl flex items-center gap-1.5 transition text-xs cursor-pointer shadow-sm active:scale-95 ${
+                  isStandaloneApp 
+                    ? 'bg-emerald-950/70 border border-emerald-500/50 text-emerald-300 hover:bg-emerald-900/60'
+                    : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 shadow-amber-500/20'
+                }`}
+                title={isStandaloneApp ? 'TutorHat Admin Standalone App Active' : 'Install TutorHat Admin as a Standalone App on your Phone or Desktop'}
+              >
+                <Smartphone className="w-3.5 h-3.5 shrink-0" />
+                <span className="hidden sm:inline">
+                  {isStandaloneApp ? '✓ অ্যাপ চালু আছে' : '📲 ইনস্টল করুন অ্যাডমিন অ্যাপ'}
+                </span>
+                <span className="sm:hidden">
+                  {isStandaloneApp ? '✓ অ্যাপ' : '📲 ইনস্টল'}
+                </span>
+              </button>
+
+              {/* View Public Marketplace Website */}
+              <button
+                type="button"
+                onClick={() => navigateTo('home')}
+                className="py-1.5 px-2 sm:px-2.5 bg-slate-900 hover:bg-slate-800 text-slate-200 font-medium rounded-xl border border-slate-700 flex items-center gap-1 transition text-xs cursor-pointer active:scale-95"
+                title="View Main TutorHat Marketplace Website"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-blue-400" />
+                <span className="hidden md:inline">মূল ওয়েবসাইট</span>
+              </button>
+
               {/* Google Sheets / CSV Export Button */}
               <button
                 type="button"
                 onClick={() => setExportModalOpen(true)}
-                className="py-1 px-2.5 sm:px-3 bg-emerald-600/90 hover:bg-emerald-600 text-white font-bold rounded-lg flex items-center gap-1.5 transition text-xs cursor-pointer shadow-xs active:scale-95"
+                className="py-1.5 px-2.5 sm:px-3 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-xl flex items-center gap-1.5 transition text-xs cursor-pointer shadow-xs active:scale-95"
                 title="Google Sheets & CSV Export"
               >
                 <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-200" />
-                <span className="hidden sm:inline">Google Sheets / Export</span>
-                <span className="sm:hidden">Export</span>
+                <span className="hidden lg:inline">Google Sheets / Export</span>
+                <span className="lg:hidden">Export</span>
               </button>
 
-              <span className="hidden sm:inline-flex px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-semibold">
-                ● Live Database
+              <span className="hidden xl:inline-flex px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[11px] font-semibold">
+                ● Live DB
               </span>
+
+              {/* Admin Logout */}
               <button
                 type="button"
                 onClick={handleAdminLogout}
-                className="py-1 px-3 bg-rose-600/90 hover:bg-rose-600 text-white font-bold rounded-lg flex items-center gap-1.5 transition text-xs cursor-pointer shadow-xs active:scale-95"
+                className="py-1.5 px-2.5 bg-rose-600/90 hover:bg-rose-600 text-white font-bold rounded-xl flex items-center gap-1 transition text-xs cursor-pointer shadow-xs active:scale-95"
                 title="Admin Logout"
               >
                 <LogOut className="w-3.5 h-3.5" />
-                <span>লগআউট</span>
+                <span className="hidden sm:inline">লগআউট</span>
               </button>
             </div>
           </div>
@@ -1005,9 +1103,12 @@ export const AdminDashboard: React.FC = () => {
                     {pendingRequests.slice(0, 3).map(req => (
                       <div key={req.id} className="p-2.5 rounded-lg bg-amber-50/60 border border-amber-200/80 flex items-start justify-between gap-2">
                         <div className="space-y-0.5 flex-1">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-bold text-blue-950">{req.guardianName}</span>
                             <span className="text-[10px] text-slate-500 font-mono">({req.phone})</span>
+                            <span className="text-[10px] font-bold text-blue-800 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">
+                              {formatRequestAge(req.createdAt)}
+                            </span>
                           </div>
                           <p className="text-[11px] text-slate-700">
                             <strong>{req.studentClass}</strong> ({req.medium}) · {req.area} · বাজেট: {settings.defaultCurrency}{req.monthlyBudget}
@@ -1053,9 +1154,12 @@ export const AdminDashboard: React.FC = () => {
                     {pendingTutors.slice(0, 3).map(tut => (
                       <div key={tut.id} className="p-2.5 rounded-lg bg-blue-50/60 border border-blue-200/80 flex items-start justify-between gap-2">
                         <div className="space-y-0.5 flex-1">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             <span className="font-bold text-blue-950">{tut.fullName}</span>
                             <span className="text-[10px] text-slate-500 font-mono">({tut.phone})</span>
+                            <span className="text-[10px] font-bold text-blue-800 bg-blue-50 px-1.5 py-0.2 rounded border border-blue-200">
+                              {formatRequestAge(tut.createdAt || tut.verificationSubmittedDate)}
+                            </span>
                           </div>
                           <p className="text-[11px] text-slate-700">
                             <strong>{tut.university || 'বিশ্ববিদ্যালয়'}</strong> ({tut.department || 'বিভাগ'}) · এলাকা: {tut.district}
@@ -1088,24 +1192,24 @@ export const AdminDashboard: React.FC = () => {
         {/* Navigation Tabs Bar with Badges */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 text-xs font-semibold scrollbar-none">
           {[
-            { id: 'jobs', label: `Tuition Jobs (${storeState.jobs.length})` },
-            { id: 'requests', label: `Guardian Requests (${storeState.requests.length})`, pending: pendingRequests.length },
-            { id: 'tutors', label: `Tutors (${storeState.tutors.length})`, pending: pendingTutors.length },
-            { id: 'guardians', label: `Guardians (${guardians.length})` },
-            { id: 'applications', label: `Applications (${storeState.applications.length})`, pending: pendingApplications.length },
-            { id: 'demos', label: `Demo Classes (${storeState.demos.length})` },
-            { id: 'confirmations', label: `Confirmations (${storeState.confirmations.length})` },
-            { id: 'chats', label: `Live Chats (${storeState.conversations?.length || 0})` },
-            { id: 'progress-reports', label: `Progress Reports (${storeState.progressReports?.length || 0})` },
-            { id: 'notices', label: `Notice Board (${storeState.notices.length})` },
-            { id: 'referrals', label: `Referrals (${storeState.referrals.length})` },
-            { id: 'messages', label: `Inquiries (${storeState.messages.filter(m => m.status === 'unread').length} new)` },
-            { id: 'payments', label: `Payments (${storeState.payments.length})` },
-            { id: 'certificates', label: `Certificates (${storeState.certificates.length})` },
-            { id: 'reviews', label: `Reviews (${storeState.reviews.length})` },
-            { id: 'activity', label: `Activity Logs (${storeState.activityLogs.length})` },
-            { id: 'admins', label: `Admin Management (${adminUsers.length})` },
-            { id: 'settings', label: 'Central Settings' }
+            { id: 'requests', label: `📋 গার্ডিয়ান রিকোয়েস্ট (${storeState.requests.length})`, pending: pendingRequests.length },
+            { id: 'tutors', label: `🎓 টিউটর সিভি আবেদন (${storeState.tutors.length})`, pending: pendingTutors.length },
+            { id: 'jobs', label: `📌 টিউশন জব সার্কুলার (${storeState.jobs.length})` },
+            { id: 'applications', label: `📝 জবে টিউটর আবেদন (${storeState.applications.length})`, pending: pendingApplications.length },
+            { id: 'guardians', label: `👥 অভিভাবক তালিকা (${guardians.length})` },
+            { id: 'demos', label: `🎯 ডেমো ক্লাস (${storeState.demos.length})` },
+            { id: 'confirmations', label: `📜 টিউশন চুক্তি (${storeState.confirmations.length})` },
+            { id: 'chats', label: `💬 লাইভ চ্যাট সুপারভিশন (${storeState.conversations?.length || 0})` },
+            { id: 'progress-reports', label: `📊 অগ্রগতি রিপোর্ট (${storeState.progressReports?.length || 0})` },
+            { id: 'notices', label: `📢 নোটিশ বোর্ড (${storeState.notices.length})` },
+            { id: 'referrals', label: `🎁 রেফারেল (${storeState.referrals.length})` },
+            { id: 'messages', label: `✉️ বার্তা ও যোগাযোগ (${storeState.messages.filter(m => m.status === 'unread').length} new)` },
+            { id: 'payments', label: `💳 পেমেন্ট ও ফি (${storeState.payments.length})` },
+            { id: 'certificates', label: `🎖️ সার্টিফিকেট (${storeState.certificates.length})` },
+            { id: 'reviews', label: `⭐ টিউটর রিভিউ (${storeState.reviews.length})` },
+            { id: 'activity', label: `📝 অডিট লগ (${storeState.activityLogs.length})` },
+            { id: 'admins', label: `⚙️ অ্যাডমিন ব্যবস্থাপনা (${adminUsers.length})` },
+            { id: 'settings', label: '🛠️ কেন্দ্রীয় সেটিংস' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -1976,155 +2080,450 @@ export const AdminDashboard: React.FC = () => {
         )}
 
         {/* ========================================================= */}
-        {/* GUARDIAN REQUESTS                                         */}
+        {/* GUARDIAN REQUESTS & TUTOR CV APPLICATIONS APPROVALS        */}
         {/* ========================================================= */}
         {activeTab === 'requests' && (
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-4 text-xs">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-5 text-xs">
+            {/* Header & Subtabs */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
               <div>
-                <h3 className="font-bold text-base text-blue-950">Guardian Tuition Requirements (অভিভাবকের টিউশন চাহিদা)</h3>
-                <p className="text-slate-500">এখান থেকে অভিভাবকদের টিউশন রিকোয়েস্ট সরাসরি এডিট, ডিলিট ও লাইভ জবে রূপান্তর করতে পারবেন।</p>
+                <h3 className="font-bold text-lg text-blue-950 flex items-center gap-2">
+                  <span>অভিভাবক রিকোয়েস্ট ও টিউটর আবেদন কন্ট্রোল সেন্টার</span>
+                  {totalPending > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-rose-600 text-white text-[11px] font-black animate-pulse">
+                      {totalPending} টি নতুন অপেক্ষমাণ
+                    </span>
+                  )}
+                </h3>
+                <p className="text-slate-500 text-xs">
+                  অভিভাবকের টিউশন চাহিদা এবং টিউটরদের পূরণকৃত সিভি যাচাই করে সরাসরি ওয়েবসাইটে লাইভ অনুমোদন করুন।
+                </p>
               </div>
-              <div className="flex items-center gap-2 self-start sm:self-auto">
-                <span className="text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full font-semibold">
-                  Total Requests: {storeState.requests.length}
-                </span>
-                {storeState.requests.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      store.clearAllRequestsAndApplications();
-                      showAdminToast('✓ সমস্ত রিকোয়েস্ট, টিউশন অফার ও আবেদন সফলভাবে মুছে শূন্য করা হয়েছে।');
-                    }}
-                    className="text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded-full font-semibold cursor-pointer transition"
-                  >
-                    সকল রিকোয়েস্ট ও আবেদন মুছুন
-                  </button>
-                )}
+
+              {/* Sub-view switcher: Guardian Requests vs Tutor CVs */}
+              <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setRequestSubView('requests')}
+                  className={`px-3.5 py-2 rounded-xl font-bold text-xs cursor-pointer transition flex items-center gap-1.5 shadow-xs ${
+                    requestSubView === 'requests'
+                      ? 'bg-blue-950 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <span>📋 অভিভাবক রিকোয়েস্ট ({storeState.requests.length})</span>
+                  {pendingRequests.length > 0 && (
+                    <span className="bg-amber-400 text-slate-950 text-[10px] px-1.5 py-0.2 rounded-full font-black animate-pulse">
+                      {pendingRequests.length} নতুন
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setRequestSubView('tutors')}
+                  className={`px-3.5 py-2 rounded-xl font-bold text-xs cursor-pointer transition flex items-center gap-1.5 shadow-xs ${
+                    requestSubView === 'tutors'
+                      ? 'bg-blue-950 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  <span>🎓 টিউটর সিভি আবেদন ({storeState.tutors.length})</span>
+                  {pendingTutors.length > 0 && (
+                    <span className="bg-emerald-400 text-slate-950 text-[10px] px-1.5 py-0.2 rounded-full font-black animate-pulse">
+                      {pendingTutors.length} নতুন
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await store.syncWithServer();
+                    showAdminToast('✓ সার্ভার থেকে সর্বশেষ রিকোয়েস্ট ও আবেদনসমূহ সিঙ্ক করা হয়েছে।');
+                  }}
+                  className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer transition"
+                  title="সার্ভার থেকে রিলোড / সিঙ্ক করুন"
+                >
+                  <RefreshCw className="w-4 h-4 text-blue-900" />
+                </button>
               </div>
             </div>
 
-            {/* Request Search Input */}
-            <div className="relative">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-              <input
-                type="text"
-                placeholder="Search requests by ID, guardian name, phone, class, area, subject, custom..."
-                value={requestSearch}
-                onChange={e => setRequestSearch(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl"
-              />
-            </div>
-
-            <div className="space-y-3">
-              {storeState.requests
-                .filter(req => {
-                  if (!requestSearch) return true;
-                  const q = requestSearch.toLowerCase();
-                  return (
-                    req.id.toLowerCase().includes(q) ||
-                    req.guardianName.toLowerCase().includes(q) ||
-                    req.phone.includes(q) ||
-                    req.studentClass.toLowerCase().includes(q) ||
-                    req.area.toLowerCase().includes(q) ||
-                    (req.customRequirements && req.customRequirements.toLowerCase().includes(q)) ||
-                    req.subjects.some(s => s.toLowerCase().includes(q))
-                  );
-                })
-                .map((req) => (
-                <div key={req.id} className="p-4 rounded-xl bg-slate-50 border border-slate-200 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 hover:border-slate-300 transition-colors">
-                  <div className="space-y-1.5 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">{req.id}</span>
-                      <span className="font-bold text-slate-900">{req.guardianName} ({req.phone})</span>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                        req.status === 'converted_to_job' ? 'bg-emerald-100 text-emerald-800' :
-                        req.status === 'pending' ? 'bg-amber-100 text-amber-800' :
-                        req.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-900'
-                      }`}>
-                        {req.status.replace('_', ' ')}
-                      </span>
-                    </div>
-
-                    <p className="text-slate-700">
-                      <strong>Class:</strong> {req.studentClass} ({req.medium}) · <strong>Area:</strong> {req.area}, {req.location}
-                    </p>
-                    <p className="text-slate-600">
-                      <strong>Subjects:</strong> {req.subjects.join(', ')} · <strong>Routine:</strong> {req.daysPerWeek} days/wk ({req.preferredTime})
-                    </p>
-                    <p className="text-blue-950 font-bold">
-                      Guardian Budget: {settings.defaultCurrency}{req.monthlyBudget.toLocaleString()}/month
-                    </p>
-
-                    {/* Requirement 2: Display Customise requirements in Admin Panel */}
-                    {req.customRequirements && (
-                      <div className="mt-1 inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 border border-amber-300 rounded-lg text-amber-950 font-medium text-[11px]">
-                        <Sparkles className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                        <span>কাস্টমাইজ চাহিদা (Customise): <strong>{req.customRequirements}</strong></span>
-                      </div>
-                    )}
-
-                    {req.additionalRequirements && (
-                      <p className="text-[11px] text-slate-500 italic">
-                        "{req.additionalRequirements}"
-                      </p>
-                    )}
+            {/* SUB-VIEW 1: GUARDIAN TUITION REQUESTS */}
+            {requestSubView === 'requests' && (
+              <div className="space-y-4">
+                {/* Search & Filter Bar */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <div className="relative flex-1">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      placeholder="অভিভাবকের নাম, ফোন, শ্রেণি, বিষয় বা এলাকা দিয়ে খুঁজুন..."
+                      value={requestSearch}
+                      onChange={e => setRequestSearch(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs"
+                    />
                   </div>
 
-                  {/* Actions Toolbar - Requirement 1: Edit & Delete */}
-                  <div className="flex items-center gap-2 shrink-0 flex-wrap">
-                    {req.status === 'pending' && (
+                  {/* Status filter tabs */}
+                  <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0 overflow-x-auto">
+                    {[
+                      { id: 'all', label: `সব (${storeState.requests.length})` },
+                      { id: 'pending', label: `⏳ অনুমোদনের অপেক্ষায় (${pendingRequests.length})` },
+                      { id: 'converted_to_job', label: `✓ অনুমোদিত ও লাইভ (${storeState.requests.filter(r => r.status === 'converted_to_job').length})` },
+                      { id: 'rejected', label: `✗ বাতিল (${storeState.requests.filter(r => r.status === 'rejected').length})` }
+                    ].map(f => (
                       <button
+                        key={f.id}
                         type="button"
-                        onClick={() => {
-                          store.convertRequestToJob(req.id);
-                          showAdminToast(`✓ অভিভাবক রিকোয়েস্ট [${req.id}] সফলভাবে অনুমোদন ও লাইভ জবে প্রকাশিত হয়েছে।`);
-                        }}
-                        className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold cursor-pointer transition shadow-xs text-xs flex items-center gap-1.5"
+                        onClick={() => setRequestStatusFilter(f.id as any)}
+                        className={`px-2.5 py-1 rounded-lg font-bold text-xs transition cursor-pointer whitespace-nowrap ${
+                          requestStatusFilter === f.id
+                            ? 'bg-white text-blue-950 shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
                       >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-white" />
-                        <span>অনুমোদন ও লাইভ সার্কুলার প্রকাশ (Approve & Publish)</span>
+                        {f.label}
                       </button>
-                    )}
+                    ))}
+                  </div>
+                </div>
 
-                    {/* Edit Request Button (Requirement 1) */}
+                {/* Request List */}
+                <div className="space-y-3.5">
+                  {storeState.requests
+                    .filter(req => {
+                      if (requestStatusFilter !== 'all' && req.status !== requestStatusFilter) {
+                        return false;
+                      }
+                      if (!requestSearch) return true;
+                      const q = requestSearch.toLowerCase();
+                      return (
+                        req.id.toLowerCase().includes(q) ||
+                        req.guardianName.toLowerCase().includes(q) ||
+                        req.phone.includes(q) ||
+                        req.studentClass.toLowerCase().includes(q) ||
+                        req.area.toLowerCase().includes(q) ||
+                        (req.customRequirements && req.customRequirements.toLowerCase().includes(q)) ||
+                        req.subjects.some(s => s.toLowerCase().includes(q))
+                      );
+                    })
+                    .map((req) => (
+                    <div 
+                      key={req.id} 
+                      className={`p-4 rounded-2xl border transition-all flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 ${
+                        req.status === 'pending'
+                          ? 'bg-amber-50/50 border-amber-300 shadow-xs ring-1 ring-amber-200'
+                          : 'bg-white border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="space-y-2 flex-1">
+                        {/* Header Badges & Request Submission Age */}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono font-bold text-blue-950 bg-blue-100/70 px-2 py-0.5 rounded-lg border border-blue-200">
+                            {req.id}
+                          </span>
+                          
+                          <span className="font-bold text-slate-900 text-sm">
+                            {req.guardianName}
+                          </span>
+
+                          {/* Elapsed Time Badge (Requirement: এতদিন আগে গার্ডিয়ান রিকোয়েস্ট করেছেন) */}
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-900 border border-blue-200 text-[11px] font-bold">
+                            <Clock className="w-3.5 h-3.5 text-blue-700" />
+                            <span>{formatRequestAge(req.createdAt)}</span>
+                          </div>
+
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                            req.status === 'converted_to_job' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' :
+                            req.status === 'pending' ? 'bg-amber-200 text-amber-950 font-black animate-pulse border border-amber-300' :
+                            req.status === 'rejected' ? 'bg-rose-100 text-rose-800' : 'bg-blue-100 text-blue-900'
+                          }`}>
+                            {req.status === 'pending' ? '⏳ অনুমোদনের অপেক্ষায়' : req.status === 'converted_to_job' ? '✓ অনুমোদিত ও লাইভ জব' : req.status}
+                          </span>
+                        </div>
+
+                        {/* Guardian Phone & Direct Contact Links */}
+                        <div className="flex items-center gap-3 text-slate-600 flex-wrap">
+                          <span className="font-mono font-semibold text-slate-800 flex items-center gap-1">
+                            <Phone className="w-3.5 h-3.5 text-slate-400" />
+                            {req.phone}
+                          </span>
+                          <a
+                            href={`tel:${req.phone}`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 font-semibold text-[11px]"
+                          >
+                            <span>📞 কল করুন</span>
+                          </a>
+                          <a
+                            href={`https://wa.me/88${req.phone.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500 text-white hover:bg-emerald-600 font-semibold text-[11px]"
+                          >
+                            <span>💬 WhatsApp</span>
+                          </a>
+                        </div>
+
+                        {/* Tuition Details */}
+                        <p className="text-slate-800 text-xs">
+                          <strong>শ্রেণি ও কারিকুলাম:</strong> {req.studentClass} ({req.medium}) · <strong>এলাকা:</strong> {req.area}, {req.location}
+                        </p>
+                        <p className="text-slate-700 text-xs">
+                          <strong>বিষয়সমূহ:</strong> {req.subjects.join(', ')} · <strong>শিডিউল:</strong> সপ্তাহে {req.daysPerWeek} দিন ({req.preferredTime})
+                        </p>
+                        <p className="text-blue-950 font-bold text-xs">
+                          অভিভাবকের অফারকৃত বাজেট: {settings.defaultCurrency}{req.monthlyBudget.toLocaleString()}/মাস
+                        </p>
+
+                        {/* Customise requirements */}
+                        {req.customRequirements && (
+                          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-100/70 border border-amber-300 rounded-xl text-amber-950 font-medium text-[11px]">
+                            <Sparkles className="w-3.5 h-3.5 text-amber-700 shrink-0" />
+                            <span>কাস্টমাইজ চাহিদা: <strong>{req.customRequirements}</strong></span>
+                          </div>
+                        )}
+
+                        {req.additionalRequirements && (
+                          <p className="text-[11px] text-slate-500 italic bg-white/70 p-2 rounded-lg border border-slate-200/60">
+                            "{req.additionalRequirements}"
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Actions: Direct One-Click Approval */}
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap lg:flex-col lg:items-end">
+                        {req.status === 'pending' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              store.convertRequestToJob(req.id);
+                              showAdminToast(`✓ অভিভাবক রিকোয়েস্ট [${req.id}] সফলভাবে অনুমোদন ও লাইভ জবে প্রকাশিত হয়েছে!`);
+                            }}
+                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold cursor-pointer transition shadow-md text-xs flex items-center gap-1.5 active:scale-95"
+                          >
+                            <CheckCircle2 className="w-4 h-4 text-white" />
+                            <span>✓ অনুমোদন ও লাইভ সার্কুলার প্রকাশ</span>
+                          </button>
+                        )}
+
+                        <div className="flex items-center gap-1.5">
+                          {/* Edit Request Button */}
+                          <button
+                            type="button"
+                            onClick={() => openEditRequestModal(req)}
+                            className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 rounded-lg font-semibold flex items-center gap-1 cursor-pointer transition shadow-2xs text-xs"
+                            title="Edit Request"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-blue-900" />
+                            <span>Edit</span>
+                          </button>
+
+                          {/* Delete Request Button */}
+                          <button
+                            type="button"
+                            onClick={() => setDeleteConfirmItem({
+                              type: 'request',
+                              id: req.id,
+                              label: `অভিভাবক ${req.guardianName}-এর রিকোয়েস্ট (${req.id}: ${req.studentClass})`
+                            })}
+                            className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer border border-transparent hover:border-rose-200 transition"
+                            title="Delete Request (মুছে ফেলুন)"
+                          >
+                            <Trash2 className="w-4 h-4 text-rose-600" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {storeState.requests.length === 0 && (
+                    <div className="py-12 text-center text-slate-500 space-y-2 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                      <FileText className="w-10 h-10 text-slate-300 mx-auto" />
+                      <p className="font-semibold text-slate-700 text-sm">বর্তমানে কোনো অভিভাবক রিকোয়েস্ট নেই</p>
+                      <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                        অভিভাবকরা ওয়েবসাইটে নতুন টিউশন রিকোয়েস্ট পাঠালে সাথে সাথে এখানে প্রদর্শিত হবে এবং আপনি অনুমোদন করতে পারবেন।
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* SUB-VIEW 2: TUTOR CV APPLICATIONS */}
+            {requestSubView === 'tutors' && (
+              <div className="space-y-4">
+                {/* Status filter tabs for Tutors */}
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
                     <button
                       type="button"
-                      onClick={() => openEditRequestModal(req)}
-                      className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 rounded-lg font-semibold flex items-center gap-1 cursor-pointer transition shadow-2xs text-xs"
-                      title="Edit Request"
+                      onClick={() => setTutorVerificationFilter('all')}
+                      className={`px-3 py-1 rounded-lg font-bold text-xs transition cursor-pointer ${
+                        tutorVerificationFilter === 'all'
+                          ? 'bg-white text-blue-950 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
                     >
-                      <Edit3 className="w-3.5 h-3.5 text-blue-900" />
-                      <span>Edit</span>
+                      সব সিভি ({storeState.tutors.length})
                     </button>
-
-                    {/* Delete Request Button (Requirement 1 - Fixed & Reliable) */}
                     <button
                       type="button"
-                      onClick={() => setDeleteConfirmItem({
-                        type: 'request',
-                        id: req.id,
-                        label: `অভিভাবক ${req.guardianName}-এর রিকোয়েস্ট (${req.id}: ${req.studentClass})`
-                      })}
-                      className="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg cursor-pointer border border-transparent hover:border-rose-200 transition"
-                      title="Delete Request (মুছে ফেলুন)"
+                      onClick={() => setTutorVerificationFilter('pending')}
+                      className={`px-3 py-1 rounded-lg font-bold text-xs transition cursor-pointer flex items-center gap-1 ${
+                        tutorVerificationFilter === 'pending'
+                          ? 'bg-amber-500 text-white shadow-xs'
+                          : 'text-amber-800 hover:text-amber-950'
+                      }`}
                     >
-                      <Trash2 className="w-4 h-4 text-rose-600" />
+                      <span>অপেক্ষমাণ অনুমোদন</span>
+                      <span className="bg-amber-200 text-amber-950 px-1.5 py-0.2 rounded-full text-[10px] font-black">
+                        {pendingTutors.length}
+                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setTutorVerificationFilter('verified')}
+                      className={`px-3 py-1 rounded-lg font-bold text-xs transition cursor-pointer ${
+                        tutorVerificationFilter === 'verified'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'text-emerald-700 hover:text-emerald-900'
+                      }`}
+                    >
+                      ভেরিফাইড ({storeState.tutors.filter(t => t.verificationStatus === 'verified').length})
                     </button>
                   </div>
                 </div>
-              ))}
 
-              {storeState.requests.length === 0 && (
-                <div className="py-12 text-center text-slate-500 space-y-2 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
-                  <FileText className="w-10 h-10 text-slate-300 mx-auto" />
-                  <p className="font-semibold text-slate-700">বর্তমানে কোনো অভিভাবক রিকোয়েস্ট নেই</p>
-                  <p className="text-[11px] text-slate-400 max-w-sm mx-auto">
-                    সকল ডেমো রিকোয়েস্ট মুছে নতুন কার্যক্রমের জন্য প্রস্তুত করা হয়েছে। অভিভাবকরা ওয়েবসাইটে নতুন টিউশন রিকোয়েস্ট পাঠালে এখানে প্রদর্শিত হবে।
-                  </p>
+                {/* Tutors CV Cards List */}
+                <div className="space-y-3.5">
+                  {storeState.tutors
+                    .filter(tut => {
+                      if (tutorVerificationFilter === 'all') return true;
+                      if (tutorVerificationFilter === 'pending') {
+                        return tut.verificationStatus === 'pending' || tut.verificationStatus === 'draft';
+                      }
+                      return tut.verificationStatus === tutorVerificationFilter;
+                    })
+                    .map((tutor) => (
+                    <div 
+                      key={tutor.id} 
+                      className={`p-4 rounded-2xl border transition-all flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 ${
+                        tutor.verificationStatus === 'pending' || tutor.verificationStatus === 'draft'
+                          ? 'bg-blue-50/40 border-blue-300 shadow-xs ring-1 ring-blue-200'
+                          : 'bg-white border-slate-200'
+                      }`}
+                    >
+                      <div className="space-y-2 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-bold text-sm text-blue-950">{tutor.fullName}</span>
+                          <span className="font-mono text-[11px] text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">{tutor.id}</span>
+
+                          {/* Submission Age Indicator */}
+                          <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100/70 text-blue-900 text-[11px] font-bold border border-blue-200">
+                            <Clock className="w-3.5 h-3.5 text-blue-700" />
+                            <span>{formatRequestAge(tutor.createdAt || tutor.verificationSubmittedDate)}</span>
+                          </div>
+
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                            tutor.verificationStatus === 'verified' ? 'bg-emerald-100 text-emerald-800' :
+                            tutor.verificationStatus === 'pending' ? 'bg-amber-100 text-amber-900 font-black animate-pulse' :
+                            'bg-slate-100 text-slate-700'
+                          }`}>
+                            {tutor.verificationStatus === 'verified' ? '✓ ভেরিফাইড' : '⏳ সিভি অনুমোদন অপেক্ষমাণ'}
+                          </span>
+
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900">
+                            সিভি সম্পন্ন: {tutor.completionPercentage || 60}%
+                          </span>
+                        </div>
+
+                        {/* Phone & Direct Contact Links */}
+                        <div className="flex items-center gap-3 text-slate-600 flex-wrap">
+                          <span className="font-mono font-semibold text-slate-800 flex items-center gap-1">
+                            <Phone className="w-3.5 h-3.5 text-slate-400" />
+                            {tutor.phone}
+                          </span>
+                          <a
+                            href={`tel:${tutor.phone}`}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 font-semibold text-[11px]"
+                          >
+                            <span>📞 কল করুন</span>
+                          </a>
+                          <a
+                            href={`https://wa.me/88${tutor.phone.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-500 text-white hover:bg-emerald-600 font-semibold text-[11px]"
+                          >
+                            <span>💬 WhatsApp</span>
+                          </a>
+                        </div>
+
+                        <p className="text-slate-800 text-xs">
+                          <strong>শিক্ষা প্রতিষ্ঠান:</strong> {tutor.university || tutor.institution || 'বিশ্ববিদ্যালয়/মাদ্রাসা'} ({tutor.department || 'বিভাগ'}) · <strong>বর্তমান জেলা/এলাকা:</strong> {tutor.district || tutor.area}
+                        </p>
+                        <p className="text-slate-700 text-xs">
+                          <strong>পছন্দের বিষয়:</strong> {tutor.preferredSubjects?.join(', ') || 'সব বিষয়'} · <strong>প্রত্যাশিত পারিশ্রমিক:</strong> {settings.defaultCurrency}{tutor.expectedSalary}/মাস
+                        </p>
+                        <div className="flex items-center gap-1.5 flex-wrap text-[11px]">
+                          <span className="text-slate-500 font-semibold">পছন্দের এলাকা:</span>
+                          {tutor.preferredAreas && tutor.preferredAreas.length > 0 ? (
+                            tutor.preferredAreas.map(a => (
+                              <span key={a} className="bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded text-[10px]">
+                                📍 {a}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-slate-400 italic">সারাদেশ / এলাকা উন্মুক্ত</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Approval Action Buttons */}
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap lg:flex-col lg:items-end">
+                        {tutor.verificationStatus !== 'verified' && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              store.setTutorVerificationStatus(tutor.id, 'verified');
+                              showAdminToast(`✓ টিউটর ${tutor.fullName}-এর আবেদন অনুমোদিত ও প্রোফাইল ভেরিফাই করা হয়েছে!`);
+                            }}
+                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold cursor-pointer transition shadow-md text-xs flex items-center gap-1.5 active:scale-95"
+                          >
+                            <CheckCircle2 className="w-4 h-4 text-white" />
+                            <span>✓ সিভি অনুমোদন ও প্রোফাইল ভেরিফাই</span>
+                          </button>
+                        )}
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedKycTutor(tutor);
+                            setKycReviewModalOpen(true);
+                          }}
+                          className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 rounded-lg font-semibold flex items-center gap-1 cursor-pointer transition shadow-2xs text-xs"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5 text-blue-900" />
+                          <span>সম্পূর্ণ সিভি ও ডকুমেন্ট রিভিউ</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {storeState.tutors.length === 0 && (
+                    <div className="py-12 text-center text-slate-500 space-y-2 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                      <GraduationCap className="w-10 h-10 text-slate-300 mx-auto" />
+                      <p className="font-semibold text-slate-700 text-sm">বর্তমানে কোনো টিউটর সিভি নেই</p>
+                      <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                        নতুন টিউটর নিবন্ধন করে সিভি পূরণ করলে এখানে তালিকাভুক্ত হবে এবং আপনি অনুমোদন করতে পারবেন।
+                      </p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -5644,6 +6043,17 @@ export const AdminDashboard: React.FC = () => {
           <span>{adminActionToast}</span>
         </div>
       )}
+
+      {/* Standalone Admin App Installation Modal */}
+      <AdminInstallModal
+        isOpen={installModalOpen}
+        onClose={() => setInstallModalOpen(false)}
+        deferredPrompt={deferredInstallPrompt}
+        onPromptTriggered={() => {
+          setDeferredInstallPrompt(null);
+          setInstallModalOpen(false);
+        }}
+      />
 
     </div>
   );

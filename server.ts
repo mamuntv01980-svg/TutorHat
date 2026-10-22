@@ -165,8 +165,9 @@ async function startServer() {
     db.requests = [];
     db.jobs = [];
     db.applications = [];
+    db.tutors = [];
     saveDb(db);
-    res.json({ success: true, message: 'All demo requests, jobs, and applications wiped cleanly.' });
+    res.json({ success: true, message: 'All demo requests, jobs, applications, and tutors wiped cleanly.' });
   });
 
   // 3. Guardian Tuition Requests
@@ -180,10 +181,15 @@ async function startServer() {
     const newReq = {
       ...req.body,
       id: req.body.id || `REQ-${Date.now().toString().slice(-6)}`,
-      status: 'pending', // Starts as pending for Admin review
+      status: req.body.status || 'pending', // Starts as pending for Admin review
       createdAt: req.body.createdAt || new Date().toISOString()
     };
-    db.requests = [newReq, ...db.requests];
+    const existingIdx = db.requests.findIndex(r => r.id === newReq.id);
+    if (existingIdx >= 0) {
+      db.requests[existingIdx] = { ...db.requests[existingIdx], ...newReq };
+    } else {
+      db.requests = [newReq, ...db.requests];
+    }
     saveDb(db);
     res.json({ success: true, request: newReq });
   });
@@ -202,7 +208,12 @@ async function startServer() {
 
     // If converted to live job, add to jobs collection
     if (req.body.status === 'converted_to_job' && req.body.createdJob) {
-      db.jobs = [req.body.createdJob, ...db.jobs];
+      const existingJobIdx = db.jobs.findIndex(j => j.id === req.body.createdJob.id);
+      if (existingJobIdx >= 0) {
+        db.jobs[existingJobIdx] = { ...db.jobs[existingJobIdx], ...req.body.createdJob };
+      } else {
+        db.jobs = [req.body.createdJob, ...db.jobs];
+      }
     }
 
     saveDb(db);

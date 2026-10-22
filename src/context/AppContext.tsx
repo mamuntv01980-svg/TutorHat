@@ -53,13 +53,82 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [storeState, setStoreState] = useState<StoreState>(store.getState());
-  const [activeView, setActiveView] = useState<AppView>('home');
+  const [activeView, setActiveView] = useState<AppView>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const p = window.location.pathname.toLowerCase();
+        const h = window.location.hash.toLowerCase();
+        if (p === '/admin' || p.startsWith('/admin/') || h === '#admin') {
+          return 'admin-dashboard';
+        }
+      } catch {}
+    }
+    return 'home';
+  });
   const [selectedTutorId, setSelectedTutorId] = useState<string | null>('tut_01');
   const [selectedJobId, setSelectedJobId] = useState<string | null>('JOB-2026-101');
   const [language, setLanguage] = useState<'bn' | 'en'>('bn');
 
-  // Default logged-in user: Let's start with a tutor for easy demonstration, or let users choose
-  const [currentUserId, setCurrentUserId] = useState<string | null>('user_tutor_01');
+  // Synchronize PWA Manifest, Page Title, and URL for Standalone Admin vs Public
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const isNowAdmin = activeView === 'admin-dashboard';
+      
+      const manifestEl = document.getElementById('app-manifest') as HTMLLinkElement | null;
+      const iconEl = document.getElementById('app-icon') as HTMLLinkElement | null;
+      const appleIconEl = document.getElementById('app-apple-icon') as HTMLLinkElement | null;
+      const appTitleMeta = document.getElementById('app-title-meta') as HTMLMetaElement | null;
+
+      if (isNowAdmin) {
+        if (manifestEl) manifestEl.href = '/manifest-admin.json';
+        if (iconEl) iconEl.href = '/icon-admin.svg';
+        if (appleIconEl) appleIconEl.href = '/icon-admin.svg';
+        if (appTitleMeta) appTitleMeta.content = 'TutorHat Admin';
+        document.title = 'TutorHat Admin – Management Console';
+        if (window.location.pathname !== '/admin') {
+          try {
+            window.history.replaceState(null, '', '/admin');
+          } catch {}
+        }
+      } else {
+        if (manifestEl) manifestEl.href = '/manifest.json';
+        if (iconEl) iconEl.href = '/icon.svg';
+        if (appleIconEl) appleIconEl.href = '/icon.svg';
+        if (appTitleMeta) appTitleMeta.content = 'TutorHat';
+        document.title = 'TutorHat – Find Trusted Tutors & Tuition Jobs in Bangladesh';
+        if (window.location.pathname === '/admin') {
+          try {
+            window.history.replaceState(null, '', '/');
+          } catch {}
+        }
+      }
+    } catch {}
+  }, [activeView]);
+
+  // Support Browser Back/Forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const p = window.location.pathname.toLowerCase();
+      const h = window.location.hash.toLowerCase();
+      if (p.includes('/admin') || h === '#admin') {
+        setActiveView('admin-dashboard');
+      } else {
+        setActiveView('home');
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Active logged-in user (persisted in localStorage, defaults to null for new guests)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('tutorhat_active_user_id') || null;
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
     const unsubscribe = store.subscribe(() => {
@@ -88,18 +157,24 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const loginAs = (role: UserRole, specificUserId?: string) => {
-    if (specificUserId) {
-      setCurrentUserId(specificUserId);
-      return;
+    let targetId = specificUserId;
+    if (!targetId) {
+      const matched = storeState.users.find(u => u.role === role);
+      if (matched) targetId = matched.id;
     }
-    const matched = storeState.users.find(u => u.role === role);
-    if (matched) {
-      setCurrentUserId(matched.id);
+    if (targetId) {
+      setCurrentUserId(targetId);
+      try {
+        localStorage.setItem('tutorhat_active_user_id', targetId);
+      } catch {}
     }
   };
 
   const logout = () => {
     setCurrentUserId(null);
+    try {
+      localStorage.removeItem('tutorhat_active_user_id');
+    } catch {}
     setActiveView('home');
   };
 

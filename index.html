@@ -13,10 +13,54 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="TutorHat" />
-    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
-    <link rel="apple-touch-icon" href="/icon.svg" />
-    <link rel="manifest" href="/manifest.json" />
+    <meta id="app-title-meta" name="apple-mobile-web-app-title" content="TutorHat" />
+    <link id="app-icon" rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link id="app-apple-icon" rel="apple-touch-icon" href="/icon.svg" />
+    <link id="app-manifest" rel="manifest" href="/manifest.json" />
+    <script>
+      (function() {
+        try {
+          var p = window.location.pathname.toLowerCase();
+          var h = window.location.hash.toLowerCase();
+          if (p === '/admin' || p.startsWith('/admin/') || h === '#admin') {
+            var m = document.getElementById('app-manifest');
+            if (m) m.setAttribute('href', '/manifest-admin.json');
+            var icon = document.getElementById('app-icon');
+            if (icon) icon.setAttribute('href', '/icon-admin.svg');
+            var appleIcon = document.getElementById('app-apple-icon');
+            if (appleIcon) appleIcon.setAttribute('href', '/icon-admin.svg');
+            var appTitle = document.getElementById('app-title-meta');
+            if (appTitle) appTitle.setAttribute('content', 'TutorHat Admin');
+            document.title = 'TutorHat Admin – Management Console';
+          }
+        } catch(e) {}
+        
+        // Prevent service worker from interfering with Vite dev preview
+        if ('serviceWorker' in navigator) {
+          var isDevOrPreview = window.location.hostname === 'localhost' || 
+                               window.location.hostname === '127.0.0.1' || 
+                               window.location.hostname.indexOf('run.app') !== -1;
+          if (isDevOrPreview) {
+            navigator.serviceWorker.getRegistrations().then(function(registrations) {
+              for (var i = 0; i < registrations.length; i++) {
+                registrations[i].unregister();
+              }
+            }).catch(function() {});
+            if (window.caches) {
+              caches.keys().then(function(keys) {
+                for (var j = 0; j < keys.length; j++) {
+                  caches.delete(keys[j]);
+                }
+              }).catch(function() {});
+            }
+          } else {
+            window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/sw.js').catch(function() {});
+            });
+          }
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">

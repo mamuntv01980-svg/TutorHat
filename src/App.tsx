@@ -86,20 +86,22 @@ const AppContent: React.FC = () => {
     }
   };
 
+  const isAdminView = activeView === 'admin-dashboard';
+
   return (
     <div className="min-h-screen flex flex-col bg-[#f8fafc] text-slate-800 antialiased font-sans">
-      <NoticeBanner />
-      <Header />
+      {!isAdminView && <NoticeBanner />}
+      {!isAdminView && <Header />}
       
       <main className="flex-1">
         {renderCurrentView()}
       </main>
 
-      <Footer />
-      <BottomNavigation />
+      {!isAdminView && <Footer />}
+      {!isAdminView && <BottomNavigation />}
       
-      {/* Floating WhatsApp Quick Action Button for Mobile & Desktop */}
-      <WhatsAppButton variant="floating" showIcon={true} />
+      {/* Floating WhatsApp Quick Action Button for Mobile & Desktop (Public only) */}
+      {!isAdminView && <WhatsAppButton variant="floating" showIcon={true} />}
     </div>
   );
 };

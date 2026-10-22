@@ -219,7 +219,8 @@ export const RegisterPage: React.FC = () => {
           homeTuition,
           onlineTeaching,
           preferredStudentGender,
-          verificationStatus: 'pending'
+          verificationStatus: 'pending',
+          verificationSubmittedDate: new Date().toISOString()
         });
 
         store.addNotification({
@@ -228,6 +229,8 @@ export const RegisterPage: React.FC = () => {
           message: `${fullName} (${university || department || 'টিচার'}) তার সিভি পূরণ করে অনুমোদনের জন্য পাঠিয়েছেন।`,
           type: 'verification'
         });
+
+        store.syncWithServer().catch(() => {});
       }
     }
 

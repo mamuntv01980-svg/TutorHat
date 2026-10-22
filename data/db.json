@@ -38,10 +38,16 @@
   "adminSecurity": {
     "primaryAdminPhone": "01752617360",
     "primaryAdminEmail": "admin@tutorhat.com",
-    "adminPasswordHash": "",
+    "adminPasswordHash": "a878f8951716b58508111a980f0165c1cd8539a7deafb8bad7f32a9374a63297",
     "adminPinHash": "de2d3061d2ebb9c5031fd1082ada07b42652451de2e9b2ae9a33175b894d5482",
     "adminPinSalt": "tutorhat_sec_salt_",
-    "twoFactorEnabled": false
+    "twoFactorEnabled": false,
+    "requireStrongPassword": false,
+    "biometricPasskeyRegistered": false,
+    "maxFailedAttempts": 5,
+    "lockoutDurationMinutes": 15,
+    "adminAccountConfigured": true,
+    "primaryAdminName": "Super Admin Mamun"
   },
-  "lastUpdated": "2026-10-18T08:35:00.000Z"
+  "lastUpdated": "2026-10-19T11:24:02.586Z"
 }
