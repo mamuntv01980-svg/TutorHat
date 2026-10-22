@@ -60,8 +60,8 @@ const DEFAULT_SETTINGS: SystemSettings = {
   },
   adminSecurity: {
     requireStrongPassword: false,
-    adminPasswordHash: 'Admin@2026#Secure',
-    adminPinHash: 'de2d3061d2ebb9c5031fd1082ada07b42652451de2e9b2ae9a33175b894d5482',
+    adminPasswordHash: '5078',
+    adminPinHash: '9ba5b4d71a7b4455e4230a991e795c0fd2d91c179ee0671b7add49cf9be962fb',
     adminPinSalt: 'tutorhat_sec_salt_',
     biometricPasskeyRegistered: false,
     twoFactorEnabled: false,

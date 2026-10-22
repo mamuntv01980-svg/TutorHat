@@ -37,9 +37,8 @@
   },
   "adminSecurity": {
     "primaryAdminPhone": "01752617360",
-    "primaryAdminEmail": "admin@tutorhat.com",
-    "adminPasswordHash": "a878f8951716b58508111a980f0165c1cd8539a7deafb8bad7f32a9374a63297",
-    "adminPinHash": "de2d3061d2ebb9c5031fd1082ada07b42652451de2e9b2ae9a33175b894d5482",
+    "adminPasswordHash": "9ba5b4d71a7b4455e4230a991e795c0fd2d91c179ee0671b7add49cf9be962fb",
+    "adminPinHash": "9ba5b4d71a7b4455e4230a991e795c0fd2d91c179ee0671b7add49cf9be962fb",
     "adminPinSalt": "tutorhat_sec_salt_",
     "twoFactorEnabled": false,
     "requireStrongPassword": false,
