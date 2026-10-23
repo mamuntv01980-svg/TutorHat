@@ -158,7 +158,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const loginAs = (role: UserRole, specificUserId?: string) => {
     let targetId = specificUserId;
-    if (!targetId) {
+    if (role === 'admin') {
+      const admin = store.ensureAdminUser();
+      targetId = specificUserId || admin.id;
+    } else if (!targetId) {
       const matched = storeState.users.find(u => u.role === role);
       if (matched) targetId = matched.id;
     }

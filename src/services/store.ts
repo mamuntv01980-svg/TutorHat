@@ -139,19 +139,6 @@ const INITIAL_USERS: User[] = [
     status: 'active',
     referralCode: 'MAHMUD-TH40',
     createdAt: '2026-02-22T09:00:00.000Z'
-  },
-  {
-    id: 'user_guardian_01',
-    name: 'Mrs. Farhana Begum',
-    email: 'farhana.guardian@example.com',
-    phone: '01799887766',
-    role: 'guardian',
-    gender: 'female',
-    location: 'Mirpur DOHS, Dhaka',
-    district: 'Dhaka',
-    status: 'active',
-    referralCode: 'FARHANA-TH88',
-    createdAt: '2026-03-01T08:00:00.000Z'
   }
 ];
 
@@ -420,7 +407,7 @@ const INITIAL_TUTORS: TutorProfile[] = [
     expectedSalary: 6000,
     preferredStudentGender: 'any',
     preferredClassLevel: 'সকল বয়স ও শ্রেণির শিক্ষার্থী',
-    verificationStatus: 'pending',
+    verificationStatus: 'verified',
     completionPercentage: 100,
     rating: 5.0,
     totalReviews: 24,
@@ -444,376 +431,13 @@ const INITIAL_REQUESTS: TuitionRequest[] = [];
 const INITIAL_JOBS: TuitionJob[] = [];
 const INITIAL_APPLICATIONS: JobApplication[] = [];
 
-const INITIAL_DEMOS: DemoClass[] = [
-  {
-    id: 'demo_401',
-    tutorId: 'tut_01',
-    tutorName: 'Rahim Chowdhury',
-    tutorPhone: '01711223344',
-    guardianId: 'user_guardian_01',
-    guardianName: 'Mrs. Farhana Begum',
-    guardianPhone: '01799887766',
-    jobId: 'JOB-2026-101',
-    jobTitle: 'Class 9 (SSC) Science Tutor Needed in Mirpur DOHS',
-    date: '2026-03-12',
-    time: '5:30 PM',
-    mode: 'home',
-    notes: 'Demo class scheduled at Guardian residence in Mirpur DOHS. Topic: Newton Laws of Motion.',
-    status: 'scheduled'
-  }
-];
-
-const INITIAL_CONFIRMATIONS: TuitionConfirmation[] = [
-  {
-    id: 'conf_501',
-    tutorId: 'tut_01',
-    tutorName: 'Rahim Chowdhury',
-    tutorPhone: '01711223344',
-    tutorUniversity: 'BUET (Electrical & Electronic Engineering)',
-    guardianId: 'user_guardian_01',
-    guardianName: 'Mrs. Farhana Begum',
-    guardianPhone: '01712345678',
-    studentName: 'Ahsan Habib (Class 9)',
-    studentClass: 'Class 9 (SSC Batch 2027)',
-    subject: 'Physics, Higher Math & ICT',
-    jobId: 'JOB-2026-101',
-    jobTitle: 'Class 9 (SSC) Science Tuition',
-    startDate: '2026-03-01',
-    monthlyFee: 7500,
-    daysPerWeek: 4,
-    scheduleTime: '5:30 PM - 7:00 PM',
-    location: 'House 45, Road 2, Mirpur DOHS, Dhaka',
-    teachingMode: 'home',
-    specialInstructions: 'মাস শেষে রেগুলার মডেল টেস্ট নিতে হবে। কোনো দিন শিডিউল পরিবর্তন হলে অভিভাবককে আগে থেকে জানাতে হবে।',
-    status: 'confirmed',
-    agreementCode: 'TH-AGR-2026-0101',
-    completedClassesCount: 8,
-    createdAt: '2026-02-28'
-  },
-  {
-    id: 'conf_502',
-    tutorId: 'tut_02',
-    tutorName: 'Nusrat Jahan',
-    tutorPhone: '01811334455',
-    tutorUniversity: 'Dhaka University (English Dept.)',
-    guardianId: 'user_guardian_01',
-    guardianName: 'Mrs. Farhana Begum',
-    guardianPhone: '01712345678',
-    studentName: 'Tania Habib (Class 8)',
-    studentClass: 'Class 8 (JSC / Junior English)',
-    subject: 'English 1st & 2nd Paper',
-    jobId: 'JOB-2026-104',
-    jobTitle: 'Class 8 English Version Tutor',
-    startDate: '2026-03-05',
-    monthlyFee: 6500,
-    daysPerWeek: 3,
-    scheduleTime: '4:00 PM - 5:30 PM',
-    location: 'House 45, Road 2, Mirpur DOHS, Dhaka',
-    teachingMode: 'home',
-    specialInstructions: 'স্পিকিং ও রিটেন গ্রামার বেশি গুরুত্ব দিতে হবে।',
-    status: 'confirmed',
-    agreementCode: 'TH-AGR-2026-0104',
-    completedClassesCount: 6,
-    createdAt: '2026-03-04'
-  }
-];
-
-const INITIAL_ATTENDANCE: AttendanceRecord[] = [
-  {
-    id: 'att_601',
-    date: '2026-03-15',
-    tutorId: 'tut_01',
-    tutorName: 'Rahim Chowdhury',
-    guardianId: 'user_guardian_01',
-    studentName: 'Ahsan Habib',
-    jobId: 'JOB-2026-101',
-    status: 'present',
-    time: '05:30 PM',
-    durationMinutes: 90,
-    topicsCovered: 'পদার্থবিজ্ঞান ৩য় অধ্যায়: বল, নিউটনের গতিসূত্র ও গাণিতিক উদাহরণ সমাধান।',
-    homeworkAssigned: 'অনুশীলনী ৩.১ থেকে ৩.৫ পর্যন্ত অঙ্ক এবং সৃজনশীল প্রশ্ন ১ ও ২।',
-    notes: 'ছাত্র মনোযোগ দিয়ে পড়েছে এবং সূত্রগুলো ভালো বুঝতে পেরেছে।',
-    verifiedByGuardian: true,
-    verifiedDate: '2026-03-15'
-  },
-  {
-    id: 'att_602',
-    date: '2026-03-17',
-    tutorId: 'tut_01',
-    tutorName: 'Rahim Chowdhury',
-    guardianId: 'user_guardian_01',
-    studentName: 'Ahsan Habib',
-    jobId: 'JOB-2026-101',
-    status: 'present',
-    time: '05:30 PM',
-    durationMinutes: 90,
-    topicsCovered: 'উচ্চতর গণিত স্থানাঙ্ক জ্যামিতি (অধ্যায় ১১): ঢাল নির্ণয় ও ক্ষেত্রফল সূত্র।',
-    homeworkAssigned: 'বোর্ড প্রশ্ন ২০২৪ স্থানাঙ্ক জ্যামিতি সৃজনশীল সমাধান।',
-    notes: 'সূত্রের প্রমাণ খাতায় লিখে দেখানো হয়েছে।',
-    verifiedByGuardian: true,
-    verifiedDate: '2026-03-17'
-  },
-  {
-    id: 'att_603',
-    date: '2026-03-19',
-    tutorId: 'tut_01',
-    tutorName: 'Rahim Chowdhury',
-    guardianId: 'user_guardian_01',
-    studentName: 'Ahsan Habib',
-    jobId: 'JOB-2026-101',
-    status: 'present',
-    time: '05:35 PM',
-    durationMinutes: 90,
-    topicsCovered: 'আইসিটি: সি-প্রোগ্রামিং লুপ ও কন্ডিশনাল স্টেটমেন্ট প্র্যাকটিস।',
-    homeworkAssigned: 'ফর লুপ দিয়ে প্রাইম নম্বর নির্ণয়ের প্রোগ্রাম লিখবে।',
-    notes: 'ল্যাপটপে কোড রান করে দেখানো হয়েছে।',
-    verifiedByGuardian: false
-  },
-  {
-    id: 'att_604',
-    date: '2026-03-22',
-    tutorId: 'tut_01',
-    tutorName: 'Rahim Chowdhury',
-    guardianId: 'user_guardian_01',
-    studentName: 'Ahsan Habib',
-    jobId: 'JOB-2026-101',
-    status: 'late',
-    time: '05:50 PM',
-    durationMinutes: 80,
-    topicsCovered: 'পদার্থবিজ্ঞান কাজ, ক্ষমতা ও শক্তি অধ্যায়ের রিভিশন।',
-    homeworkAssigned: 'সংক্ষিপ্ত নোট রিভিশন ও সৃজনশীল টেস্ট প্রস্তুতি।',
-    notes: 'ভারী যানজটের কারণে ১৫ মিনিট বিলম্বে ক্লাস শুরু হয়েছিল। সময় পুষিয়ে দেওয়া হয়েছে।',
-    verifiedByGuardian: true,
-    verifiedDate: '2026-03-22'
-  }
-];
-
-const INITIAL_PAYMENTS: PaymentRecord[] = [
-  {
-    id: 'PAY-2026-001',
-    tutorId: 'tut_01',
-    tutorName: 'Rahim Chowdhury',
-    guardianId: 'user_guardian_01',
-    guardianName: 'Mrs. Farhana Begum',
-    studentName: 'Ahsan Habib (Class 9)',
-    jobId: 'JOB-2026-101',
-    amount: 7500,
-    month: 'March 2026',
-    paymentDate: '2026-03-31',
-    status: 'paid',
-    paymentMethod: 'bkash',
-    transactionId: 'BK9X28M7QL',
-    receiptNumber: 'TH-REC-2026-9041',
-    paidAt: '2026-03-31T14:30:00.000Z',
-    acknowledgedByTutor: true,
-    notes: 'মার্চ মাসের সম্মানী বিকাশ পার্সোনাল মাধ্যমে পরিশোধিত। ধন্যবাদ।'
-  },
-  {
-    id: 'PAY-2026-002',
-    tutorId: 'tut_01',
-    tutorName: 'Rahim Chowdhury',
-    guardianId: 'user_guardian_01',
-    guardianName: 'Mrs. Farhana Begum',
-    studentName: 'Ahsan Habib (Class 9)',
-    jobId: 'JOB-2026-101',
-    amount: 7500,
-    month: 'April 2026',
-    paymentDate: '2026-04-30',
-    status: 'due',
-    notes: 'এপ্রিল মাসের নিয়মিত টিউশন ফি বকেয়া রয়েছে।'
-  }
-];
-
-const INITIAL_CERTIFICATES: CertificateRecord[] = [
-  {
-    id: 'CERT-TH-8821',
-    tutorId: 'tut_01',
-    tutorName: 'Rahim Chowdhury',
-    title: 'Excellence in Science & Mathematics Mentorship',
-    issueDate: '2026-01-15',
-    description: 'Awarded for demonstrating superior pedagogical methodology, 100% attendance punctuality, and stellar student exam outcomes on TutorHat platform.',
-    status: 'active',
-    verificationCode: 'TH-VER-2026-0199',
-    subject: 'SSC Physics, Higher Mathematics & ICT',
-    totalHoursCompleted: 120,
-    gradeHonor: 'Outstanding Mentor',
-    issuedBy: 'TutorHat Academic Verification Board'
-  },
-  {
-    id: 'CERT-TH-9012',
-    tutorId: 'tut_02',
-    tutorName: 'Nusrat Jahan',
-    title: 'Distinguished English Language Educator',
-    issueDate: '2026-02-10',
-    description: 'Recognized for top-tier student engagement, verified lesson plans, and stellar parent feedback in English Version curriculum.',
-    status: 'active',
-    verificationCode: 'TH-VER-2026-0210',
-    subject: 'English 1st & 2nd Paper (National Curriculum & IGCSE)',
-    totalHoursCompleted: 96,
-    gradeHonor: 'Distinguished Educator',
-    issuedBy: 'TutorHat Academic Verification Board'
-  }
-];
-
-const INITIAL_REVIEWS: ReviewRecord[] = [
-  {
-    id: 'rev_701',
-    tutorId: 'tut_01',
-    guardianId: 'user_guardian_01',
-    guardianName: 'Mrs. Farhana Begum',
-    studentGradeOrSubject: 'Class 10 (SSC) — Physics & Higher Math',
-    rating: 5,
-    criteria: {
-      teachingSkill: 5,
-      punctuality: 5,
-      behavior: 5,
-      studentImprovement: 5
-    },
-    comment: 'Rahim sir is exceptionally punctual, polite, and explains complex physics concepts with practical everyday examples. My son scored 92 in his pre-test exam!',
-    date: '2026-02-28',
-    status: 'approved',
-    isVerifiedTuition: true,
-    helpfulCount: 14,
-    tutorReply: {
-      tutorName: 'Rahim Chowdhury',
-      replyText: 'অনেক ধন্যবাদ খালাম্মা। আবির খুবই পরিশ্রমী ছাত্র, নিয়মিত হোমওয়ার্ক করায় ওর এই চমৎকার উন্নতি সম্ভব হয়েছে।',
-      repliedAt: '2026-03-01'
-    }
-  },
-  {
-    id: 'rev_702',
-    tutorId: 'tut_01',
-    guardianId: 'user_guardian_02',
-    guardianName: 'Engr. Mahbubur Rahman',
-    studentGradeOrSubject: 'HSC 1st Year — General Mathematics',
-    rating: 5,
-    criteria: {
-      teachingSkill: 5,
-      punctuality: 4,
-      behavior: 5,
-      studentImprovement: 5
-    },
-    comment: 'বুয়েটের ভাইয়া হওয়ায় ক্যালকুলাস ও ত্রিকোণমিতির শর্টকাট টেকনিক খুব চমৎকারভাবে শিখিয়েছেন। ওনার ধৈর্য প্রশংসনীয়।',
-    date: '2026-03-05',
-    status: 'approved',
-    isVerifiedTuition: true,
-    helpfulCount: 8
-  },
-  {
-    id: 'rev_703',
-    tutorId: 'tut_02',
-    guardianId: 'user_guardian_03',
-    guardianName: 'Dr. Shahana Akter',
-    studentGradeOrSubject: 'Class 8 — English 1st & 2nd Paper',
-    rating: 5,
-    criteria: {
-      teachingSkill: 5,
-      punctuality: 5,
-      behavior: 5,
-      studentImprovement: 5
-    },
-    comment: 'নুসরাত আপু অসাধারণ আন্তরিক। আমার মেয়ের ইংরেজি স্পিকিং ও গ্রামার ভীতি পুরোপুরি দূর হয়েছে। অত্যন্ত দায়িত্বশীল ও সময়নিষ্ঠ শিক্ষিকা।',
-    date: '2026-03-02',
-    status: 'approved',
-    isVerifiedTuition: true,
-    helpfulCount: 11,
-    tutorReply: {
-      tutorName: 'Nusrat Jahan',
-      replyText: 'ধন্যবাদ আন্টি। তানিয়ার একাগ্রতা সত্যিই প্রশংসার দাবিদার। ওর উজ্জ্বল ভবিষ্যৎ কামনা করি।',
-      repliedAt: '2026-03-03'
-    }
-  },
-  {
-    id: 'rev_704',
-    tutorId: 'tut_03',
-    guardianId: 'user_guardian_04',
-    guardianName: 'Advocate M. A. Karim',
-    studentGradeOrSubject: 'HSC 2nd Year — Biology & Chemistry',
-    rating: 5,
-    criteria: {
-      teachingSkill: 5,
-      punctuality: 5,
-      behavior: 5,
-      studentImprovement: 5
-    },
-    comment: 'মেডিকেলের ছাত্র হিসেবে তানভীর স্যারের বায়োলজি ও অ্যানাটমির ডায়াগ্রামভিত্তিক পড়ানোর স্টাইল অনন্য। ছাত্রকে নিয়মিত পরীক্ষা নিয়ে যাচাই করেন।',
-    date: '2026-03-08',
-    status: 'approved',
-    isVerifiedTuition: true,
-    helpfulCount: 6
-  },
-  {
-    id: 'rev_705',
-    tutorId: 'tut_04',
-    guardianId: 'user_guardian_05',
-    guardianName: 'Al-Haj Rafiqul Islam',
-    studentGradeOrSubject: 'Class 5 & Quran Recitation with Tajweed',
-    rating: 5,
-    criteria: {
-      teachingSkill: 5,
-      punctuality: 5,
-      behavior: 5,
-      studentImprovement: 5
-    },
-    comment: 'সাদিয়া ম্যাডাম অত্যন্ত নম্র ও স্নেহময়ী। সহিহ তাজবীদ সহ কুরআন শিক্ষা এবং গণিত ও বাংলা যত্নসহকারে পড়ান। মাশাআল্লাহ চমৎকার টিউটর।',
-    date: '2026-03-10',
-    status: 'approved',
-    isVerifiedTuition: true,
-    helpfulCount: 15
-  },
-  {
-    id: 'rev_706',
-    tutorId: 'tut_01',
-    guardianId: 'user_guardian_06',
-    guardianName: 'Kamal Hossain (Banker)',
-    studentGradeOrSubject: 'Class 9 — ICT & General Science',
-    rating: 5,
-    criteria: {
-      teachingSkill: 5,
-      punctuality: 5,
-      behavior: 5,
-      studentImprovement: 4
-    },
-    comment: 'খুবই আন্তরিক এবং ছাত্রের দুর্বলতা চিহ্নিত করে অতিরিক্ত সময় দিয়ে বোঝান। টিউটরহ্যাটের সার্বিক সার্ভিসও চমৎকার।',
-    date: '2026-03-11',
-    status: 'pending',
-    isVerifiedTuition: true,
-    helpfulCount: 1
-  }
-];
-
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 'notif_801',
-    userId: 'user_tutor_01',
-    title: 'Shortlisted for Tuition Job!',
-    message: 'Congratulations! You have been shortlisted for JOB-2026-101 in Mirpur DOHS.',
-    type: 'application',
-    read: false,
-    date: '2026-03-04T12:00:00.000Z',
-    actionUrl: 'applications'
-  },
-  {
-    id: 'notif_802',
-    userId: 'user_tutor_01',
-    title: 'Demo Class Scheduled',
-    message: 'Demo class confirmed for JOB-2026-101 on March 12 at 5:30 PM with Mrs. Farhana Begum.',
-    type: 'demo',
-    read: false,
-    date: '2026-03-05T09:30:00.000Z',
-    actionUrl: 'demo-classes'
-  },
-  {
-    id: 'notif_803',
-    userId: 'user_guardian_01',
-    title: 'Tutor Profiles Ready for Review',
-    message: '3 qualified verified tutors have applied for your Class 9 SSC tuition requirement.',
-    type: 'application',
-    read: false,
-    date: '2026-03-03T16:00:00.000Z',
-    actionUrl: 'requests'
-  }
-];
+const INITIAL_DEMOS: DemoClass[] = [];
+const INITIAL_CONFIRMATIONS: TuitionConfirmation[] = [];
+const INITIAL_ATTENDANCE: AttendanceRecord[] = [];
+const INITIAL_PAYMENTS: PaymentRecord[] = [];
+const INITIAL_CERTIFICATES: CertificateRecord[] = [];
+const INITIAL_REVIEWS: ReviewRecord[] = [];
+const INITIAL_NOTIFICATIONS: NotificationItem[] = [];
 
 const INITIAL_NOTICES: NoticeItem[] = [
   {
@@ -845,229 +469,15 @@ const INITIAL_NOTICES: NoticeItem[] = [
   }
 ];
 
-const INITIAL_MESSAGES: ContactMessage[] = [
-  {
-    id: 'msg_01',
-    name: 'Kabir Ahmed',
-    mobile: '01712000000',
-    email: 'kabir@example.com',
-    subject: 'Corporate Quran Tuition Query',
-    message: 'Assalamu Alaikum. Can you arrange home Quran tutor for 3 family members in Banani?',
-    date: '2026-03-05',
-    status: 'read'
-  },
-  {
-    id: 'msg_02',
-    name: 'Shirin Akter',
-    mobile: '01819000000',
-    email: 'shirin@example.com',
-    subject: 'English Medium Math Tutor in Uttara',
-    message: 'Need Edexcel IGCSE Math tutor immediately for my daughter in Sector 4, Uttara.',
-    date: '2026-03-06',
-    status: 'unread'
-  }
-];
+const INITIAL_MESSAGES: ContactMessage[] = [];
+const INITIAL_REFERRALS: ReferralRecord[] = [];
+const INITIAL_ADMIN_NOTES: AdminNote[] = [];
+const INITIAL_ACTIVITY_LOGS: ActivityLog[] = [];
+const INITIAL_CONVERSATIONS: ChatConversation[] = [];
+const INITIAL_CHAT_MESSAGES: ChatMessage[] = [];
+const INITIAL_PROGRESS_REPORTS: StudentProgressReport[] = [];
 
-const INITIAL_REFERRALS: ReferralRecord[] = [
-  {
-    id: 'ref_01',
-    referrerId: 'user_tutor_01',
-    referrerName: 'Rahim Chowdhury',
-    referredUserId: 'user_tutor_02',
-    referredUserName: 'Nusrat Jahan',
-    referralCode: 'RAHIM-TH10',
-    date: '2026-02-20',
-    status: 'completed',
-    rewardStatus: 'credited',
-    rewardDetails: '৳200 referral bonus credited to wallet'
-  }
-];
-
-const INITIAL_ADMIN_NOTES: AdminNote[] = [
-  {
-    id: 'anote_01',
-    entityType: 'tutor',
-    entityId: 'tut_01',
-    note: 'Academic credentials cross-verified with BUET portal. Excellent feedback from guardians.',
-    createdBy: 'Master Admin',
-    createdAt: '2026-02-12T10:00:00.000Z'
-  },
-  {
-    id: 'anote_02',
-    entityType: 'guardian',
-    entityId: 'user_guardian_01',
-    note: 'Verified parent in Mirpur DOHS. Prompt in scheduling demo sessions.',
-    createdBy: 'Master Admin',
-    createdAt: '2026-03-02T12:00:00.000Z'
-  }
-];
-
-const INITIAL_ACTIVITY_LOGS: ActivityLog[] = [
-  {
-    id: 'act_01',
-    action: 'TUTOR_VERIFIED',
-    performedBy: 'admin@tutorhat.com',
-    timestamp: '2026-02-12T10:05:00.000Z',
-    details: 'Verified tutor profile for Rahim Chowdhury (tut_01)'
-  },
-  {
-    id: 'act_02',
-    action: 'JOB_PUBLISHED',
-    performedBy: 'admin@tutorhat.com',
-    timestamp: '2026-03-02T11:00:00.000Z',
-    details: 'Published JOB-2026-101 from guardian request req_101'
-  }
-];
-
-// Feature 6: Initial Chat Conversations
-const INITIAL_CONVERSATIONS: ChatConversation[] = [
-  {
-    id: 'conv_01',
-    participantIds: ['user_guardian_01', 'user_tutor_01'],
-    guardianId: 'user_guardian_01',
-    guardianName: 'Mrs. Farhana Begum',
-    guardianPhone: '01719876543',
-    tutorId: 'tut_01',
-    tutorName: 'Rahim Chowdhury',
-    tutorPhone: '01711223344',
-    jobId: 'JOB-2026-101',
-    jobTitle: 'Class 9 Higher Math & Physics (Mirpur DOHS)',
-    lastMessageText: 'আজকের ক্লাসের নির্ধারিত হোমওয়ার্ক সম্পন্ন হয়েছে। আগামী ক্লাসে টেস্ট নেওয়া হবে।',
-    lastMessageTime: '2026-03-08T18:45:00.000Z',
-    unreadCountGuardian: 0,
-    unreadCountTutor: 1,
-    status: 'active',
-    subjectOrContext: 'Class 9 Higher Math & Physics'
-  },
-  {
-    id: 'conv_02',
-    participantIds: ['user_guardian_01', 'user_tutor_02'],
-    guardianId: 'user_guardian_01',
-    guardianName: 'Mrs. Farhana Begum',
-    guardianPhone: '01719876543',
-    tutorId: 'tut_02',
-    tutorName: 'Nusrat Jahan',
-    tutorPhone: '01811334455',
-    jobId: 'JOB-2026-102',
-    jobTitle: 'Class 5 English Version All Subjects (Uttara)',
-    lastMessageText: 'আসসালামু আলাইকুম আন্টি, আগামী রবিবার বিকেল ৫টায় ফ্রি ডেমো ক্লাসে আসছি।',
-    lastMessageTime: '2026-03-07T15:20:00.000Z',
-    unreadCountGuardian: 0,
-    unreadCountTutor: 0,
-    status: 'active',
-    subjectOrContext: 'Class 5 English Version All Subjects'
-  }
-];
-
-// Feature 6: Initial Messages
-const INITIAL_CHAT_MESSAGES: ChatMessage[] = [
-  {
-    id: 'msg_chat_101',
-    conversationId: 'conv_01',
-    senderId: 'user_guardian_01',
-    senderName: 'Mrs. Farhana Begum',
-    senderRole: 'guardian',
-    receiverId: 'user_tutor_01',
-    receiverName: 'Rahim Chowdhury',
-    text: 'আসসালামু আলাইকুম রহিম সাহেব। আহসান হাবিবের উচ্চতর গণিত জ্যামিতি অংশের কিছু সমস্যা আছে, এ বিষয়ে একটু বেশি নজর দিলে ভালো হয়।',
-    createdAt: '2026-03-08T14:10:00.000Z',
-    read: true,
-    messageType: 'text'
-  },
-  {
-    id: 'msg_chat_102',
-    conversationId: 'conv_01',
-    senderId: 'user_tutor_01',
-    senderName: 'Rahim Chowdhury',
-    senderRole: 'tutor',
-    receiverId: 'user_guardian_01',
-    receiverName: 'Mrs. Farhana Begum',
-    text: 'ওয়ালাইকুম আসসালাম আন্টি। অবশ্যই, আমি ইতোমধ্যে ত্রিকোণমিতি ও স্থানাঙ্ক জ্যামিতির বেসিক ক্লিয়ার করেছি। আগামী সপ্তাহে অতিরিক্ত ৩০ মিনিট সময় দিয়ে প্র্যাকটিস করাব ইনশাআল্লাহ।',
-    createdAt: '2026-03-08T14:35:00.000Z',
-    read: true,
-    messageType: 'text'
-  },
-  {
-    id: 'msg_chat_103',
-    conversationId: 'conv_01',
-    senderId: 'user_guardian_01',
-    senderName: 'Mrs. Farhana Begum',
-    senderRole: 'guardian',
-    receiverId: 'user_tutor_01',
-    receiverName: 'Rahim Chowdhury',
-    text: 'মাশাল্লাহ, খুব ভালো হবে। আগামী ক্লাসের সময় কি বিকেল ৫:০০ টাই থাকছে?',
-    createdAt: '2026-03-08T15:00:00.000Z',
-    read: true,
-    messageType: 'text'
-  },
-  {
-    id: 'msg_chat_104',
-    conversationId: 'conv_01',
-    senderId: 'user_tutor_01',
-    senderName: 'Rahim Chowdhury',
-    senderRole: 'tutor',
-    receiverId: 'user_guardian_01',
-    receiverName: 'Mrs. Farhana Begum',
-    text: 'জি আন্টি, ইনশাআল্লাহ ঠিক বিকেল ৫:০০ টায় আসব। আজকের ক্লাসের নির্ধারিত হোমওয়ার্ক সম্পন্ন হয়েছে। আগামী ক্লাসে টেস্ট নেওয়া হবে।',
-    createdAt: '2026-03-08T18:45:00.000Z',
-    read: false,
-    messageType: 'text'
-  },
-  {
-    id: 'msg_chat_201',
-    conversationId: 'conv_02',
-    senderId: 'user_guardian_01',
-    senderName: 'Mrs. Farhana Begum',
-    senderRole: 'guardian',
-    receiverId: 'user_tutor_02',
-    receiverName: 'Nusrat Jahan',
-    text: 'আসসালামু আলাইকুম নুসরাত। ক্লাস ফাইভের মেয়ের জন্য আপনার প্রোফাইলটি দেখেছি। রবিবারে কি ডেমো ক্লাস নেওয়া সম্ভব?',
-    createdAt: '2026-03-07T14:00:00.000Z',
-    read: true,
-    messageType: 'text'
-  },
-  {
-    id: 'msg_chat_202',
-    conversationId: 'conv_02',
-    senderId: 'user_tutor_02',
-    senderName: 'Nusrat Jahan',
-    senderRole: 'tutor',
-    receiverId: 'user_guardian_01',
-    receiverName: 'Mrs. Farhana Begum',
-    text: 'আসসালামু আলাইকুম আন্টি, আগামী রবিবার বিকেল ৫টায় ফ্রি ডেমো ক্লাসে আসছি। সব নোটস ও সিলেবাস রেডি আছে।',
-    createdAt: '2026-03-07T15:20:00.000Z',
-    read: true,
-    messageType: 'text'
-  }
-];
-
-// Feature 6: Initial Student Progress Reports
-const INITIAL_PROGRESS_REPORTS: StudentProgressReport[] = [
-  {
-    id: 'rep_01',
-    reportCode: 'TH-REP-2026-901',
-    tutorId: 'tut_01',
-    tutorName: 'Rahim Chowdhury',
-    tutorUniversity: 'BUET (Electrical & Electronic Engineering)',
-    guardianId: 'user_guardian_01',
-    guardianName: 'Mrs. Farhana Begum',
-    studentName: 'Ahsan Habib',
-    subject: 'Higher Mathematics & Physics',
-    classLevel: 'Class 9 (Bangla Medium)',
-    month: 'ফেব্রুয়ারি - মার্চ ২০২৬',
-    attendanceScore: 96,
-    homeworkCompletionScore: 92,
-    classAttentionScore: 88,
-    examOrQuizScore: 90,
-    overallGrade: 'A+',
-    strengths: 'বীজগণিত ও ক্যালকুলাস সম্পর্কিত ফর্মুলা দ্রুত বুঝতে পারে। ক্লাসে প্রশ্ন করার আগ্রহ চমৎকার। নিয়মিত পড়া রিভিশন দেয়।',
-    improvementsNeeded: 'জ্যামিতিক উপপাদ্য লেখার ক্ষেত্রে ধাপে ধাপে উপস্থাপন আরও নিখুঁত করতে হবে এবং সময় মেনে লেখা প্র্যাকটিস করতে হবে।',
-    tutorRemarks: 'গত ১ মাসে শিক্ষার্থীর গণিতে ভয় অনেকটাই দূর হয়েছে। নিয়মিত এই ধারাবাহিকতা বজায় রাখলে টার্ম ফাইনালে জিপিএ-৫ অর্জন নিশ্চিত।',
-    createdAt: '2026-03-05T10:00:00.000Z'
-  }
-];
-
-const STORAGE_KEY = 'tutorhat_data_v8';
+const STORAGE_KEY = 'tutorhat_data_v9';
 
 export interface StoreState {
   settings: SystemSettings;
@@ -1092,7 +502,7 @@ export interface StoreState {
   conversations: ChatConversation[];
   chatMessages: ChatMessage[];
   progressReports: StudentProgressReport[];
-  _freshCleanV8?: boolean;
+  _freshCleanV9?: boolean;
 }
 
 export function calculateCvCompletion(tutor?: Partial<TutorProfile> | null): { percent: number; missing: string[] } {
@@ -1169,8 +579,8 @@ class Store {
 
   constructor() {
     this.state = this.loadState();
-    // Guarantee fresh clean state is persisted to v8
-    this.state._freshCleanV8 = true;
+    // Guarantee fresh clean state is persisted to v9
+    this.state._freshCleanV9 = true;
     this.saveState();
 
     if (typeof window !== 'undefined') {
@@ -1182,8 +592,17 @@ class Store {
 
   public async syncWithServer(): Promise<void> {
     try {
-      const res = await fetch('/api/sync');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const res = await fetch('/api/sync', { signal: controller.signal });
+      clearTimeout(timeoutId);
+
       if (res.ok) {
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          return; // Static host / Netlify HTML fallback, skip safely
+        }
+
         const json = await res.json();
         if (json.success && json.data) {
           const s = json.data;
@@ -1257,11 +676,11 @@ class Store {
     try {
       let data = localStorage.getItem(STORAGE_KEY);
       if (!data) {
-        data = localStorage.getItem('tutorhat_data_v7') || localStorage.getItem('tutorhat_data_v6');
+        data = localStorage.getItem('tutorhat_data_v8') || localStorage.getItem('tutorhat_data_v7');
       }
       if (data) {
         const parsed = JSON.parse(data);
-        const isFreshClean = parsed._freshCleanV8 === true;
+        const isFreshClean = parsed._freshCleanV9 === true;
         return {
           settings: {
             ...DEFAULT_SETTINGS,
@@ -1275,14 +694,23 @@ class Store {
               ...(parsed.settings?.adminSecurity || {})
             }
           },
-          users: (Array.isArray(parsed.users) && parsed.users.length > 0) ? parsed.users : INITIAL_USERS,
+          users: (() => {
+            const rawUsers = (Array.isArray(parsed.users) && parsed.users.length > 0)
+              ? parsed.users.filter((u: User) => u.id !== 'user_guardian_01' && u.email !== 'farhana.guardian@example.com')
+              : INITIAL_USERS;
+            const hasAdmin = rawUsers.some((u: User) => u.role === 'admin');
+            return hasAdmin ? rawUsers : [INITIAL_USERS[0], ...rawUsers];
+          })(),
           tutors: (Array.isArray(parsed.tutors) && parsed.tutors.length > 0)
             ? parsed.tutors.map((t: TutorProfile) => {
                 const initT = INITIAL_TUTORS.find(it => it.id === t.id);
+                const verificationStatus = (t.id === 'tut_04' && !isFreshClean) 
+                  ? 'verified' 
+                  : (t.verificationStatus || initT?.verificationStatus || 'verified');
                 return {
                   ...(initT || {}),
                   ...t,
-                  verificationStatus: t.verificationStatus || initT?.verificationStatus || 'verified',
+                  verificationStatus,
                   trustScore: t.trustScore !== undefined ? t.trustScore : (initT?.trustScore || 100),
                   rating: t.rating !== undefined ? t.rating : (initT?.rating || 5.0),
                   totalReviews: t.totalReviews !== undefined ? t.totalReviews : (initT?.totalReviews || 0)
@@ -1293,36 +721,23 @@ class Store {
           requests: isFreshClean && Array.isArray(parsed.requests) ? parsed.requests : [],
           jobs: isFreshClean && Array.isArray(parsed.jobs) ? parsed.jobs : [],
           applications: isFreshClean && Array.isArray(parsed.applications) ? parsed.applications : [],
-          _freshCleanV8: true,
-          demos: Array.isArray(parsed.demos) ? parsed.demos : INITIAL_DEMOS,
-          confirmations: Array.isArray(parsed.confirmations) ? parsed.confirmations : INITIAL_CONFIRMATIONS,
-          attendance: Array.isArray(parsed.attendance) ? parsed.attendance : INITIAL_ATTENDANCE,
-          payments: Array.isArray(parsed.payments) ? parsed.payments : INITIAL_PAYMENTS,
-          certificates: Array.isArray(parsed.certificates) ? parsed.certificates : INITIAL_CERTIFICATES,
-          reviews: (Array.isArray(parsed.reviews) && parsed.reviews.length > 0)
-            ? parsed.reviews.map((r: ReviewRecord) => {
-                const initR = INITIAL_REVIEWS.find(ir => ir.id === r.id);
-                return {
-                  ...(initR || {}),
-                  ...r,
-                  status: r.status || 'approved',
-                  rating: r.rating || 5,
-                  guardianName: r.guardianName || initR?.guardianName || 'Guardian',
-                  comment: r.comment || initR?.comment || '',
-                  helpfulCount: r.helpfulCount !== undefined ? r.helpfulCount : (initR?.helpfulCount || 0)
-                };
-              })
-            : INITIAL_REVIEWS,
-          notifications: Array.isArray(parsed.notifications) ? parsed.notifications : INITIAL_NOTIFICATIONS,
-          notices: Array.isArray(parsed.notices) ? parsed.notices : INITIAL_NOTICES,
-          messages: Array.isArray(parsed.messages) ? parsed.messages : INITIAL_MESSAGES,
-          referrals: Array.isArray(parsed.referrals) ? parsed.referrals : INITIAL_REFERRALS,
-          adminNotes: Array.isArray(parsed.adminNotes) ? parsed.adminNotes : INITIAL_ADMIN_NOTES,
-          activityLogs: Array.isArray(parsed.activityLogs) ? parsed.activityLogs : INITIAL_ACTIVITY_LOGS,
-          shortlists: Array.isArray(parsed.shortlists) ? parsed.shortlists : [{ guardianId: 'user_guardian_01', tutorId: 'tut_01' }],
-          conversations: Array.isArray(parsed.conversations) ? parsed.conversations : INITIAL_CONVERSATIONS,
-          chatMessages: Array.isArray(parsed.chatMessages) ? parsed.chatMessages : INITIAL_CHAT_MESSAGES,
-          progressReports: Array.isArray(parsed.progressReports) ? parsed.progressReports : INITIAL_PROGRESS_REPORTS
+          _freshCleanV9: true,
+          demos: isFreshClean && Array.isArray(parsed.demos) ? parsed.demos : [],
+          confirmations: isFreshClean && Array.isArray(parsed.confirmations) ? parsed.confirmations : [],
+          attendance: isFreshClean && Array.isArray(parsed.attendance) ? parsed.attendance : [],
+          payments: isFreshClean && Array.isArray(parsed.payments) ? parsed.payments : [],
+          certificates: isFreshClean && Array.isArray(parsed.certificates) ? parsed.certificates : [],
+          reviews: isFreshClean && Array.isArray(parsed.reviews) ? parsed.reviews : [],
+          notifications: isFreshClean && Array.isArray(parsed.notifications) ? parsed.notifications : [],
+          notices: Array.isArray(parsed.notices) && parsed.notices.length > 0 ? parsed.notices : INITIAL_NOTICES,
+          messages: isFreshClean && Array.isArray(parsed.messages) ? parsed.messages : [],
+          referrals: isFreshClean && Array.isArray(parsed.referrals) ? parsed.referrals : [],
+          adminNotes: isFreshClean && Array.isArray(parsed.adminNotes) ? parsed.adminNotes : [],
+          activityLogs: isFreshClean && Array.isArray(parsed.activityLogs) ? parsed.activityLogs : [],
+          shortlists: isFreshClean && Array.isArray(parsed.shortlists) ? parsed.shortlists : [],
+          conversations: isFreshClean && Array.isArray(parsed.conversations) ? parsed.conversations : [],
+          chatMessages: isFreshClean && Array.isArray(parsed.chatMessages) ? parsed.chatMessages : [],
+          progressReports: isFreshClean && Array.isArray(parsed.progressReports) ? parsed.progressReports : []
         };
       }
     } catch {
@@ -1348,10 +763,11 @@ class Store {
       referrals: INITIAL_REFERRALS,
       adminNotes: INITIAL_ADMIN_NOTES,
       activityLogs: INITIAL_ACTIVITY_LOGS,
-      shortlists: [{ guardianId: 'user_guardian_01', tutorId: 'tut_01' }],
+      shortlists: [],
       conversations: INITIAL_CONVERSATIONS,
       chatMessages: INITIAL_CHAT_MESSAGES,
-      progressReports: INITIAL_PROGRESS_REPORTS
+      progressReports: INITIAL_PROGRESS_REPORTS,
+      _freshCleanV9: true
     };
   }
 
@@ -1362,6 +778,17 @@ class Store {
       // storage full or disabled
     }
     this.notify();
+  }
+
+  public ensureAdminUser(): User {
+    let admin = this.state.users.find(u => u.role === 'admin');
+    if (!admin) {
+      admin = INITIAL_USERS[0];
+      this.state.users = [admin, ...this.state.users];
+      this.saveState();
+      this.notify();
+    }
+    return admin;
   }
 
   public subscribe(listener: () => void) {
@@ -1512,6 +939,21 @@ class Store {
     this.saveState();
   }
 
+  public deleteGuardian(guardianId: string, performedBy: string = 'Admin') {
+    const guardian = this.getUserById(guardianId);
+    this.state.users = this.state.users.filter(u => u.id !== guardianId);
+    this.state.requests = this.state.requests.filter(r => r.guardianId !== guardianId);
+    this.state.demos = this.state.demos.filter(d => d.guardianId !== guardianId);
+    this.state.confirmations = this.state.confirmations.filter(c => c.guardianId !== guardianId);
+    this.state.attendance = this.state.attendance.filter(a => a.guardianId !== guardianId);
+    this.state.payments = this.state.payments.filter(p => p.guardianId !== guardianId);
+    this.state.reviews = this.state.reviews.filter(r => r.guardianId !== guardianId);
+    this.logActivity('GUARDIAN_DELETED', `Deleted guardian ${guardian?.name || guardianId}`, performedBy);
+    this.saveState();
+
+    fetch(`/api/users/${guardianId}`, { method: 'DELETE' }).catch(() => {});
+  }
+
   // Tutors
   public getTutors(): TutorProfile[] {
     return this.state.tutors;
@@ -1523,6 +965,29 @@ class Store {
 
   public getTutorByUserId(userId: string): TutorProfile | undefined {
     return this.state.tutors.find(t => t.userId === userId);
+  }
+
+  public deleteTutor(tutorId: string, performedBy: string = 'Admin') {
+    const tutor = this.getTutorById(tutorId);
+    if (!tutor) return;
+    this.state.tutors = this.state.tutors.filter(t => t.id !== tutorId);
+    if (tutor.userId) {
+      this.state.users = this.state.users.filter(u => u.id !== tutor.userId);
+    }
+    this.state.applications = this.state.applications.filter(a => a.tutorId !== tutorId);
+    this.state.demos = this.state.demos.filter(d => d.tutorId !== tutorId);
+    this.state.confirmations = this.state.confirmations.filter(c => c.tutorId !== tutorId);
+    this.state.attendance = this.state.attendance.filter(a => a.tutorId !== tutorId);
+    this.state.payments = this.state.payments.filter(p => p.tutorId !== tutorId);
+    this.state.reviews = this.state.reviews.filter(r => r.tutorId !== tutorId);
+    this.state.certificates = this.state.certificates.filter(c => c.tutorId !== tutorId);
+    this.logActivity('TUTOR_DELETED', `Deleted tutor ${tutor.fullName} (${tutorId})`, performedBy);
+    this.saveState();
+
+    fetch(`/api/tutors/${tutorId}`, { method: 'DELETE' }).catch(() => {});
+    if (tutor.userId) {
+      fetch(`/api/users/${tutor.userId}`, { method: 'DELETE' }).catch(() => {});
+    }
   }
 
   public updateTutorProfile(tutorId: string, updates: Partial<TutorProfile>) {
@@ -2245,6 +1710,15 @@ class Store {
     this.saveState();
   }
 
+  public deleteDemoClass(demoId: string, performedBy: string = 'Admin') {
+    const demo = this.state.demos.find(d => d.id === demoId);
+    this.state.demos = this.state.demos.filter(d => d.id !== demoId);
+    this.logActivity('DEMO_DELETED', `Deleted demo class ${demoId} (${demo?.tutorName || ''})`, performedBy);
+    this.saveState();
+
+    fetch(`/api/demos/${demoId}`, { method: 'DELETE' }).catch(() => {});
+  }
+
   public updateDemoResult(
     demoId: string, 
     result: 'selected' | 'not_selected' | 'further_review', 
@@ -2371,6 +1845,15 @@ class Store {
 
     this.logActivity('CONFIRMATION_STATUS_UPDATED', `Tuition ${confId} status updated to ${status}`);
     this.saveState();
+  }
+
+  public deleteTuitionConfirmation(confId: string, performedBy: string = 'Admin') {
+    const conf = this.state.confirmations.find(c => c.id === confId);
+    this.state.confirmations = this.state.confirmations.filter(c => c.id !== confId);
+    this.logActivity('CONFIRMATION_DELETED', `Deleted tuition confirmation ${confId} (${conf?.jobTitle || ''})`, performedBy);
+    this.saveState();
+
+    fetch(`/api/confirmations/${confId}`, { method: 'DELETE' }).catch(() => {});
   }
 
   // Feature 5: Class Attendance & Study Log Tracker
@@ -2588,6 +2071,14 @@ class Store {
     this.saveState();
   }
 
+  public deletePayment(paymentId: string, performedBy: string = 'Admin') {
+    this.state.payments = this.state.payments.filter(p => p.id !== paymentId);
+    this.logActivity('PAYMENT_DELETED', `Deleted payment record ${paymentId}`, performedBy);
+    this.saveState();
+
+    fetch(`/api/payments/${paymentId}`, { method: 'DELETE' }).catch(() => {});
+  }
+
   // Feature 5: Experience Certificate Management
   public issueCertificate(cert: Omit<CertificateRecord, 'id' | 'verificationCode'>): CertificateRecord {
     const id = `CERT-TH-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -2630,6 +2121,14 @@ class Store {
       return c;
     });
     this.saveState();
+  }
+
+  public deleteCertificate(certId: string, performedBy: string = 'Admin') {
+    this.state.certificates = this.state.certificates.filter(c => c.id !== certId);
+    this.logActivity('CERTIFICATE_DELETED', `Deleted certificate ${certId}`, performedBy);
+    this.saveState();
+
+    fetch(`/api/certificates/${certId}`, { method: 'DELETE' }).catch(() => {});
   }
 
   public getUserById(userId: string): User | undefined {
@@ -2872,6 +2371,12 @@ class Store {
     this.saveState();
   }
 
+  public deleteReferral(referralId: string, performedBy: string = 'Admin') {
+    this.state.referrals = this.state.referrals.filter(r => r.id !== referralId);
+    this.logActivity('REFERRAL_DELETED', `Deleted referral record ${referralId}`, performedBy);
+    this.saveState();
+  }
+
   // Admin Notes (Section 34, 42)
   public addAdminNote(entityType: AdminNote['entityType'], entityId: string, note: string, createdBy: string) {
     const id = `anote_${Date.now()}`;
@@ -2996,6 +2501,11 @@ class Store {
       timestamp: new Date().toISOString(),
       details: 'Audit logs cleared and reset by administrator.'
     }];
+    this.saveState();
+  }
+
+  public deleteActivityLog(logId: string, performedBy: string = 'Admin') {
+    this.state.activityLogs = this.state.activityLogs.filter(l => l.id !== logId);
     this.saveState();
   }
 

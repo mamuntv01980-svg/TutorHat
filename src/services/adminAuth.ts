@@ -310,33 +310,43 @@ export function resetFailedAttempts(): void {
  */
 export function createAdminSession(adminId: string, method: 'pin' | 'biometric' | 'password'): void {
   const now = Date.now();
-  // Valid for 2 hours of inactivity
+  // Valid for 24 hours in PWA / mobile app
   const sessionData: AdminSessionData = {
     token: `th_sec_${Math.random().toString(36).substring(2)}_${now}`,
     adminId,
     authenticatedAt: now,
-    expiresAt: now + 2 * 60 * 60 * 1000,
+    expiresAt: now + 24 * 60 * 60 * 1000,
     method
   };
 
   try {
     sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionData));
-  } catch (e) {
-    console.error('Failed to store admin session', e);
-  }
+  } catch {}
+  try {
+    localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(sessionData));
+  } catch {}
 }
 
 /**
- * Checks if current admin session is valid and active
+ * Checks if current admin session is valid and active (checks both sessionStorage & localStorage)
  */
 export function isAdminSessionValid(): boolean {
   try {
-    const raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    let raw: string | null = null;
+    try {
+      raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    } catch {}
+    if (!raw) {
+      try {
+        raw = localStorage.getItem(SESSION_STORAGE_KEY);
+      } catch {}
+    }
     if (!raw) return false;
+
     const data: AdminSessionData = JSON.parse(raw);
     const now = Date.now();
     if (data.expiresAt && data.expiresAt < now) {
-      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+      clearAdminSession();
       return false;
     }
     return Boolean(data.token);
@@ -351,9 +361,10 @@ export function isAdminSessionValid(): boolean {
 export function clearAdminSession(): void {
   try {
     sessionStorage.removeItem(SESSION_STORAGE_KEY);
-  } catch (e) {
-    console.error('Failed to clear admin session', e);
-  }
+  } catch {}
+  try {
+    localStorage.removeItem(SESSION_STORAGE_KEY);
+  } catch {}
 }
 
 /**

@@ -402,6 +402,54 @@ async function startServer() {
     res.json({ success: true, user: newUser });
   });
 
+  app.delete('/api/users/:id', (req: Request, res: Response) => {
+    const db = loadDb();
+    const { id } = req.params;
+    db.users = (db.users || []).filter(u => u.id !== id);
+    saveDb(db);
+    res.json({ success: true, message: `User ${id} deleted` });
+  });
+
+  app.delete('/api/demos/:id', (req: Request, res: Response) => {
+    const db = loadDb();
+    const { id } = req.params;
+    db.demos = (db.demos || []).filter(d => d.id !== id);
+    saveDb(db);
+    res.json({ success: true, message: `Demo ${id} deleted` });
+  });
+
+  app.delete('/api/confirmations/:id', (req: Request, res: Response) => {
+    const db = loadDb();
+    const { id } = req.params;
+    db.confirmations = (db.confirmations || []).filter(c => c.id !== id);
+    saveDb(db);
+    res.json({ success: true, message: `Confirmation ${id} deleted` });
+  });
+
+  app.delete('/api/payments/:id', (req: Request, res: Response) => {
+    const db = loadDb();
+    const { id } = req.params;
+    db.payments = (db.payments || []).filter(p => p.id !== id);
+    saveDb(db);
+    res.json({ success: true, message: `Payment ${id} deleted` });
+  });
+
+  app.delete('/api/certificates/:id', (req: Request, res: Response) => {
+    const db = loadDb();
+    const { id } = req.params;
+    db.certificates = (db.certificates || []).filter(c => c.id !== id);
+    saveDb(db);
+    res.json({ success: true, message: `Certificate ${id} deleted` });
+  });
+
+  app.delete('/api/reviews/:id', (req: Request, res: Response) => {
+    const db = loadDb();
+    const { id } = req.params;
+    db.reviews = (db.reviews || []).filter(r => r.id !== id);
+    saveDb(db);
+    res.json({ success: true, message: `Review ${id} deleted` });
+  });
+
   // 8. Admin Security & Login from Any Mobile Phone
   app.post('/api/admin/verify', (req: Request, res: Response) => {
     const { identifier, password, pin } = req.body;

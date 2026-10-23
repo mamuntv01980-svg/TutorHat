@@ -140,14 +140,19 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
     setIsVerifying(true);
 
     try {
-      // 1. Central server-side verification (enables login from any mobile phone)
+      // 1. Central server-side verification (with 1.5s timeout for instant Netlify/PWA fallback)
       let serverVerified = false;
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 1500);
         const res = await fetch('/api/admin/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier: identifier.trim(), password: password.trim() })
+          body: JSON.stringify({ identifier: identifier.trim(), password: password.trim() }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
+
         if (res.ok) {
           const contentType = res.headers.get('content-type') || '';
           if (contentType.includes('application/json')) {
@@ -200,10 +205,10 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
         setAuthSuccess(true);
         setSuccessMessage('পাসওয়ার্ড যাচাই সফল হয়েছে! অ্যাডমিন ড্যাশবোর্ডে প্রবেশ করানো হচ্ছে...');
 
+        loginAs('admin', adminId);
         setTimeout(() => {
-          loginAs('admin', adminId);
           if (onSuccess) onSuccess();
-        }, 500);
+        }, 120);
       } else {
         // Record failed attempt
         const updatedLockout = recordFailedAttempt();

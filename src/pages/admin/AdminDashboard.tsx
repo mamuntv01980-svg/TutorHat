@@ -221,7 +221,21 @@ export const AdminDashboard: React.FC = () => {
 
   // Delete Confirmation State (Reliable across all platforms, replaces window.confirm)
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<{
-    type: 'request' | 'application' | 'job';
+    type: 
+      | 'request' 
+      | 'application' 
+      | 'job' 
+      | 'tutor' 
+      | 'guardian' 
+      | 'demo' 
+      | 'confirmation' 
+      | 'payment' 
+      | 'certificate' 
+      | 'review' 
+      | 'referral' 
+      | 'activity' 
+      | 'clear_all_activity'
+      | 'conversation';
     id: string;
     label: string;
   } | null>(null);
@@ -439,10 +453,13 @@ export const AdminDashboard: React.FC = () => {
   };
 
   // High-Security Admin Authentication Barrier
-  if (currentUser?.role !== 'admin' || !isAdminSessionValid()) {
+  if (!currentUser || currentUser.role !== 'admin' || !isAdminSessionValid()) {
     return (
       <div className="min-h-screen bg-slate-900/10 py-12 px-4 flex items-center justify-center">
         <AdminAuthBarrier
+          onSuccess={() => {
+            loginAs('admin', 'user_admin_01');
+          }}
           onCancel={() => {
             navigateTo('home');
           }}
@@ -702,18 +719,53 @@ export const AdminDashboard: React.FC = () => {
     showAdminToast(`✓ আবেদনপত্র [${selectedAppForEdit.id}] সফলভাবে আপডেট করা হয়েছে।`);
   };
 
-  // Safe Deletion Handler (Requirement 1 - replaces fragile window.confirm)
+  // Safe Deletion Handler (Reliable in-app confirmation modal, zero window.confirm)
   const handleConfirmDelete = () => {
     if (!deleteConfirmItem) return;
-    if (deleteConfirmItem.type === 'request') {
-      store.deleteTuitionRequest(deleteConfirmItem.id, currentUser.name);
-      showAdminToast(`✓ অভিভাবক টিউশন চাহিদা [${deleteConfirmItem.id}] সফলভাবে মুছে ফেলা হয়েছে।`);
-    } else if (deleteConfirmItem.type === 'application') {
-      store.deleteApplication(deleteConfirmItem.id, currentUser.name);
-      showAdminToast(`✓ টিউটর আবেদনপত্র [${deleteConfirmItem.id}] সফলভাবে মুছে ফেলা হয়েছে।`);
-    } else if (deleteConfirmItem.type === 'job') {
-      store.deleteJob(deleteConfirmItem.id, currentUser.name);
-      showAdminToast(`✓ টিউশন সার্কুলার [${deleteConfirmItem.id}] সফলভাবে মুছে ফেলা হয়েছে।`);
+    const { type, id } = deleteConfirmItem;
+
+    if (type === 'request') {
+      store.deleteTuitionRequest(id, currentUser.name);
+      showAdminToast(`✓ অভিভাবক টিউশন চাহিদা [${id}] সফলভাবে মুছে ফেলা হয়েছে।`);
+    } else if (type === 'application') {
+      store.deleteApplication(id, currentUser.name);
+      showAdminToast(`✓ টিউটর আবেদনপত্র [${id}] সফলভাবে মুছে ফেলা হয়েছে।`);
+    } else if (type === 'job') {
+      store.deleteJob(id, currentUser.name);
+      showAdminToast(`✓ টিউশন সার্কুলার [${id}] সফলভাবে মুছে ফেলা হয়েছে।`);
+    } else if (type === 'tutor') {
+      store.deleteTutor(id, currentUser.name);
+      showAdminToast(`✓ টিউটর প্রোফাইল [${id}] সফলভাবে মুছে ফেলা হয়েছে।`);
+    } else if (type === 'guardian') {
+      store.deleteGuardian(id, currentUser.name);
+      showAdminToast(`✓ অভিভাবক প্রোফাইল [${id}] সফলভাবে মুছে ফেলা হয়েছে।`);
+    } else if (type === 'demo') {
+      store.deleteDemoClass(id, currentUser.name);
+      showAdminToast(`✓ ডেমো ক্লাস রেকর্ড সফলভাবে মুছে ফেলা হয়েছে।`);
+    } else if (type === 'confirmation') {
+      store.deleteTuitionConfirmation(id, currentUser.name);
+      showAdminToast(`✓ টিউশন চুক্তিপত্র সফলভাবে মুছে ফেলা হয়েছে।`);
+    } else if (type === 'payment') {
+      store.deletePayment(id, currentUser.name);
+      showAdminToast(`✓ পেমেন্ট রেকর্ড সফলভাবে মুছে ফেলা হয়েছে।`);
+    } else if (type === 'certificate') {
+      store.deleteCertificate(id, currentUser.name);
+      showAdminToast(`✓ সার্টিফিকেট সফলভাবে মুছে ফেলা হয়েছে।`);
+    } else if (type === 'review') {
+      store.deleteReview(id);
+      showAdminToast(`✓ রিভিউ সফলভাবে মুছে ফেলা হয়েছে।`);
+    } else if (type === 'referral') {
+      store.deleteReferral(id, currentUser.name);
+      showAdminToast(`✓ রেফারেল রেকর্ড সফলভাবে মুছে ফেলা হয়েছে।`);
+    } else if (type === 'activity') {
+      store.deleteActivityLog(id, currentUser.name);
+      showAdminToast(`✓ অডিট লগ এন্ট্রি মুছে ফেলা হয়েছে।`);
+    } else if (type === 'clear_all_activity') {
+      store.clearActivityLogs(currentUser.name);
+      showAdminToast(`✓ সকল অডিট লগ সফলভাবে মুছে ফেলা হয়েছে।`);
+    } else if (type === 'conversation') {
+      store.deleteConversation(id);
+      showAdminToast(`✓ লাইভ চ্যাট কথোপকথন সফলভাবে মুছে ফেলা হয়েছে।`);
     }
     setDeleteConfirmItem(null);
   };
@@ -1193,7 +1245,7 @@ export const AdminDashboard: React.FC = () => {
         <div className="flex items-center gap-2 overflow-x-auto pb-2 text-xs font-semibold scrollbar-none">
           {[
             { id: 'requests', label: `📋 গার্ডিয়ান রিকোয়েস্ট (${storeState.requests.length})`, pending: pendingRequests.length },
-            { id: 'tutors', label: `🎓 টিউটর সিভি আবেদন (${storeState.tutors.length})`, pending: pendingTutors.length },
+            { id: 'tutors', label: `📝 টিউটর সিভি আবেদন (${pendingTutors.length})`, pending: pendingTutors.length },
             { id: 'jobs', label: `📌 টিউশন জব সার্কুলার (${storeState.jobs.length})` },
             { id: 'applications', label: `📝 জবে টিউটর আবেদন (${storeState.applications.length})`, pending: pendingApplications.length },
             { id: 'guardians', label: `👥 অভিভাবক তালিকা (${guardians.length})` },
@@ -1557,6 +1609,21 @@ export const AdminDashboard: React.FC = () => {
                             Reactivate
                           </button>
                         )}
+
+                        {/* Delete Guardian */}
+                        <button
+                          type="button"
+                          onClick={() => setDeleteConfirmItem({
+                            type: 'guardian',
+                            id: guardian.id,
+                            label: `অভিভাবক: ${guardian.name} (${guardian.phone || guardian.email || guardian.id})`
+                          })}
+                          className="px-3 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-lg font-semibold flex items-center gap-1 cursor-pointer transition"
+                          title="অভিভাবক প্রোফাইল মুছে ফেলুন"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Delete</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -1735,6 +1802,19 @@ export const AdminDashboard: React.FC = () => {
                           ✓ Credit Reward
                         </button>
                       )}
+
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmItem({
+                          type: 'referral',
+                          id: ref.id,
+                          label: `রেফারেল কোড: ${ref.referralCode} (রেফারার: ${ref.referrerName})`
+                        })}
+                        className="p-1.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-lg cursor-pointer transition"
+                        title="রেফারেল রেকর্ড মুছে ফেলুন"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))
@@ -2071,6 +2151,19 @@ export const AdminDashboard: React.FC = () => {
                     >
                       <Eye className="w-3.5 h-3.5 text-blue-900" />
                       <span>সিভি</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirmItem({
+                        type: 'tutor',
+                        id: tutor.id,
+                        label: `টিউটর প্রোফাইল: ${tutor.fullName} (${tutor.phone || tutor.id})`
+                      })}
+                      className="p-1.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-lg cursor-pointer transition"
+                      title="টিউটর প্রোফাইল মুছে ফেলুন"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -2497,17 +2590,32 @@ export const AdminDashboard: React.FC = () => {
                           </button>
                         )}
 
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedKycTutor(tutor);
-                            setKycReviewModalOpen(true);
-                          }}
-                          className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 rounded-lg font-semibold flex items-center gap-1 cursor-pointer transition shadow-2xs text-xs"
-                        >
-                          <ShieldCheck className="w-3.5 h-3.5 text-blue-900" />
-                          <span>সম্পূর্ণ সিভি ও ডকুমেন্ট রিভিউ</span>
-                        </button>
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedKycTutor(tutor);
+                              setKycReviewModalOpen(true);
+                            }}
+                            className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-800 rounded-lg font-semibold flex items-center gap-1 cursor-pointer transition shadow-2xs text-xs"
+                          >
+                            <ShieldCheck className="w-3.5 h-3.5 text-blue-900" />
+                            <span>সম্পূর্ণ সিভি ও ডকুমেন্ট রিভিউ</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setDeleteConfirmItem({
+                              type: 'tutor',
+                              id: tutor.id,
+                              label: `সিভি আবেদন: ${tutor.fullName} (${tutor.phone || tutor.id})`
+                            })}
+                            className="p-1.5 bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 rounded-lg cursor-pointer transition text-xs"
+                            title="সিভি আবেদন মুছে ফেলুন"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
