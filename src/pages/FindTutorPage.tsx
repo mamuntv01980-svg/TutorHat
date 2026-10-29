@@ -460,23 +460,58 @@ export const FindTutorPage: React.FC = () => {
           </div>
 
           {filteredTutors.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 text-center border border-slate-200">
-              <GraduationCap className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <h3 className="text-base font-semibold text-slate-800">
-                {language === 'bn' ? 'কোনো টিউটর পাওয়া যায়নি' : 'No tutors match the selected criteria'}
-              </h3>
-              <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-                {language === 'bn'
-                  ? 'অনুগ্রহ করে ফিল্টার পরিবর্তন করুন অথবা সরাসরি টিউটর রিকোয়েস্ট পোস্ট করুন।'
-                  : 'Try relaxing your filters or submit a custom tuition request for our team to match.'}
-              </p>
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="mt-4 px-4 py-2 text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100"
-              >
-                {language === 'bn' ? 'সব ফিল্টার মুছুন' : 'Clear All Filters'}
-              </button>
+            <div className="bg-white rounded-3xl p-10 sm:p-14 text-center border border-slate-200 shadow-2xs space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-900 flex items-center justify-center mx-auto">
+                <GraduationCap className="w-8 h-8" />
+              </div>
+              <div className="max-w-md mx-auto space-y-1.5">
+                <h3 className="text-lg font-bold text-blue-950">
+                  {language === 'bn' 
+                    ? (storeState.tutors.filter(t => t.verificationStatus === 'verified').length === 0
+                        ? 'সারাদেশের ভেরিফাইড টিউটর প্রোফাইল শিগগিরই যুক্ত হচ্ছে'
+                        : 'কোনো টিউটর পাওয়া যায়নি')
+                    : (storeState.tutors.filter(t => t.verificationStatus === 'verified').length === 0
+                        ? 'Verified Tutors Across Bangladesh Coming Soon'
+                        : 'No tutors match the selected criteria')}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                  {language === 'bn'
+                    ? (storeState.tutors.filter(t => t.verificationStatus === 'verified').length === 0
+                        ? 'শিক্ষকগণ সিভি সাবমিট করলে অ্যাডমিন প্যানেল থেকে সার্টিফিকেট ও এনআইডি যাচাইয়ের পর তা সরাসরি এখানে ভেরিফাইড ব্যাজসহ প্রদর্শিত হবে।'
+                        : 'অনুগ্রহ করে ফিল্টার পরিবর্তন করুন অথবা সরাসরি টিউটর রিকোয়েস্ট পোস্ট করুন।')
+                    : (storeState.tutors.filter(t => t.verificationStatus === 'verified').length === 0
+                        ? 'Educators submitting CVs are verified by admin before appearing live here with verified credentials.'
+                        : 'Try relaxing your filters or submit a custom tuition request for our team to match.')}
+                </p>
+              </div>
+
+              <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigateTo('become-a-tutor')}
+                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+                >
+                  {language === 'bn' ? '🎓 শিক্ষক হিসেবে সিভি জমা দিন' : 'Register as Tutor'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigateTo('request-tutor')}
+                  className="px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+                >
+                  {language === 'bn' ? '✓ টিউটর রিকোয়েস্ট পোস্ট করুন' : 'Post Tuition Request'}
+                </button>
+
+                {filteredTutors.length === 0 && storeState.tutors.filter(t => t.verificationStatus === 'verified').length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="px-4 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
+                  >
+                    {language === 'bn' ? 'সব ফিল্টার মুছুন' : 'Clear All Filters'}
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

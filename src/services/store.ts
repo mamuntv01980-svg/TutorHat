@@ -50,13 +50,13 @@ const DEFAULT_SETTINGS: SystemSettings = {
   referralRules: 'Earn ৳200 bonus or discount voucher on your child’s tuition after successful demo completion by a referred student or tutor.',
   referralBonusText: '৳200 Credit per verified referral',
   jobAutoApprove: false,
-  isDemoDataEnabled: true,
+  isDemoDataEnabled: false,
   paymentAccounts: {
-    bkashNumber: '01610582917',
+    bkashNumber: '01752617360',
     bkashType: 'personal',
-    nagadNumber: '01610582917',
+    nagadNumber: '01752617360',
     nagadType: 'personal',
-    paymentInstructionsBn: 'বিকাশ অথবা নগদ "Send Money" (সেন্ড মানি) অপশন ব্যবহার করে 01610582917 নম্বরে পেমেন্ট করুন। রেফারেন্সে আপনার নাম বা জব আইডি দিন।'
+    paymentInstructionsBn: 'বিকাশ অথবা নগদ "Send Money" (সেন্ড মানি) অপশন ব্যবহার করে 01752617360 নম্বরে পেমেন্ট করুন। রেফারেন্সে আপনার নাম বা জব আইডি দিন।'
   },
   adminSecurity: {
     requireStrongPassword: false,
@@ -67,8 +67,8 @@ const DEFAULT_SETTINGS: SystemSettings = {
     twoFactorEnabled: false,
     maxFailedAttempts: 5,
     lockoutDurationMinutes: 15,
-    adminAccountConfigured: false,
-    primaryAdminName: 'Super Admin',
+    adminAccountConfigured: true,
+    primaryAdminName: 'Super Admin Mamun',
     primaryAdminEmail: 'admin@tutorhat.com',
     primaryAdminPhone: '01752617360'
   }
@@ -77,7 +77,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
 const INITIAL_USERS: User[] = [
   {
     id: 'user_admin_01',
-    name: 'TutorHat Admin',
+    name: 'Super Admin Mamun',
     email: 'admin@tutorhat.com',
     phone: '01752617360',
     role: 'admin',
@@ -87,344 +87,10 @@ const INITIAL_USERS: User[] = [
     district: 'Dhaka',
     status: 'active',
     createdAt: '2026-01-01T00:00:00.000Z'
-  },
-  {
-    id: 'user_tutor_01',
-    name: 'Rahim Chowdhury',
-    email: 'rahim.tutor@example.com',
-    phone: '01711223344',
-    role: 'tutor',
-    gender: 'male',
-    location: 'Dhanmondi, Dhaka',
-    district: 'Dhaka',
-    status: 'active',
-    referralCode: 'RAHIM-TH10',
-    createdAt: '2026-02-10T10:00:00.000Z'
-  },
-  {
-    id: 'user_tutor_02',
-    name: 'Nusrat Jahan',
-    email: 'nusrat.du@example.com',
-    phone: '01811334455',
-    role: 'tutor',
-    gender: 'female',
-    location: 'Uttara Sector 7, Dhaka',
-    district: 'Dhaka',
-    status: 'active',
-    referralCode: 'NUSRAT-TH20',
-    createdAt: '2026-02-15T12:00:00.000Z'
-  },
-  {
-    id: 'user_tutor_03',
-    name: 'Hafez Maulana Abdullah',
-    email: 'abdullah.quran@example.com',
-    phone: '01911445566',
-    role: 'tutor',
-    gender: 'male',
-    location: 'Mohammadpur, Dhaka',
-    district: 'Dhaka',
-    status: 'active',
-    referralCode: 'ABDULLAH-TH30',
-    createdAt: '2026-02-18T14:00:00.000Z'
-  },
-  {
-    id: 'user_tutor_04',
-    name: 'Mufti Hafez Mahmudur Rahman',
-    email: 'mahmud.mufti@example.com',
-    phone: '01610582917',
-    role: 'tutor',
-    gender: 'male',
-    location: 'Lalbagh, Dhaka',
-    district: 'Dhaka',
-    status: 'active',
-    referralCode: 'MAHMUD-TH40',
-    createdAt: '2026-02-22T09:00:00.000Z'
   }
 ];
 
-const INITIAL_TUTORS: TutorProfile[] = [
-  {
-    id: 'tut_01',
-    userId: 'user_tutor_01',
-    fullName: 'Rahim Chowdhury',
-    photo: tutorProfileImg,
-    gender: 'male',
-    dateOfBirth: '1999-05-14',
-    phone: '01711223344',
-    email: 'rahim.tutor@example.com',
-    currentAddress: 'House 12, Road 4, Dhanmondi',
-    permanentAddress: 'Chandpur Sadar, Chandpur',
-    district: 'Dhaka',
-    area: 'Dhanmondi',
-    preferredAreas: ['Dhanmondi', 'Mirpur', 'Mohammadpur', 'Lalmatia', 'Farmgate'],
-    aboutMe: 'Graduated from BUET (EEE). I have over 4 years of experience preparing students for SSC, HSC, and English Medium board exams in Mathematics and Physics. My focus is conceptual clarity and regular weekly model tests.',
-    tutorCategory: 'general',
-    university: 'Bangladesh University of Engineering and Technology (BUET)',
-    department: 'Electrical & Electronic Engineering (EEE)',
-    programDegree: 'B.Sc. Engineering',
-    admissionYear: '2020',
-    currentYearSemester: 'Completed / 4th Year',
-    institution: 'BUET',
-    ssc: {
-      schoolOrCollege: 'Dhaka Residential Model College',
-      board: 'Dhaka',
-      gpa: '5.00',
-      groupOrMajor: 'Science',
-      passingYear: '2017'
-    },
-    hsc: {
-      schoolOrCollege: 'Notre Dame College, Dhaka',
-      board: 'Dhaka',
-      gpa: '5.00',
-      groupOrMajor: 'Science',
-      passingYear: '2019'
-    },
-    teachingExperienceYears: 4,
-    teachingMethod: 'Concept breakdown with real-world applications, interactive practice, formula worksheets, and chapter-wise mock exams.',
-    preferredClasses: ['Class 9 (SSC)', 'Class 10 (SSC)', 'HSC 1st Year', 'HSC 2nd Year', 'O Level (Standard)'],
-    preferredSubjects: ['Higher Mathematics', 'Physics', 'Mathematics', 'Chemistry'],
-    preferredMediums: ['Bangla Medium', 'English Version', 'English Medium (Cambridge / Edexcel)'],
-    categories: ['Bangla Medium', 'English Version', 'English Medium'],
-    onlineTeaching: true,
-    homeTuition: true,
-    coachingGroupTuition: false,
-    availableDays: ['Saturday', 'Monday', 'Wednesday', 'Thursday'],
-    availableTime: 'After 4:30 PM',
-    expectedSalary: 7500,
-    preferredStudentGender: 'any',
-    preferredClassLevel: 'Secondary & Higher Secondary',
-    verificationStatus: 'verified',
-    completionPercentage: 100,
-    rating: 4.9,
-    totalReviews: 14,
-    featured: true,
-    nidNumber: '19992691234567890',
-    nidFrontPhoto: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
-    nidBackPhoto: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
-    studentIdCardPhoto: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=600&q=80',
-    certificatePhoto: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&w=600&q=80',
-    isNidVerified: true,
-    isStudentIdVerified: true,
-    isAcademicVerified: true,
-    verificationSubmittedDate: '2026-09-01',
-    verifiedDate: '2026-09-02',
-    trustScore: 100,
-    badgeLevel: 'golden_star'
-  },
-  {
-    id: 'tut_02',
-    userId: 'user_tutor_02',
-    fullName: 'Nusrat Jahan',
-    photo: '',
-    gender: 'female',
-    dateOfBirth: '2001-08-20',
-    phone: '01811334455',
-    email: 'nusrat.du@example.com',
-    currentAddress: 'Sector 7, Road 11, Uttara',
-    permanentAddress: 'Mymensingh Sadar',
-    district: 'Dhaka',
-    area: 'Uttara',
-    preferredAreas: ['Uttara', 'Nikunja', 'Bashundhara R/A', 'Banani'],
-    aboutMe: 'Honours student in English at University of Dhaka. Dedicated to helping junior and high school students master English grammar, creative writing, and Cambridge IGCSE English. Very friendly and patient.',
-    tutorCategory: 'general',
-    university: 'University of Dhaka (DU)',
-    department: 'Department of English',
-    programDegree: 'B.A. (Honours)',
-    admissionYear: '2021',
-    currentYearSemester: '3rd Year',
-    institution: 'University of Dhaka',
-    ssc: {
-      schoolOrCollege: 'Viqarunnisa Noon School & College',
-      board: 'Dhaka',
-      gpa: '5.00',
-      groupOrMajor: 'Science',
-      passingYear: '2018'
-    },
-    hsc: {
-      schoolOrCollege: 'Viqarunnisa Noon College',
-      board: 'Dhaka',
-      gpa: '5.00',
-      groupOrMajor: 'Humanities',
-      passingYear: '2020'
-    },
-    teachingExperienceYears: 3,
-    teachingMethod: 'Interactive vocabulary building, grammar fundamentals, daily speaking drills, and comprehension mastery.',
-    preferredClasses: ['Class 6', 'Class 7', 'Class 8 (JSC)', 'Class 9 (SSC)', 'O Level (Standard)'],
-    preferredSubjects: ['English (1st & 2nd Paper)', 'Bangla (1st & 2nd Paper)', 'Social Science / BGS'],
-    preferredMediums: ['Bangla Medium', 'English Version', 'English Medium (Cambridge / Edexcel)'],
-    categories: ['English Medium', 'English Version', 'Language Learning (English, Spoken Arabic)'],
-    onlineTeaching: true,
-    homeTuition: true,
-    coachingGroupTuition: true,
-    availableDays: ['Sunday', 'Tuesday', 'Thursday', 'Friday'],
-    availableTime: '3:00 PM - 8:00 PM',
-    expectedSalary: 6500,
-    preferredStudentGender: 'female',
-    preferredClassLevel: 'Junior & Secondary',
-    verificationStatus: 'verified',
-    completionPercentage: 100,
-    rating: 5.0,
-    totalReviews: 8,
-    featured: true,
-    nidNumber: '20012699876543210',
-    nidFrontPhoto: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
-    nidBackPhoto: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
-    studentIdCardPhoto: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=600&q=80',
-    certificatePhoto: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&w=600&q=80',
-    isNidVerified: true,
-    isStudentIdVerified: true,
-    isAcademicVerified: true,
-    verificationSubmittedDate: '2026-09-10',
-    verifiedDate: '2026-09-11',
-    trustScore: 100,
-    badgeLevel: 'verified_pro'
-  },
-  {
-    id: 'tut_03',
-    userId: 'user_tutor_03',
-    fullName: 'Hafez Maulana Abdullah',
-    photo: '',
-    gender: 'male',
-    dateOfBirth: '1998-11-05',
-    phone: '01911445566',
-    email: 'abdullah.quran@example.com',
-    currentAddress: 'Town Hall, Mohammadpur',
-    permanentAddress: 'Kishoreganj',
-    district: 'Dhaka',
-    area: 'Mohammadpur',
-    preferredAreas: ['Mohammadpur', 'Dhanmondi', 'Shyamoli', 'Lalmatia'],
-    aboutMe: 'Hafez-e-Quran and Kamil in Hadith from Islamic Arabic University. 6 years of experience in Noorani Quran reading, Makhraj, Tajweed, Duas, and basic Arabic speaking for children and adults.',
-    tutorCategory: 'alia_madrasa',
-    madrasaDetails: {
-      category: 'alia_madrasa',
-      isHafiz: true,
-      qiratTajweedCertificate: 'ইজাযাহ সনদ (তাজবীদ ও ক্বেরাত)',
-      madrasaBoard: 'বাংলাদেশ মাদরাসা শিক্ষা বোর্ড (Alia Madrasah Board)',
-      highestSanadOrDegree: 'কামিল / মাস্টার্স (হাদিস বিভাগ)',
-      sanadPassingYear: '2021',
-      sanadDivisionOrGpa: 'প্রথম শ্রেণি (First Class)',
-      specializationDept: 'আল-হাদিস ও ইসলামিক স্টাডিজ',
-      currentKhidmatOrInstitution: 'ঢাকা সরকারি মাদ্রাসা-ই-আলিয়া'
-    },
-    university: 'Islamic Arabic University',
-    department: 'Department of Hadith & Islamic Studies',
-    programDegree: 'Masters / Kamil',
-    admissionYear: '2019',
-    currentYearSemester: 'Completed',
-    institution: 'Government Madrasah-e-Alia',
-    ssc: {
-      schoolOrCollege: 'Darunnajat Siddikia Kamil Madrasah',
-      board: 'Madrasah',
-      gpa: '5.00',
-      groupOrMajor: 'General',
-      passingYear: '2016'
-    },
-    hsc: {
-      schoolOrCollege: 'Darunnajat Siddikia Kamil Madrasah',
-      board: 'Madrasah',
-      gpa: '5.00',
-      groupOrMajor: 'General',
-      passingYear: '2018'
-    },
-    teachingExperienceYears: 6,
-    teachingMethod: 'Gentle, methodical Tajweed drill, correct articulation (Makhraj), daily revision, Masnoon Duas, and basic manners (Adab).',
-    preferredClasses: ['Play / Nursery / KG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5 (PEC)', 'Adult / Noorani Quran Learner'],
-    preferredSubjects: ['Holy Quran & Tajweed', 'Arabic Grammar & Spoken', 'Islamic Studies'],
-    preferredMediums: ['Quran & Arabic Learning', 'Hifz & Tajweed', 'Madrasa / Islamic Curriculum'],
-    categories: ['Arabic & Quran', 'Hifz & Tajweed', 'Islamic Studies'],
-    onlineTeaching: true,
-    homeTuition: true,
-    coachingGroupTuition: false,
-    availableDays: ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday'],
-    availableTime: 'Morning 7:00 AM - 9:00 AM or Evening 5:00 PM - 8:00 PM',
-    expectedSalary: 5000,
-    preferredStudentGender: 'any',
-    preferredClassLevel: 'All Age Groups',
-    verificationStatus: 'verified',
-    completionPercentage: 100,
-    rating: 4.95,
-    totalReviews: 19,
-    featured: true
-  },
-  {
-    id: 'tut_04',
-    userId: 'user_tutor_04',
-    fullName: 'মুফতি হাফেজ মাহমুদুর রহমান',
-    photo: '',
-    gender: 'male',
-    dateOfBirth: '1996-03-12',
-    phone: '01610582917',
-    email: 'mahmud.mufti@example.com',
-    currentAddress: 'Lalbagh Shahi Masjid Area',
-    permanentAddress: 'Brahmanbaria Sadar',
-    district: 'Dhaka',
-    area: 'Lalbagh',
-    preferredAreas: ['Lalbagh', 'Dhanmondi', 'Azimpur', 'Chawkbazar', 'New Market'],
-    aboutMe: 'মুফতি ও হাফেজ-এ-কুরআন। হাটহাজারী মাদ্রাসা থেকে দাওরায়ে হাদিস (মাস্টার্স সমমান) এবং উচ্চতর ইফতা কোর্স সম্পন্ন। শিশুদের নুরানী পদ্ধতিতে কোরআন মাজিদ শিক্ষা, তাজবীদ, মাসনুন দো‘আ এবং কওমি মাদ্রাসার নাহু-সরফ ও হাদিস পড়ানোর ৫ বছরের অভিজ্ঞতা।',
-    tutorCategory: 'qawmi_madrasa',
-    madrasaDetails: {
-      category: 'qawmi_madrasa',
-      isHafiz: true,
-      qiratTajweedCertificate: 'কারী ও তাজবীদ সনদপত্র (মুত্তাসিল সানাদ)',
-      madrasaBoard: 'আল-হাইয়াতুল উলয়া লিল জামিআতিল কওমিয়া বাংলাদেশ',
-      highestSanadOrDegree: 'দাওরায়ে হাদিস / তাকমিল (মাস্টার্স সমমান)',
-      sanadPassingYear: '2020',
-      sanadDivisionOrGpa: 'মুমতাজ (Star Marks / Distinction)',
-      specializationDept: 'ইফতা (ইসলামি আইন ও ফতোয়া গবেষণা)',
-      currentKhidmatOrInstitution: 'আল-জামিয়াতুল আহলিয়া দারুল উলুম মুঈনুল ইসলাম (হাটহাজারী)'
-    },
-    university: 'আল-জামিয়াতুল আহলিয়া দারুল উলুম মুঈনুল ইসলাম (হাটহাজারী)',
-    department: 'দাওরায়ে হাদিস ও উচ্চতর ইফতা বিভাগ',
-    programDegree: 'দাওরায়ে হাদিস (মাস্টার্স সমমান)',
-    admissionYear: '2016',
-    currentYearSemester: 'উচ্চতর সনদপ্রাপ্ত',
-    institution: 'আল-হাইয়াতুল উলয়া লিল জামিআতিল কওমিয়া',
-    ssc: {
-      schoolOrCollege: 'জামিয়া ইসলামিয়া ইউনুছিয়া',
-      board: 'বেফাকুল মাদারিসিল আরাবিয়া',
-      gpa: 'মুমতাজ (Star Marks)',
-      groupOrMajor: 'সানাবিয়া আম্মা',
-      passingYear: '2015'
-    },
-    hsc: {
-      schoolOrCollege: 'দারুল উলুম হাটহাজারী',
-      board: 'বেফাকুল মাদারিসিল আরাবিয়া',
-      gpa: 'মুমতাজ (Star Marks)',
-      groupOrMajor: 'ফযিলত',
-      passingYear: '2017'
-    },
-    teachingExperienceYears: 5,
-    teachingMethod: 'নুরানী তরিকায় বিশুদ্ধ মাখরাজ ও তাজবীদ মাশক, আমপারা ও পূর্ণ কুরআন হিফজ করান, শিশুদের আদব-শিষ্টাচার ও মাসায়েল শিক্ষা।',
-    preferredClasses: ['Play / Nursery / KG', 'Class 1', 'Class 2', 'Class 3', 'Class 4', 'Class 5 (PEC)', 'কওমি মাদ্রাসা জামাত (ইবতিদায়ি-সানাবিয়া)', 'হিফজ শিক্ষার্থী'],
-    preferredSubjects: ['Holy Quran & Tajweed', 'নুরানী কুরআন শিক্ষা', 'হিফজুল কুরআন (৩০ পারা)', 'Arabic Grammar & Spoken', 'Islamic Studies', 'মাসআলা-মাসায়েল ও আদব'],
-    preferredMediums: ['Quran & Arabic Learning', 'Hifz & Tajweed', 'Madrasa / Islamic Curriculum'],
-    categories: ['Arabic & Quran', 'Hifz & Tajweed', 'Islamic Studies'],
-    onlineTeaching: true,
-    homeTuition: true,
-    coachingGroupTuition: false,
-    availableDays: ['Saturday', 'Sunday', 'Monday', 'Tuesday', 'Wednesday'],
-    availableTime: 'সকাল ৭:০০ - ৯:০০ অথবা মাগরিবের পর',
-    expectedSalary: 6000,
-    preferredStudentGender: 'any',
-    preferredClassLevel: 'সকল বয়স ও শ্রেণির শিক্ষার্থী',
-    verificationStatus: 'verified',
-    completionPercentage: 100,
-    rating: 5.0,
-    totalReviews: 24,
-    featured: true,
-    nidNumber: '19951234567890123',
-    nidFrontPhoto: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
-    nidBackPhoto: 'https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=600&q=80',
-    studentIdCardPhoto: 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&w=600&q=80',
-    certificatePhoto: 'https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&w=600&q=80',
-    isNidVerified: false,
-    isStudentIdVerified: false,
-    isAcademicVerified: false,
-    verificationSubmittedDate: '2026-10-11',
-    trustScore: 40,
-    badgeLevel: 'none'
-  }
-];
+const INITIAL_TUTORS: TutorProfile[] = [];
 
 // Empty initial jobs, requests and applications so the platform starts completely fresh for real users
 const INITIAL_REQUESTS: TuitionRequest[] = [];
@@ -477,7 +143,7 @@ const INITIAL_CONVERSATIONS: ChatConversation[] = [];
 const INITIAL_CHAT_MESSAGES: ChatMessage[] = [];
 const INITIAL_PROGRESS_REPORTS: StudentProgressReport[] = [];
 
-const STORAGE_KEY = 'tutorhat_data_v9';
+const STORAGE_KEY = 'tutorhat_data_v10';
 
 export interface StoreState {
   settings: SystemSettings;
@@ -502,7 +168,7 @@ export interface StoreState {
   conversations: ChatConversation[];
   chatMessages: ChatMessage[];
   progressReports: StudentProgressReport[];
-  _freshCleanV9?: boolean;
+  _freshCleanV10?: boolean;
 }
 
 export function calculateCvCompletion(tutor?: Partial<TutorProfile> | null): { percent: number; missing: string[] } {
@@ -579,8 +245,8 @@ class Store {
 
   constructor() {
     this.state = this.loadState();
-    // Guarantee fresh clean state is persisted to v9
-    this.state._freshCleanV9 = true;
+    // Guarantee fresh clean state is persisted to v10
+    this.state._freshCleanV10 = true;
     this.saveState();
 
     if (typeof window !== 'undefined') {
@@ -621,31 +287,13 @@ class Store {
             changed = true;
           }
           if (Array.isArray(s.tutors)) {
-            const serverTutors: TutorProfile[] = s.tutors;
-            const mergedTutors = [...this.state.tutors];
-            for (const st of serverTutors) {
-              const idx = mergedTutors.findIndex(t => t.id === st.id || t.userId === st.userId);
-              if (idx >= 0) {
-                mergedTutors[idx] = { ...mergedTutors[idx], ...st };
-              } else {
-                mergedTutors.unshift(st);
-              }
-            }
-            this.state.tutors = mergedTutors;
+            this.state.tutors = s.tutors.filter((t: TutorProfile) => !t.id.startsWith('tut_01') && !t.id.startsWith('tut_02') && !t.id.startsWith('tut_03') && !t.id.startsWith('tut_04'));
             changed = true;
           }
           if (Array.isArray(s.users)) {
-            const serverUsers = s.users;
-            const mergedUsers = [...this.state.users];
-            for (const su of serverUsers) {
-              const idx = mergedUsers.findIndex(u => u.id === su.id || (u.phone && su.phone && u.phone === su.phone));
-              if (idx >= 0) {
-                mergedUsers[idx] = { ...mergedUsers[idx], ...su };
-              } else {
-                mergedUsers.push(su);
-              }
-            }
-            this.state.users = mergedUsers;
+            const serverUsers = s.users.filter((u: User) => !u.id.startsWith('user_tutor_') && u.id !== 'user_guardian_01');
+            const hasAdmin = serverUsers.some((u: User) => u.role === 'admin');
+            this.state.users = hasAdmin ? serverUsers : [INITIAL_USERS[0], ...serverUsers];
             changed = true;
           }
           if (s.adminSecurity) {
@@ -674,71 +322,57 @@ class Store {
 
   private loadState(): StoreState {
     try {
-      let data = localStorage.getItem(STORAGE_KEY);
-      if (!data) {
-        data = localStorage.getItem('tutorhat_data_v8') || localStorage.getItem('tutorhat_data_v7');
-      }
+      const data = localStorage.getItem(STORAGE_KEY);
       if (data) {
         const parsed = JSON.parse(data);
-        const isFreshClean = parsed._freshCleanV9 === true;
-        return {
-          settings: {
-            ...DEFAULT_SETTINGS,
-            ...(parsed.settings || {}),
-            paymentAccounts: {
-              ...DEFAULT_SETTINGS.paymentAccounts,
-              ...(parsed.settings?.paymentAccounts || {})
+        const isFreshClean = parsed._freshCleanV10 === true;
+        if (isFreshClean) {
+          const rawUsers = (Array.isArray(parsed.users) && parsed.users.length > 0)
+            ? parsed.users.filter((u: User) => !u.id.startsWith('user_tutor_') && u.id !== 'user_guardian_01')
+            : INITIAL_USERS;
+          const hasAdmin = rawUsers.some((u: User) => u.role === 'admin');
+          const finalUsers = hasAdmin ? rawUsers : [INITIAL_USERS[0], ...rawUsers];
+
+          const cleanTutors = (Array.isArray(parsed.tutors) ? parsed.tutors : [])
+            .filter((t: TutorProfile) => !t.id.startsWith('tut_01') && !t.id.startsWith('tut_02') && !t.id.startsWith('tut_03') && !t.id.startsWith('tut_04'));
+
+          return {
+            settings: {
+              ...DEFAULT_SETTINGS,
+              ...(parsed.settings || {}),
+              paymentAccounts: {
+                ...DEFAULT_SETTINGS.paymentAccounts,
+                ...(parsed.settings?.paymentAccounts || {})
+              },
+              adminSecurity: {
+                ...DEFAULT_SETTINGS.adminSecurity,
+                ...(parsed.settings?.adminSecurity || {})
+              }
             },
-            adminSecurity: {
-              ...DEFAULT_SETTINGS.adminSecurity,
-              ...(parsed.settings?.adminSecurity || {})
-            }
-          },
-          users: (() => {
-            const rawUsers = (Array.isArray(parsed.users) && parsed.users.length > 0)
-              ? parsed.users.filter((u: User) => u.id !== 'user_guardian_01' && u.email !== 'farhana.guardian@example.com')
-              : INITIAL_USERS;
-            const hasAdmin = rawUsers.some((u: User) => u.role === 'admin');
-            return hasAdmin ? rawUsers : [INITIAL_USERS[0], ...rawUsers];
-          })(),
-          tutors: (Array.isArray(parsed.tutors) && parsed.tutors.length > 0)
-            ? parsed.tutors.map((t: TutorProfile) => {
-                const initT = INITIAL_TUTORS.find(it => it.id === t.id);
-                const verificationStatus = (t.id === 'tut_04' && !isFreshClean) 
-                  ? 'verified' 
-                  : (t.verificationStatus || initT?.verificationStatus || 'verified');
-                return {
-                  ...(initT || {}),
-                  ...t,
-                  verificationStatus,
-                  trustScore: t.trustScore !== undefined ? t.trustScore : (initT?.trustScore || 100),
-                  rating: t.rating !== undefined ? t.rating : (initT?.rating || 5.0),
-                  totalReviews: t.totalReviews !== undefined ? t.totalReviews : (initT?.totalReviews || 0)
-                };
-              })
-            : INITIAL_TUTORS,
-          // Clear all demo guardian requests, tuition jobs, and tutor applications so user starts completely fresh
-          requests: isFreshClean && Array.isArray(parsed.requests) ? parsed.requests : [],
-          jobs: isFreshClean && Array.isArray(parsed.jobs) ? parsed.jobs : [],
-          applications: isFreshClean && Array.isArray(parsed.applications) ? parsed.applications : [],
-          _freshCleanV9: true,
-          demos: isFreshClean && Array.isArray(parsed.demos) ? parsed.demos : [],
-          confirmations: isFreshClean && Array.isArray(parsed.confirmations) ? parsed.confirmations : [],
-          attendance: isFreshClean && Array.isArray(parsed.attendance) ? parsed.attendance : [],
-          payments: isFreshClean && Array.isArray(parsed.payments) ? parsed.payments : [],
-          certificates: isFreshClean && Array.isArray(parsed.certificates) ? parsed.certificates : [],
-          reviews: isFreshClean && Array.isArray(parsed.reviews) ? parsed.reviews : [],
-          notifications: isFreshClean && Array.isArray(parsed.notifications) ? parsed.notifications : [],
-          notices: Array.isArray(parsed.notices) && parsed.notices.length > 0 ? parsed.notices : INITIAL_NOTICES,
-          messages: isFreshClean && Array.isArray(parsed.messages) ? parsed.messages : [],
-          referrals: isFreshClean && Array.isArray(parsed.referrals) ? parsed.referrals : [],
-          adminNotes: isFreshClean && Array.isArray(parsed.adminNotes) ? parsed.adminNotes : [],
-          activityLogs: isFreshClean && Array.isArray(parsed.activityLogs) ? parsed.activityLogs : [],
-          shortlists: isFreshClean && Array.isArray(parsed.shortlists) ? parsed.shortlists : [],
-          conversations: isFreshClean && Array.isArray(parsed.conversations) ? parsed.conversations : [],
-          chatMessages: isFreshClean && Array.isArray(parsed.chatMessages) ? parsed.chatMessages : [],
-          progressReports: isFreshClean && Array.isArray(parsed.progressReports) ? parsed.progressReports : []
-        };
+            users: finalUsers,
+            tutors: cleanTutors,
+            requests: Array.isArray(parsed.requests) ? parsed.requests : [],
+            jobs: Array.isArray(parsed.jobs) ? parsed.jobs : [],
+            applications: Array.isArray(parsed.applications) ? parsed.applications : [],
+            _freshCleanV10: true,
+            demos: Array.isArray(parsed.demos) ? parsed.demos : [],
+            confirmations: Array.isArray(parsed.confirmations) ? parsed.confirmations : [],
+            attendance: Array.isArray(parsed.attendance) ? parsed.attendance : [],
+            payments: Array.isArray(parsed.payments) ? parsed.payments : [],
+            certificates: Array.isArray(parsed.certificates) ? parsed.certificates : [],
+            reviews: Array.isArray(parsed.reviews) ? parsed.reviews : [],
+            notifications: Array.isArray(parsed.notifications) ? parsed.notifications : [],
+            notices: Array.isArray(parsed.notices) && parsed.notices.length > 0 ? parsed.notices : INITIAL_NOTICES,
+            messages: Array.isArray(parsed.messages) ? parsed.messages : [],
+            referrals: Array.isArray(parsed.referrals) ? parsed.referrals : [],
+            adminNotes: Array.isArray(parsed.adminNotes) ? parsed.adminNotes : [],
+            activityLogs: Array.isArray(parsed.activityLogs) ? parsed.activityLogs : [],
+            shortlists: Array.isArray(parsed.shortlists) ? parsed.shortlists : [],
+            conversations: Array.isArray(parsed.conversations) ? parsed.conversations : [],
+            chatMessages: Array.isArray(parsed.chatMessages) ? parsed.chatMessages : [],
+            progressReports: Array.isArray(parsed.progressReports) ? parsed.progressReports : []
+          };
+        }
       }
     } catch {
       // ignore corrupt data
@@ -767,7 +401,7 @@ class Store {
       conversations: INITIAL_CONVERSATIONS,
       chatMessages: INITIAL_CHAT_MESSAGES,
       progressReports: INITIAL_PROGRESS_REPORTS,
-      _freshCleanV9: true
+      _freshCleanV10: true
     };
   }
 

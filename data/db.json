@@ -6,7 +6,7 @@
   "users": [
     {
       "id": "user_admin_01",
-      "name": "Super Admin",
+      "name": "Super Admin Mamun",
       "email": "admin@tutorhat.com",
       "phone": "01752617360",
       "role": "admin",
@@ -41,6 +41,7 @@
   },
   "adminSecurity": {
     "primaryAdminPhone": "01752617360",
+    "primaryAdminEmail": "admin@tutorhat.com",
     "adminPasswordHash": "9ba5b4d71a7b4455e4230a991e795c0fd2d91c179ee0671b7add49cf9be962fb",
     "adminPinHash": "9ba5b4d71a7b4455e4230a991e795c0fd2d91c179ee0671b7add49cf9be962fb",
     "adminPinSalt": "tutorhat_sec_salt_",
@@ -52,5 +53,5 @@
     "adminAccountConfigured": true,
     "primaryAdminName": "Super Admin Mamun"
   },
-  "lastUpdated": "2026-10-23T00:00:00.000Z"
+  "lastUpdated": "2026-10-29T13:00:00.000Z"
 }

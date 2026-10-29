@@ -52,7 +52,7 @@ function getInitialDb(): ServerDb {
     users: [
       {
         id: 'user_admin_01',
-        name: 'Super Admin',
+        name: 'Super Admin Mamun',
         email: 'admin@tutorhat.com',
         phone: '01752617360',
         role: 'admin',

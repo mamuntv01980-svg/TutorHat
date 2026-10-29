@@ -279,10 +279,10 @@ export const HomePage: React.FC = () => {
 
             <div className="p-4 bg-white rounded-xl border border-slate-200 shadow-xs">
               <div className="text-2xl sm:text-3xl font-bold text-blue-950 tabular-nums">
-                12+
+                {language === 'bn' ? '৬৪' : '64'}
               </div>
               <p className="text-xs font-semibold text-slate-600 mt-1">
-                {language === 'bn' ? 'মেট্রোপলিটন জেলা ও এলাকা' : 'Districts & Metro Areas'}
+                {language === 'bn' ? 'সারাদেশের ৬৪ জেলা' : 'All 64 Districts'}
               </p>
             </div>
 
@@ -582,12 +582,21 @@ export const HomePage: React.FC = () => {
         </div>
 
         {activeJobs.length === 0 ? (
-          <div className="bg-white rounded-2xl p-12 text-center border border-slate-200">
-            <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-            <h3 className="text-base font-semibold text-slate-700">{t.noJobsFound}</h3>
-            <p className="text-xs text-slate-500 mt-1">
-              {language === 'bn' ? 'শীঘ্রই নতুন টিউশন সার্কুলার যুক্ত হবে।' : 'New circulars will appear here as soon as approved.'}
+          <div className="bg-white rounded-2xl p-10 text-center border border-slate-200 space-y-3">
+            <Briefcase className="w-10 h-10 text-slate-300 mx-auto" />
+            <h3 className="text-base font-semibold text-slate-800">
+              {language === 'bn' ? 'সারাদেশের টিউশন সার্কুলার শিগগিরই লাইভ হচ্ছে' : 'Live Tuition Circulars Coming Soon'}
+            </h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              {language === 'bn' ? 'অভিভাবকদের নতুন টিউশন চাহিদা পোস্ট হলে অ্যাডমিন অনুমোদনের পর সরাসরি এখানে দেখা যাবে।' : 'Guardian requests will appear here as soon as approved by admin.'}
             </p>
+            <button
+              type="button"
+              onClick={() => navigateTo('request-tutor')}
+              className="mt-2 px-4 py-2 bg-blue-900 text-white rounded-xl text-xs font-bold hover:bg-blue-800 transition cursor-pointer"
+            >
+              {language === 'bn' ? 'টিউশন রিকোয়েস্ট পোস্ট করুন' : 'Post Tuition Requirement'}
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

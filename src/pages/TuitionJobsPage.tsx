@@ -289,21 +289,58 @@ export const TuitionJobsPage: React.FC = () => {
         {/* Jobs List */}
         <div className="lg:col-span-3 space-y-5">
           {publishedJobs.length === 0 ? (
-            <div className="bg-white rounded-2xl p-12 text-center border border-slate-200">
-              <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-3" />
-              <h3 className="text-base font-semibold text-slate-800">
-                {language === 'bn' ? 'কোনো টিউশন জব পাওয়া যায়নি' : 'No jobs found matching your filters'}
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                {language === 'bn' ? 'ফিল্টার পরিবর্তন করে পুনরায় চেষ্টা করুন।' : 'Try resetting your search terms or filters.'}
-              </p>
-              <button
-                type="button"
-                onClick={clearFilters}
-                className="mt-4 px-4 py-2 text-xs font-semibold text-blue-900 bg-blue-50 border border-blue-200 rounded-xl"
-              >
-                {language === 'bn' ? 'ফিল্টার রিসেট' : 'Reset Filters'}
-              </button>
+            <div className="bg-white rounded-3xl p-10 sm:p-14 text-center border border-slate-200 shadow-2xs space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-900 flex items-center justify-center mx-auto">
+                <Briefcase className="w-8 h-8" />
+              </div>
+              <div className="max-w-md mx-auto space-y-1.5">
+                <h3 className="text-lg font-bold text-blue-950">
+                  {language === 'bn' 
+                    ? (storeState.jobs.filter(j => j.status === 'published').length === 0 
+                        ? 'সারাদেশের টিউশন সার্কুলার শিগগিরই লাইভ হচ্ছে' 
+                        : 'কোনো টিউশন জব পাওয়া যায়নি')
+                    : (storeState.jobs.filter(j => j.status === 'published').length === 0
+                        ? 'Live Tuition Circulars Coming Soon'
+                        : 'No tuition openings match your filters')}
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed">
+                  {language === 'bn'
+                    ? (storeState.jobs.filter(j => j.status === 'published').length === 0
+                        ? 'অভিভাবকরা নতুন টিউশন চাহিদা পোস্ট করলে এবং তা অ্যাডমিন প্যানেল থেকে অনুমোদিত হলে সাথে সাথে এখানে লাইভ দেখতে পাবেন।'
+                        : 'অনুগ্রহ করে ফিল্টার পরিবর্তন করুন অথবা সব ফিল্টার রিসেট করে পুনরায় চেষ্টা করুন।')
+                    : (storeState.jobs.filter(j => j.status === 'published').length === 0
+                        ? 'When guardians post tuition requirements and admin approves them, they appear live here across Bangladesh.'
+                        : 'Try resetting your search terms or broadening your selected criteria.')}
+                </p>
+              </div>
+
+              <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => navigateTo('request-tutor')}
+                  className="px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+                >
+                  {language === 'bn' ? '✓ টিউশন শিক্ষক রিকোয়েস্ট করুন' : 'Post Tuition Request'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => navigateTo('become-a-tutor')}
+                  className="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold transition shadow-xs cursor-pointer"
+                >
+                  {language === 'bn' ? '🎓 শিক্ষক হিসেবে সিভি জমা দিন' : 'Register as Tutor'}
+                </button>
+
+                {publishedJobs.length === 0 && storeState.jobs.filter(j => j.status === 'published').length > 0 && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="px-4 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
+                  >
+                    {language === 'bn' ? 'ফিল্টার রিসেট' : 'Reset Filters'}
+                  </button>
+                )}
+              </div>
             </div>
           ) : (
             publishedJobs.map((job) => {
