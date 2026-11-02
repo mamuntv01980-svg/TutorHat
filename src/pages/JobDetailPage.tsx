@@ -6,13 +6,15 @@ import {
   BookOpen, 
   Calendar, 
   CheckCircle, 
+  CheckCircle2,
   AlertCircle, 
   Share2, 
   Send, 
   UserCheck, 
   ShieldAlert,
   GraduationCap,
-  MessageSquare
+  MessageSquare,
+  Compass
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { store } from '../services/store';
@@ -36,10 +38,22 @@ export const JobDetailPage: React.FC = () => {
 
   const [applyModalOpen, setApplyModalOpen] = useState(false);
   const [chatModalOpen, setChatModalOpen] = useState(false);
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
   const [expectedSalary, setExpectedSalary] = useState(job ? job.salary : 6000);
   const [coverNote, setCoverNote] = useState('');
   const [applySuccess, setApplySuccess] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+
+  // Google Maps Direction URL Generator (Caretutors requirement)
+  const getDirectionsUrl = (jobItem: typeof job, tutorOrigin?: string) => {
+    if (!jobItem) return '#';
+    const destination = encodeURIComponent(`${jobItem.area}, ${jobItem.district}, Bangladesh`);
+    if (tutorOrigin && tutorOrigin.trim()) {
+      const origin = encodeURIComponent(`${tutorOrigin.trim()}, Bangladesh`);
+      return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
+    }
+    return `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+  };
 
   if (!job) {
     return (
@@ -142,6 +156,62 @@ export const JobDetailPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Caretutors 3 Interactive Action Ribbon */}
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 text-white flex flex-col sm:flex-row items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3 text-xs">
+            <span className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center font-bold text-amber-300 shrink-0">
+              🧭
+            </span>
+            <div>
+              <p className="font-bold text-white text-sm">
+                {language === 'bn' ? 'টিউশন লোকেশন ও গুগল ম্যাপস ডিরেকশন' : 'Tuition Location & Directions'}
+              </p>
+              <p className="text-[11px] text-blue-200">
+                📍 {job.area}, {job.district} · {job.teachingType === 'home' ? 'Home Tuition (শিক্ষার্থীর বাসায়)' : 'Online Tuition'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            {/* 1. লোকেশন বাটন */}
+            <button
+              type="button"
+              onClick={() => setLocationModalOpen(true)}
+              className="flex-1 sm:flex-initial px-4 py-2.5 bg-white/15 hover:bg-white/25 border border-white/20 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
+            >
+              <MapPin className="w-3.5 h-3.5 text-amber-300" />
+              <span>{language === 'bn' ? 'লোকেশন' : 'Location'}</span>
+            </button>
+
+            {/* 2. ডিরেকশন বাটন */}
+            <a
+              href={getDirectionsUrl(job, activeTutorProfile?.area || activeTutorProfile?.currentAddress)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 sm:flex-initial px-4 py-2.5 bg-indigo-500 hover:bg-indigo-400 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 shadow-2xs cursor-pointer"
+            >
+              <Compass className="w-3.5 h-3.5 text-white" />
+              <span>{language === 'bn' ? 'ডিরেকশন' : 'Direction'}</span>
+            </a>
+
+            {/* 3. এপ্লাই বাটন */}
+            {existingApp || applySuccess ? (
+              <span className="flex-1 sm:flex-initial px-4 py-2.5 bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1 shadow-2xs">
+                ✓ {language === 'bn' ? 'আবেদন সম্পন্ন' : 'Applied'}
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setApplyModalOpen(true)}
+                className="flex-1 sm:flex-initial px-5 py-2.5 bg-amber-400 hover:bg-amber-300 text-blue-950 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 transition active:scale-95 shadow-xs cursor-pointer"
+              >
+                <Send className="w-3.5 h-3.5 text-blue-950" />
+                <span>{language === 'bn' ? 'এপ্লাই' : 'Apply'}</span>
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Subjects required */}
         <div className="space-y-2">
           <h3 className="text-xs font-bold text-blue-950 uppercase tracking-wider">
@@ -223,21 +293,45 @@ export const JobDetailPage: React.FC = () => {
               <div className="text-xs text-slate-500">
                 <span>{language === 'bn' ? 'আপনার সিভি অভিভাবক ও অ্যাডমিন কর্তৃক মূল্যায়িত হবে।' : 'Your CV will be reviewed by platform admins.'}</span>
               </div>
-              <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                {/* লোকেশন বাটন */}
+                <button
+                  type="button"
+                  onClick={() => setLocationModalOpen(true)}
+                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl border border-blue-200 bg-blue-50/80 hover:bg-blue-100 text-blue-900 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
+                >
+                  <MapPin className="w-3.5 h-3.5 text-blue-700" />
+                  <span>{language === 'bn' ? 'লোকেশন' : 'Location'}</span>
+                </button>
+
+                {/* ডিরেকশন বাটন */}
+                <a
+                  href={getDirectionsUrl(job, activeTutorProfile?.area || activeTutorProfile?.currentAddress)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-900 text-xs font-bold flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
+                >
+                  <Compass className="w-3.5 h-3.5 text-indigo-700" />
+                  <span>{language === 'bn' ? 'ডিরেকশন' : 'Direction'}</span>
+                </a>
+
+                {/* মেসেজ বাটন */}
                 <button
                   type="button"
                   onClick={() => setChatModalOpen(true)}
-                  className="flex-1 sm:flex-initial px-5 py-3 rounded-xl bg-blue-50 border border-blue-200 hover:bg-blue-100 text-blue-900 text-xs font-bold shadow-xs flex items-center justify-center gap-2 transition-all active:scale-[0.98] min-h-[44px] cursor-pointer"
+                  className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold flex items-center justify-center transition active:scale-95 cursor-pointer"
+                  title={language === 'bn' ? 'অভিভাবককে সরাসরি মেসেজ দিন' : 'Message Guardian'}
                 >
                   <MessageSquare className="w-4 h-4 text-blue-700" />
-                  <span>{language === 'bn' ? 'মেসেজ দিন' : 'Message'}</span>
                 </button>
+
+                {/* এপ্লাই বাটন */}
                 <button
                   type="button"
                   onClick={() => setApplyModalOpen(true)}
-                  className="flex-1 sm:flex-initial px-8 py-3 rounded-xl bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold shadow-md flex items-center justify-center gap-2 transition-all active:scale-[0.98] min-h-[44px] cursor-pointer"
+                  className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-white text-xs font-bold shadow-md flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-4 h-4 text-amber-300" />
                   <span>{t.applyNow}</span>
                 </button>
               </div>
@@ -351,6 +445,105 @@ export const JobDetailPage: React.FC = () => {
           jobId={job.id}
           jobTitle={job.title}
         />
+      )}
+
+      {/* Caretutors Feature: Location Preview & Route Modal */}
+      {locationModalOpen && job && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-900 flex items-center justify-center font-bold">
+                  <MapPin className="w-5 h-5 text-blue-700" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-blue-950">
+                    {language === 'bn' ? 'টিউশন লোকেশন ও ম্যাপ' : 'Tuition Location & Map'}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-mono">{job.id} · {job.area}, {job.district}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setLocationModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Address & Spec Summary */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">এলাকা ও জেলা</span>
+                  <span className="font-bold text-slate-900 text-sm">📍 {job.area}, {job.district}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">শ্রেণী ও মাধ্যম</span>
+                  <span className="font-bold text-slate-900">{job.classLevel} ({job.medium})</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60 text-[11px]">
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">সময়সূচি</span>
+                  <span className="font-medium text-slate-700">{job.daysPerWeek} দিন/সপ্তাহ ({job.preferredTime})</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">সম্মানী</span>
+                  <span className="font-bold text-blue-950">৳{job.salary.toLocaleString()}/মাস</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Interactive Embedded Google Map */}
+            <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 relative">
+              <iframe
+                title="Tuition Location Map"
+                className="w-full h-52 sm:h-60 border-0"
+                loading="lazy"
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(`${job.area}, ${job.district}, Bangladesh`)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+              />
+            </div>
+
+            {/* Travel & Directions Advice */}
+            <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-blue-950 space-y-1">
+              <p className="font-semibold flex items-center gap-1.5">
+                <span>🧭 আপনার অবস্থান থেকে যাওয়ার দিকনির্দেশনা:</span>
+              </p>
+              <p className="text-[11px] text-slate-600">
+                অভিভাবকের ঠিকানায় সরাসরি পৌঁছানোর সঠিক রুট, ট্রাফিক ও আনুমানিক ভ্রমণ সময় জানতে নিচের গুগল ম্যাপস ডিরেকশন বাটনে চাপুন।
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
+              <a
+                href={getDirectionsUrl(job, activeTutorProfile?.area || activeTutorProfile?.currentAddress)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm transition"
+              >
+                <Compass className="w-4 h-4 text-indigo-200" />
+                <span>{language === 'bn' ? 'গুগল ম্যাপসে ডিরেকশন দেখুন' : 'Get Directions on Google Maps'}</span>
+              </a>
+
+              {!(existingApp || applySuccess) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLocationModalOpen(false);
+                    setApplyModalOpen(true);
+                  }}
+                  className="w-full sm:w-auto py-3 px-5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition"
+                >
+                  <Send className="w-3.5 h-3.5 text-amber-300" />
+                  <span>{language === 'bn' ? 'আবেদন করুন' : 'Apply Now'}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
 
     </div>

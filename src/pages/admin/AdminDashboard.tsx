@@ -1172,11 +1172,12 @@ export const AdminDashboard: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            store.convertRequestToJob(req.id);
-                            showAdminToast(`✓ অভিভাবক রিকোয়েস্ট [${req.id}] সফলভাবে অনুমোদন ও সার্কুলার বোর্ডে প্রকাশ করা হয়েছে!`);
+                            const newJob = store.convertRequestToJob(req.id);
+                            const count = newJob ? store.notifyMatchingTutorsForJob(newJob) : 0;
+                            showAdminToast(`✓ অভিভাবক রিকোয়েস্ট [${req.id}] অনুমোদন ও প্রকাশ সম্পন্ন! ${count > 0 ? `(${count} জন টিউটরের কাছে অটো-নোটিফিকেশন পাঠানো হয়েছে)` : ''}`);
                           }}
                           className="px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-[11px] shrink-0 cursor-pointer shadow-xs flex items-center gap-1"
-                          title="Approve & Publish to Job Board"
+                          title="Approve & Publish to Job Board with Instant Area Tutor Notification"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
                           <span>অনুমোদন ও প্রকাশ</span>
@@ -1431,12 +1432,8 @@ export const AdminDashboard: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => {
-                            store.notifyMatchingTutorsForJob(job);
-                            const matchingCount = storeState.tutors.filter(t => 
-                              (t.preferredAreas && t.preferredAreas.some(a => a.toLowerCase().includes((job.area || '').toLowerCase()))) ||
-                              (t.district && job.district && t.district.toLowerCase() === job.district.toLowerCase())
-                            ).length;
-                            showAdminToast(`✓ "${job.area || job.district}" এলাকার ${matchingCount} জন পছন্দের টিউটরের কাছে নোটিফিকেশন পাঠানো হয়েছে।`);
+                            const count = store.notifyMatchingTutorsForJob(job);
+                            showAdminToast(`✓ "${job.area || job.district}" এলাকার ${count} জন পছন্দের টিউটরের কাছে নোটিফিকেশন অ্যালার্ট সফলভাবে পাঠানো হয়েছে।`);
                           }}
                           className="px-2.5 py-1.5 bg-amber-50 text-amber-900 border border-amber-300 hover:bg-amber-100 rounded-lg font-semibold flex items-center gap-1 cursor-pointer text-xs"
                           title="এই এলাকার পছন্দের টিউটরদের স্বয়ংক্রিয় নোটিফিকেশন পাঠান"
@@ -2391,8 +2388,9 @@ export const AdminDashboard: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => {
-                              store.convertRequestToJob(req.id);
-                              showAdminToast(`✓ অভিভাবক রিকোয়েস্ট [${req.id}] সফলভাবে অনুমোদন ও লাইভ জবে প্রকাশিত হয়েছে!`);
+                              const newJob = store.convertRequestToJob(req.id);
+                              const count = newJob ? store.notifyMatchingTutorsForJob(newJob) : 0;
+                              showAdminToast(`✓ অভিভাবক রিকোয়েস্ট [${req.id}] সফলভাবে অনুমোদন ও লাইভ জবে প্রকাশিত হয়েছে! ${count > 0 ? `(${count} জন টিউটরকে অটো-নোটিফিকেশন পাঠানো হয়েছে)` : ''}`);
                             }}
                             className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold cursor-pointer transition shadow-md text-xs flex items-center gap-1.5 active:scale-95"
                           >

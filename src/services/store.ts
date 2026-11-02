@@ -922,36 +922,59 @@ class Store {
     }).catch(() => {});
   }
 
-  // Automatic Notification to matching tutors based on their preferred areas (Requirement 3)
-  public notifyMatchingTutorsForJob(job: TuitionJob) {
-    if (!job || job.status !== 'published') return;
+  // Automatic Notification to matching tutors based on their preferred areas and location (Requirement 3)
+  public notifyMatchingTutorsForJob(job: TuitionJob): number {
+    if (!job || job.status !== 'published') return 0;
 
     const jobArea = (job.area || '').toLowerCase().trim();
     const jobDistrict = (job.district || '').toLowerCase().trim();
 
     const matchingTutors = this.state.tutors.filter(t => {
+      // 1. Preferred tutoring areas array
       const areaMatches = Array.isArray(t.preferredAreas) && t.preferredAreas.some(area => {
-        const a = area.toLowerCase().trim();
-        return a === jobArea || jobArea.includes(a) || a.includes(jobArea);
+        const a = (area || '').toLowerCase().trim();
+        return a && (a === jobArea || jobArea.includes(a) || a.includes(jobArea));
       });
-      const districtMatches = t.district && jobDistrict && t.district.toLowerCase().trim() === jobDistrict;
-      return areaMatches || districtMatches;
+      // 2. Primary area of tutor
+      const ownAreaMatches = t.area && jobArea && (
+        t.area.toLowerCase().trim() === jobArea ||
+        jobArea.includes(t.area.toLowerCase().trim()) ||
+        t.area.toLowerCase().trim().includes(jobArea)
+      );
+      // 3. District match
+      const districtMatches = t.district && jobDistrict && (
+        t.district.toLowerCase().trim() === jobDistrict ||
+        jobDistrict.includes(t.district.toLowerCase().trim()) ||
+        t.district.toLowerCase().trim().includes(jobDistrict)
+      );
+      // 4. Current address mention
+      const addressMatches = t.currentAddress && jobArea && t.currentAddress.toLowerCase().includes(jobArea);
+
+      return areaMatches || ownAreaMatches || districtMatches || addressMatches;
     });
 
+    let notifiedCount = 0;
     matchingTutors.forEach(tutor => {
       const alreadyNotified = this.state.notifications.some(
-        n => n.userId === tutor.userId && n.message.includes(job.id)
+        n => n.userId === tutor.userId && (n.message.includes(job.id) || n.title.includes(job.id))
       );
       if (!alreadyNotified) {
         this.addNotification({
           userId: tutor.userId,
-          title: `নতুন টিউশন অফার (${job.area})`,
-          message: `আপনার পছন্দের এলাকা "${job.area}, ${job.district}"-এ নতুন টিউশন সার্কুলার [${job.id}] প্রকাশিত হয়েছে: ${job.title} (সম্মানী: ৳${job.salary.toLocaleString()}/মাস)। এখনই বিস্তারিত দেখুন ও আবেদন করুন!`,
+          title: `🔔 নতুন টিউশন সার্কুলার: ${job.area || job.district}`,
+          message: `আপনার পছন্দের এলাকা "${job.area}, ${job.district}"-এ নতুন টিউশন সার্কুলার [${job.id}] প্রকাশিত হয়েছে: ${job.title} (শ্রেণী: ${job.classLevel || 'সকল শ্রেণী'}, সম্মানী: ৳${job.salary.toLocaleString()}/মাস)। লোকেশন ও ডিরেকশন দেখে এখনই আবেদন করুন!`,
           type: 'job',
-          actionUrl: 'tuition-jobs'
+          actionUrl: 'job-detail'
         });
+        notifiedCount++;
       }
     });
+
+    if (notifiedCount > 0) {
+      this.logActivity('JOB_AUTO_NOTIFIED', `Auto-notified ${notifiedCount} tutors for job ${job.id} in ${job.area}, ${job.district}`);
+    }
+
+    return notifiedCount;
   }
 
   // Jobs Management (Admin Section 33)

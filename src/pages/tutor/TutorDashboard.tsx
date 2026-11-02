@@ -203,6 +203,7 @@ export const TutorDashboard: React.FC = () => {
   const tutorConversations = store.getConversationsForUser(currentUser?.id || tutor?.userId || 'user_tutor_01');
   const unreadChatCount = tutorConversations.reduce((acc, c) => acc + (c.unreadCountTutor || 0), 0);
   const tutorNotifications = storeState.notifications.filter(n => n.userId === currentUser?.id);
+  const unreadJobNotifs = tutorNotifications.filter(n => !n.read && (n.type === 'job' || n.title.includes('টিউশন') || n.title.includes('সার্কুলার')));
 
   // CV Completion
   const completionData = calculateCvCompletion(tutor);
@@ -298,6 +299,43 @@ export const TutorDashboard: React.FC = () => {
             <span>{language === 'bn' ? 'টিউশন জবস দেখুন' : 'Explore Tuition Jobs'}</span>
           </button>
         </div>
+
+        {/* Automatic Area Job Notification Alert Bar (Directly answering user's requirement) */}
+        {unreadJobNotifs.length > 0 && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-blue-900 via-indigo-900 to-blue-950 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-blue-800 animate-in slide-in-from-top-2 duration-200">
+            <div className="flex items-start sm:items-center gap-3.5">
+              <div className="w-11 h-11 rounded-2xl bg-amber-400 text-slate-950 flex items-center justify-center font-black text-xl shrink-0 shadow-sm animate-pulse">
+                <Bell className="w-5 h-5 text-slate-950" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="font-extrabold text-sm sm:text-base text-white">
+                    {language === 'bn' ? 'আপনার এলাকায় নতুন টিউশন সার্কুলার প্রকাশিত হয়েছে!' : 'New Tuition Circular in Your Area!'}
+                  </h4>
+                  <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black">
+                    {unreadJobNotifs.length} টি নতুন সার্কুলার
+                  </span>
+                </div>
+                <p className="text-xs text-blue-200 mt-0.5 line-clamp-1 leading-relaxed">
+                  {unreadJobNotifs[0].message}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  unreadJobNotifs.forEach(n => store.markNotificationAsRead(n.id));
+                  navigateTo('tuition-jobs');
+                }}
+                className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <span>{language === 'bn' ? 'সার্কুলার দেখুন ও আবেদন করুন' : 'View Jobs & Apply'}</span>
+                <span>→</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Verification Status & CV Completion Banner */}
         <div className="space-y-4">
@@ -1639,16 +1677,29 @@ export const TutorDashboard: React.FC = () => {
                 {tutorNotifications.map((notif) => (
                   <div
                     key={notif.id}
-                    onClick={() => store.markNotificationAsRead(notif.id)}
+                    onClick={() => {
+                      store.markNotificationAsRead(notif.id);
+                      if (notif.actionUrl === 'tuition-jobs' || notif.actionUrl === 'job-detail') {
+                        navigateTo('tuition-jobs');
+                      }
+                    }}
                     className={`p-3.5 rounded-xl border text-xs cursor-pointer transition-colors ${
-                      notif.read ? 'bg-white border-slate-200' : 'bg-blue-50/70 border-blue-200'
+                      notif.read ? 'bg-white border-slate-200' : 'bg-blue-50/70 border-blue-300 ring-1 ring-blue-200'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <h4 className="font-bold text-blue-950">{notif.title}</h4>
+                      <div className="flex items-center gap-2">
+                        {!notif.read && <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />}
+                        <h4 className="font-bold text-blue-950">{notif.title}</h4>
+                      </div>
                       <span className="text-[10px] text-slate-400">{notif.date.split('T')[0]}</span>
                     </div>
                     <p className="text-slate-600 mt-1 leading-relaxed">{notif.message}</p>
+                    {notif.type === 'job' && (
+                      <span className="inline-block mt-2 text-[11px] font-bold text-blue-900 hover:underline">
+                        সার্কুলার বিস্তারিত দেখুন ও আবেদন করুন →
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>

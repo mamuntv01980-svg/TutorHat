@@ -11,9 +11,17 @@ import {
   CheckCircle2, 
   ArrowRight,
   Filter,
-  MessageSquare
+  MessageSquare,
+  Compass,
+  Send,
+  Eye,
+  AlertCircle,
+  ExternalLink,
+  Map,
+  Navigation
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { store } from '../services/store';
 import { 
   BD_DISTRICTS, 
   DHAKA_AREAS, 
@@ -31,6 +39,18 @@ export const TuitionJobsPage: React.FC = () => {
   const [chatModalOpen, setChatModalOpen] = useState(false);
   const t = TRANSLATIONS[language];
 
+  // Caretutors 3 Buttons: Location Modal State
+  const [selectedLocationJob, setSelectedLocationJob] = useState<TuitionJob | null>(null);
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
+
+  // Caretutors 3 Buttons: Quick Apply Modal State
+  const [selectedApplyJob, setSelectedApplyJob] = useState<TuitionJob | null>(null);
+  const [applyModalOpen, setApplyModalOpen] = useState(false);
+  const [applyExpectedSalary, setApplyExpectedSalary] = useState<number>(5000);
+  const [applyCoverNote, setApplyCoverNote] = useState('');
+  const [applyErrorMessage, setApplyErrorMessage] = useState<string | null>(null);
+  const [applySuccessId, setApplySuccessId] = useState<string | null>(null);
+
   // Filter States
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDistrict, setSelectedDistrict] = useState('All');
@@ -43,6 +63,63 @@ export const TuitionJobsPage: React.FC = () => {
   const [minSalary, setMinSalary] = useState(3000);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
   const [copiedJobId, setCopiedJobId] = useState<string | null>(null);
+
+  // Google Maps Direction URL Generator (Caretutors requirement)
+  const getDirectionsUrl = (job: TuitionJob, tutorOrigin?: string) => {
+    const destination = encodeURIComponent(`${job.area}, ${job.district}, Bangladesh`);
+    if (tutorOrigin && tutorOrigin.trim()) {
+      const origin = encodeURIComponent(`${tutorOrigin.trim()}, Bangladesh`);
+      return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}`;
+    }
+    return `https://www.google.com/maps/dir/?api=1&destination=${destination}`;
+  };
+
+  const handleOpenApplyModal = (job: TuitionJob) => {
+    setSelectedApplyJob(job);
+    setApplyExpectedSalary(job.salary);
+    setApplyCoverNote(
+      language === 'bn'
+        ? `আসসালামু আলাইকুম, আমি ${job.area}-এ ${job.classLevel} (${job.medium})-এর এই টিউশনটিতে পড়াতে আগ্রহী এবং নিষ্ঠার সাথে পাঠদান করতে সক্ষম।`
+        : `Assalamu Alaikum, I am very interested in tutoring for ${job.classLevel} in ${job.area} and confident in providing regular guidance.`
+    );
+    setApplyErrorMessage(null);
+    setApplyModalOpen(true);
+  };
+
+  const handleSubmitApply = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedApplyJob) return;
+
+    if (!currentUser) {
+      navigateTo('login');
+      return;
+    }
+
+    if (currentUser.role !== 'tutor') {
+      setApplyErrorMessage(language === 'bn' ? 'শুধুমাত্র টিউটররা আবেদন করতে পারেন।' : 'Only registered tutors can apply.');
+      return;
+    }
+
+    const tutorProfile = activeTutorProfile || storeState.tutors.find(t => t.userId === currentUser.id);
+    if (!tutorProfile) {
+      setApplyErrorMessage(language === 'bn' ? 'টিউটর প্রোফাইল পাওয়া যায়নি।' : 'Tutor profile not found.');
+      return;
+    }
+
+    try {
+      store.applyToJob({
+        jobId: selectedApplyJob.id,
+        tutorId: tutorProfile.id,
+        expectedSalary: Number(applyExpectedSalary),
+        coverNote: applyCoverNote.trim() || 'Interested in tutoring this student.'
+      });
+      setApplySuccessId(selectedApplyJob.id);
+      setApplyModalOpen(false);
+      setTimeout(() => setApplySuccessId(null), 5000);
+    } catch (err: any) {
+      setApplyErrorMessage(err.message || 'Failed to submit application.');
+    }
+  };
 
   // Published Jobs
   const publishedJobs = useMemo(() => {
@@ -406,63 +483,102 @@ export const TuitionJobsPage: React.FC = () => {
 
                   </div>
 
-                  {/* Bottom Footer: Salary + Actions */}
-                  <div className="pt-4 mt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div>
-                      <span className="text-[10px] text-slate-400 uppercase tracking-wider block">{t.salary}</span>
-                      <span className="text-lg font-bold text-blue-950 tabular-nums">
-                        {settings.defaultCurrency}{job.salary.toLocaleString()}
-                        <span className="text-xs font-normal text-slate-500">{t.perMonth}</span>
+                  {/* Bottom Footer: Caretutors 3 Actions (Location, Direction, Apply) + Secondary Controls */}
+                  <div className="pt-4 mt-4 border-t border-slate-100 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
+                    <div className="flex items-center justify-between lg:block">
+                      <div>
+                        <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">{t.salary}</span>
+                        <span className="text-xl font-black text-blue-950 tabular-nums">
+                          {settings.defaultCurrency}{job.salary.toLocaleString()}
+                          <span className="text-xs font-normal text-slate-500">{t.perMonth}</span>
+                        </span>
+                      </div>
+                      <span className="lg:hidden text-[11px] font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded">
+                        📍 {job.area}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                    {/* Caretutors 3 Buttons Cluster */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {/* Button 1: লোকেশন (Location) */}
                       <button
                         type="button"
                         onClick={() => {
-                          setSelectedChatJob(job);
-                          setChatModalOpen(true);
+                          setSelectedLocationJob(job);
+                          setLocationModalOpen(true);
                         }}
-                        className="p-2.5 rounded-xl border border-blue-200 bg-blue-50/70 text-blue-900 hover:bg-blue-100 transition-colors"
-                        title={language === 'bn' ? 'অভিভাবকের সাথে সরাসরি চ্যাট করুন' : 'Direct Message Guardian'}
+                        className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl border border-blue-200 bg-blue-50/80 hover:bg-blue-100 text-blue-900 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                        title={language === 'bn' ? 'টিউশনের লোকেশন ও ম্যাপ প্রাকদর্শন' : 'View Job Location & Map'}
                       >
-                        <MessageSquare className="w-4 h-4" />
+                        <MapPin className="w-3.5 h-3.5 text-blue-700" />
+                        <span>{language === 'bn' ? 'লোকেশন' : 'Location'}</span>
                       </button>
 
-                      <button
-                        type="button"
-                        onClick={() => handleShare(job.id)}
-                        className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 transition-colors"
-                        title="Share circular link"
+                      {/* Button 2: ডিরেকশন (Direction) */}
+                      <a
+                        href={getDirectionsUrl(job, activeTutorProfile?.area || activeTutorProfile?.currentAddress)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex-1 sm:flex-initial px-3.5 py-2.5 rounded-xl border border-indigo-200 bg-indigo-50/80 hover:bg-indigo-100 text-indigo-900 font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-2xs active:scale-95 cursor-pointer"
+                        title={language === 'bn' ? 'গুগল ম্যাপসে আপনার অবস্থান থেকে সরাসরি রুট দেখুন' : 'Get Google Maps Directions from Your Location'}
                       >
-                        {copiedJobId === job.id ? (
-                          <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                        ) : (
-                          <Share2 className="w-4 h-4" />
-                        )}
-                      </button>
+                        <Compass className="w-3.5 h-3.5 text-indigo-700" />
+                        <span>{language === 'bn' ? 'ডিরেকশন' : 'Direction'}</span>
+                      </a>
 
-                      <button
-                        type="button"
-                        onClick={() => navigateTo('job-detail', { jobId: job.id })}
-                        className="flex-1 sm:flex-initial px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 transition-colors min-h-[40px] flex items-center justify-center"
-                      >
-                        {t.viewDetails}
-                      </button>
-
-                      {applied ? (
-                        <span className="px-4 py-2 text-xs font-semibold rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-center min-h-[40px]">
-                          ✓ Applied
+                      {/* Button 3: এপ্লাই (Apply) */}
+                      {applied || applySuccessId === job.id ? (
+                        <span className="flex-1 sm:flex-initial px-4 py-2.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>{language === 'bn' ? '✓ আবেদন সম্পন্ন' : '✓ Applied'}</span>
                         </span>
                       ) : (
                         <button
                           type="button"
-                          onClick={() => navigateTo('job-detail', { jobId: job.id })}
-                          className="flex-1 sm:flex-initial px-5 py-2 text-xs font-semibold rounded-xl bg-blue-900 hover:bg-blue-800 text-white transition-colors min-h-[40px] flex items-center justify-center"
+                          onClick={() => handleOpenApplyModal(job)}
+                          className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-900 to-indigo-900 hover:from-blue-800 hover:to-indigo-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm active:scale-95 cursor-pointer"
                         >
-                          {t.applyNow}
+                          <Send className="w-3.5 h-3.5 text-amber-300" />
+                          <span>{language === 'bn' ? 'এপ্লাই করুন' : 'Apply Now'}</span>
                         </button>
                       )}
+
+                      {/* Secondary Buttons: Details, Chat, Share */}
+                      <div className="flex items-center gap-1.5 ml-auto sm:ml-0">
+                        <button
+                          type="button"
+                          onClick={() => navigateTo('job-detail', { jobId: job.id })}
+                          className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                          title={language === 'bn' ? 'সার্কুলারের সম্পূর্ণ বিবরণ দেখুন' : 'View Full Details'}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedChatJob(job);
+                            setChatModalOpen(true);
+                          }}
+                          className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-blue-900 transition-colors"
+                          title={language === 'bn' ? 'অভিভাবকের সাথে সরাসরি চ্যাট করুন' : 'Direct Message Guardian'}
+                        >
+                          <MessageSquare className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => handleShare(job.id)}
+                          className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 transition-colors"
+                          title="Share circular link"
+                        >
+                          {copiedJobId === job.id ? (
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                          ) : (
+                            <Share2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
 
@@ -517,6 +633,229 @@ export const TuitionJobsPage: React.FC = () => {
           jobId={selectedChatJob.id}
           jobTitle={selectedChatJob.title}
         />
+      )}
+
+      {/* Caretutors Feature: Location Preview & Route Modal */}
+      {locationModalOpen && selectedLocationJob && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <div className="w-9 h-9 rounded-xl bg-blue-100 text-blue-900 flex items-center justify-center font-bold">
+                  <MapPin className="w-5 h-5 text-blue-700" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-base text-blue-950">
+                    {language === 'bn' ? 'টিউশন লোকেশন ও ম্যাপ' : 'Tuition Location & Map'}
+                  </h3>
+                  <p className="text-xs text-slate-500 font-mono">{selectedLocationJob.id} · {selectedLocationJob.area}, {selectedLocationJob.district}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setLocationModalOpen(false);
+                  setSelectedLocationJob(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Address & Spec Summary */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2">
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">এলাকা ও জেলা</span>
+                  <span className="font-bold text-slate-900 text-sm">📍 {selectedLocationJob.area}, {selectedLocationJob.district}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">শ্রেণী ও মাধ্যম</span>
+                  <span className="font-bold text-slate-900">{selectedLocationJob.classLevel} ({selectedLocationJob.medium})</span>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60 text-[11px]">
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">সময়সূচি</span>
+                  <span className="font-medium text-slate-700">{selectedLocationJob.daysPerWeek} দিন/সপ্তাহ ({selectedLocationJob.preferredTime})</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block text-[10px] uppercase font-bold">সম্মানী</span>
+                  <span className="font-bold text-blue-950">৳{selectedLocationJob.salary.toLocaleString()}/মাস</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Interactive Embedded Google Map */}
+            <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-inner bg-slate-100 relative">
+              <iframe
+                title="Tuition Location Map"
+                className="w-full h-52 sm:h-60 border-0"
+                loading="lazy"
+                src={`https://maps.google.com/maps?q=${encodeURIComponent(`${selectedLocationJob.area}, ${selectedLocationJob.district}, Bangladesh`)}&t=&z=14&ie=UTF8&iwloc=&output=embed`}
+              />
+            </div>
+
+            {/* Travel & Directions Advice */}
+            <div className="p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-xs text-blue-950 space-y-1">
+              <p className="font-semibold flex items-center gap-1.5">
+                <span>🧭 আপনার অবস্থান থেকে যাওয়ার দিকনির্দেশনা:</span>
+              </p>
+              <p className="text-[11px] text-slate-600">
+                অভিভাবকের ঠিকানায় সরাসরি পৌঁছানোর সঠিক রুট, যানজটের অবস্থা ও আনুমানিক ভ্রমণ সময় জানতে নিচের গুগল ম্যাপস ডিরেকশন বাটনে চাপুন।
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-2">
+              <a
+                href={getDirectionsUrl(selectedLocationJob, activeTutorProfile?.area || activeTutorProfile?.currentAddress)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:flex-1 py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow-sm transition"
+              >
+                <Compass className="w-4 h-4 text-indigo-200" />
+                <span>{language === 'bn' ? 'গুগল ম্যাপসে ডিরেকশন দেখুন' : 'Get Directions on Google Maps'}</span>
+              </a>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const job = selectedLocationJob;
+                  setLocationModalOpen(false);
+                  setSelectedLocationJob(null);
+                  handleOpenApplyModal(job);
+                }}
+                className="w-full sm:w-auto py-3 px-5 bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition"
+              >
+                <Send className="w-3.5 h-3.5 text-amber-300" />
+                <span>{language === 'bn' ? 'আবেদন করুন' : 'Apply Now'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Caretutors Feature: Quick Apply Modal */}
+      {applyModalOpen && selectedApplyJob && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-7 max-w-lg w-full shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-150 space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-base text-blue-950">
+                  {language === 'bn' ? 'টিউশনে সরাসরি আবেদন' : 'Apply for Tuition Job'}
+                </h3>
+                <p className="text-xs text-slate-500 font-mono">{selectedApplyJob.id} · {selectedApplyJob.title}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setApplyModalOpen(false);
+                  setSelectedApplyJob(null);
+                }}
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100"
+              >
+                ✕
+              </button>
+            </div>
+
+            {applyErrorMessage && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{applyErrorMessage}</span>
+              </div>
+            )}
+
+            {!currentUser ? (
+              <div className="p-4 rounded-2xl bg-blue-50 border border-blue-200 space-y-3 text-xs">
+                <p className="font-bold text-blue-950">
+                  {language === 'bn' ? 'আবেদন করতে টিউটর একাউন্টে লগইন করুন' : 'Please Sign In as Tutor to Apply'}
+                </p>
+                <p className="text-slate-600">
+                  {language === 'bn' ? 'আপনার প্রোফাইল অভিভাবক ও অ্যাডমিন কর্তৃক মূল্যায়নের জন্য টিউটর লগইন আবশ্যক।' : 'You need a registered tutor account to submit applications.'}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => navigateTo('login')}
+                  className="w-full py-2.5 bg-blue-900 text-white font-bold rounded-xl text-center cursor-pointer"
+                >
+                  {language === 'bn' ? 'টিউটর লগইন / রেজিস্ট্রেশন' : 'Tutor Login / Register'}
+                </button>
+              </div>
+            ) : currentUser.role !== 'tutor' ? (
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 space-y-2">
+                <p className="font-bold">
+                  {language === 'bn' ? 'শুধুমাত্র রেজিস্টার্ড টিউটররা আবেদন করতে পারেন' : 'Tutor Role Required'}
+                </p>
+                <p>
+                  {language === 'bn' ? 'আপনি বর্তমানে অভিভাবক বা অ্যাডমিন অ্যাকাউন্টে আছেন। টিউটর অ্যাকাউন্টে সুইচ করে আবেদন করুন।' : 'You are currently logged in as guardian/admin.'}
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmitApply} className="space-y-4 text-xs">
+                {activeTutorProfile && (
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                    <span className="text-[10px] text-slate-400 uppercase font-bold block">আবেদনকারী টিউটর প্রোফাইল</span>
+                    <p className="font-bold text-blue-950 text-sm mt-0.5">{activeTutorProfile.fullName}</p>
+                    <p className="text-[11px] text-slate-500">{activeTutorProfile.university} ({activeTutorProfile.department})</p>
+                  </div>
+                )}
+
+                <div>
+                  <label className="font-semibold text-slate-900 block mb-1">
+                    {language === 'bn' ? 'প্রত্যাশিত মাসিক সম্মানী (BDT ৳)' : 'Expected Monthly Salary (৳)'}
+                  </label>
+                  <input
+                    type="number"
+                    min="2000"
+                    max="35000"
+                    step="500"
+                    value={applyExpectedSalary}
+                    onChange={(e) => setApplyExpectedSalary(Number(e.target.value))}
+                    required
+                    className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl font-mono text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                  <span className="text-[11px] text-slate-400 mt-0.5 block">
+                    অভিভাবকের নির্ধারিত বাজেট: ৳{selectedApplyJob.salary.toLocaleString()}/মাস
+                  </span>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-900 block mb-1">
+                    {language === 'bn' ? 'কভার নোট বা বার্তা (অভিভাবকের জন্য)' : 'Cover Note for Guardian'}
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={applyCoverNote}
+                    onChange={(e) => setApplyCoverNote(e.target.value)}
+                    placeholder={language === 'bn' ? 'আপনার শিক্ষকতা অভিজ্ঞতা ও কীভাবে পড়াবেন সংক্ষেপে লিখুন...' : 'Write your teaching strategy...'}
+                    className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 text-xs"
+                  />
+                </div>
+
+                <div className="pt-2 flex items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setApplyModalOpen(false);
+                      setSelectedApplyJob(null);
+                    }}
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  >
+                    {language === 'bn' ? 'বাতিল' : 'Cancel'}
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 bg-blue-900 hover:bg-blue-800 text-white text-xs font-bold rounded-xl shadow-sm cursor-pointer"
+                  >
+                    {language === 'bn' ? 'আবেদন নিশ্চিত করুন' : 'Confirm & Apply'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
       )}
 
     </div>
