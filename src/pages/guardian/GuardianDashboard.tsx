@@ -439,7 +439,7 @@ export const GuardianDashboard: React.FC = () => {
                             💳 টিউশন ফি পরিশোধ মেথড (bKash & Nagad):
                           </span>
                           <p className="text-slate-600">
-                            বিকাশ / নগদ (Personal): <strong className="font-mono text-pink-700 font-bold">{settings.paymentAccounts?.bkashNumber || '01610582917'}</strong>
+                            বিকাশ / নগদ (Personal): <strong className="font-mono text-pink-700 font-bold">{settings.paymentAccounts?.bkashNumber || '01752617360'}</strong>
                           </p>
                           <p className="text-[10px] text-slate-500">
                             {settings.paymentAccounts?.paymentInstructionsBn || 'Send Money করে রেফারেন্সে আপনার কনফার্মেশন আইডি দিন।'}
@@ -1493,7 +1493,7 @@ export const GuardianDashboard: React.FC = () => {
                     💳 প্ল্যাটফর্ম অফিসিয়াল বিকাশ ও নগদ নম্বর:
                   </span>
                   <p className="text-[11px] text-slate-600 mt-0.5">
-                    বিকাশ (Personal): <strong className="font-mono text-pink-700 font-bold">{settings.paymentAccounts?.bkashNumber || '01610582917'}</strong> · নগদ (Personal): <strong className="font-mono text-amber-700 font-bold">{settings.paymentAccounts?.nagadNumber || '01610582917'}</strong>
+                    বিকাশ (Personal): <strong className="font-mono text-pink-700 font-bold">{settings.paymentAccounts?.bkashNumber || '01752617360'}</strong> · নগদ (Personal): <strong className="font-mono text-amber-700 font-bold">{settings.paymentAccounts?.nagadNumber || '01752617360'}</strong>
                   </p>
                   <p className="text-[10px] text-slate-500">
                     {settings.paymentAccounts?.paymentInstructionsBn || 'Send Money করে ট্রানজেকশন আইডি প্রদান করুন।'}

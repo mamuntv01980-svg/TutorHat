@@ -490,6 +490,7 @@ export interface AdminSecurityConfig {
   maxFailedAttempts?: number;
   lockoutDurationMinutes?: number;
   adminAccountConfigured?: boolean;
+  initialPinChanged?: boolean;
   primaryAdminName?: string;
   primaryAdminEmail?: string;
   primaryAdminPhone?: string;

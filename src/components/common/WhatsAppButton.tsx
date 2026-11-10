@@ -25,7 +25,7 @@ export const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({
   const label = language === 'bn' ? 'হোয়াটসঅ্যাপ চ্যাট' : 'WhatsApp Chat';
   
   // Clean international format without '+' or spaces for wa.me link
-  const rawNum = phoneNumber || settings.whatsAppIntl || settings.publicPhone || '01610582917';
+  const rawNum = phoneNumber || settings.whatsAppIntl || settings.publicPhone || '01752617360';
   const cleanDigits = rawNum.replace(/[^0-9]/g, '');
   const intlClean = cleanDigits.startsWith('880') 
     ? cleanDigits 

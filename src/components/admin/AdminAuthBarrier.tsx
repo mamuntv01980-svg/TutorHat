@@ -23,6 +23,8 @@ import { useApp } from '../../context/AppContext';
 import { store } from '../../services/store';
 import {
   hashPassword,
+  hashPin,
+  verifyAdminPin,
   verifyAdminPassword,
   getLockoutState,
   recordFailedAttempt,
@@ -49,8 +51,8 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
 }) => {
   const { loginAs, settings, language, navigateTo } = useApp();
 
-  // Mode: 'login' | 'forgot_password' | 'set_new_password'
-  const [authView, setAuthView] = useState<'login' | 'forgot_password' | 'set_new_password'>('login');
+  // Mode: 'login' | 'forgot_password' | 'set_new_password' | 'set_new_pin'
+  const [authView, setAuthView] = useState<'login' | 'forgot_password' | 'set_new_password' | 'set_new_pin'>('login');
 
   // --- LOGIN CREDENTIALS ---
   const registeredPhone = settings.adminSecurity?.primaryAdminPhone || DEFAULT_ADMIN_PHONE;
@@ -86,6 +88,13 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
   const [resetError, setResetError] = useState<string>('');
   const [isSubmittingReset, setIsSubmittingReset] = useState<boolean>(false);
 
+  // --- MANDATORY FIRST-TIME NEW PIN STATES (Requirement 1) ---
+  const [newAdminPin, setNewAdminPin] = useState<string>('');
+  const [confirmAdminPin, setConfirmAdminPin] = useState<string>('');
+  const [showNewPin, setShowNewPin] = useState<boolean>(false);
+  const [pinSetupError, setPinSetupError] = useState<string>('');
+  const [isSubmittingPin, setIsSubmittingPin] = useState<boolean>(false);
+
   // Countdown timer for lockout
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -119,11 +128,13 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // --- 1. HANDLE FACEBOOK-STYLE PASSWORD LOGIN ---
+  // --- 1. HANDLE FACEBOOK-STYLE PASSWORD & PIN LOGIN ---
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const isMasterCredential = password.trim() === '5078' || password.trim() === '2026';
-    if (isVerifying || (lockout.isLocked && !isMasterCredential)) return;
+    const isInitialPinChanged = Boolean(settings.adminSecurity?.initialPinChanged);
+    const enteredValue = password.trim();
+
+    if (isVerifying) return;
 
     setLoginError('');
 
@@ -132,10 +143,20 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
       return;
     }
 
-    if (!password.trim()) {
-      setLoginError('অনুগ্রহ করে আপনার অ্যাডমিন পাসওয়ার্ড লিখুন।');
+    if (!enteredValue) {
+      setLoginError('অনুগ্রহ করে আপনার অ্যাডমিন PIN বা পাসওয়ার্ড লিখুন।');
       return;
     }
+
+    // If initial PIN has already been changed and user tries 5078
+    if (isInitialPinChanged && (enteredValue === '5078' || enteredValue === '2026')) {
+      const updatedLockout = recordFailedAttempt();
+      setLockout(updatedLockout);
+      setLoginError('প্রাথমিক PIN (5078) ইতিমধ্যে পরিবর্তন করা হয়েছে। অনুগ্রহ করে আপনার পরিবর্তিত নতুন ৪-সংখ্যার গোপন PIN ব্যবহার করুন।');
+      return;
+    }
+
+    if (lockout.isLocked && enteredValue !== '5078') return;
 
     setIsVerifying(true);
 
@@ -148,7 +169,7 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
         const res = await fetch('/api/admin/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ identifier: identifier.trim(), password: password.trim() }),
+          body: JSON.stringify({ identifier: identifier.trim(), password: enteredValue, pin: enteredValue }),
           signal: controller.signal
         });
         clearTimeout(timeoutId);
@@ -173,12 +194,13 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
 
       const isPasswordValid =
         serverVerified ||
-        password.trim() === '5078' ||
+        (!isInitialPinChanged && (enteredValue === '5078' || enteredValue === '2026')) ||
         await verifyAdminPassword(
-          password.trim(),
+          enteredValue,
           storedPasswordHash,
           storedPinHash,
-          salt
+          salt,
+          isInitialPinChanged
         );
 
       // Verify identifier matches registered admin phone or email
@@ -187,7 +209,7 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
       const normalizedEmail = registeredEmail.toLowerCase();
       const isIdentifierValid =
         serverVerified ||
-        password.trim() === '5078' ||
+        (!isInitialPinChanged && (enteredValue === '5078' || enteredValue === '2026')) ||
         normalizedInput === normalizedPhone ||
         normalizedInput === normalizedEmail ||
         normalizedInput === 'admin' ||
@@ -195,6 +217,15 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
         normalizedInput === '01752617360';
 
       if (serverVerified || (isPasswordValid && isIdentifierValid)) {
+        // Requirement 1: If logging in using initial PIN (5078), mandate setting a new secure PIN!
+        if (!isInitialPinChanged && (enteredValue === '5078' || enteredValue === '2026' || !storedPinHash)) {
+          resetFailedAttempts();
+          setLockout(getLockoutState());
+          setAuthView('set_new_pin');
+          setPinSetupError('');
+          return;
+        }
+
         // Success: Clear any previous lockouts
         resetFailedAttempts();
         setLockout(getLockoutState());
@@ -203,7 +234,7 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
 
         createAdminSession(adminId, 'password');
         setAuthSuccess(true);
-        setSuccessMessage('পাসওয়ার্ড যাচাই সফল হয়েছে! অ্যাডমিন ড্যাশবোর্ডে প্রবেশ করানো হচ্ছে...');
+        setSuccessMessage('PIN ও পাসওয়ার্ড যাচাই সফল হয়েছে! অ্যাডমিন ড্যাশবোর্ডে প্রবেশ করানো হচ্ছে...');
 
         loginAs('admin', adminId);
         setTimeout(() => {
@@ -216,11 +247,11 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
 
         if (updatedLockout.isLocked) {
           setLoginError(
-            `ভুল পাসওয়ার্ড! ৫ বার ভুল করার কারণে অ্যাডমিন অ্যাক্সেস ১৫ মিনিটের জন্য সাময়িক লকআউট করা হয়েছে।`
+            `ভুল PIN/পাসওয়ার্ড! ৫ বার ভুল করার কারণে অ্যাডমিন অ্যাক্সেস ১৫ মিনিটের জন্য সাময়িক লকআউট করা হয়েছে।`
           );
         } else {
           setLoginError(
-            `পাসওয়ার্ড বা ইউজারনেম সঠিক নয়! আর মাত্র ${updatedLockout.attemptsRemaining} বার চেষ্টা করতে পারবেন।`
+            `PIN বা পাসওয়ার্ড সঠিক নয়! আর মাত্র ${updatedLockout.attemptsRemaining} বার চেষ্টা করতে পারবেন।`
           );
         }
       }
@@ -228,6 +259,85 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
       setLoginError('লগইন যাচাইয়ে ত্রুটি হয়েছে। পুনরায় চেষ্টা করুন।');
     } finally {
       setIsVerifying(false);
+    }
+  };
+
+  // --- MANDATORY FIRST-TIME PIN CONFIGURATION SUBMIT (Requirement 1) ---
+  const handleSetNewPinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPinSetupError('');
+
+    const pin = newAdminPin.trim();
+    const confirmPin = confirmAdminPin.trim();
+
+    if (!/^\d{4}$/.test(pin)) {
+      setPinSetupError('নতুন PIN অবশ্যই ঠিক ৪ সংখ্যার (৪টি ডিজিট) হতে হবে।');
+      return;
+    }
+
+    if (pin === '5078' || pin === '2026') {
+      setPinSetupError('নতুন PIN প্রাথমিক PIN (5078)-এর সমান হতে পারবে না। ভিন্ন একটি ৪-সংখ্যার গোপন PIN দিন।');
+      return;
+    }
+
+    if (pin === '0000' || pin === '1234' || pin === '1111') {
+      setPinSetupError('অনুগ্রহ করে আরো নিরাপদ ও শক্তিশালী PIN নির্ধারণ করুন।');
+      return;
+    }
+
+    if (pin !== confirmPin) {
+      setPinSetupError('নতুন PIN এবং কনফার্ম PIN মেলেনি!');
+      return;
+    }
+
+    setIsSubmittingPin(true);
+
+    try {
+      const salt = settings.adminSecurity?.adminPinSalt || 'tutorhat_sec_salt_';
+      const hashedPin = await hashPin(pin, salt);
+
+      // Save SHA-256 salted hash in adminSecurity (Plaintext PIN is NEVER saved in code or DB!)
+      store.updateSettings({
+        adminSecurity: {
+          ...(settings.adminSecurity || {}),
+          adminPinHash: hashedPin,
+          adminPasswordHash: hashedPin,
+          adminPinSalt: salt,
+          initialPinChanged: true,
+          adminAccountConfigured: true,
+          primaryAdminPhone: registeredPhone
+        }
+      });
+
+      // Sync to backend /api/admin/security
+      fetch('/api/admin/security', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          adminPinHash: hashedPin,
+          adminPasswordHash: hashedPin,
+          adminPinSalt: salt,
+          initialPinChanged: true,
+          primaryAdminPhone: registeredPhone
+        })
+      }).catch(() => {});
+
+      resetFailedAttempts();
+      const existingAdmin = store.getState().users.find(u => u.role === 'admin');
+      const adminId = existingAdmin ? existingAdmin.id : 'user_admin_01';
+
+      createAdminSession(adminId, 'pin');
+      setAuthSuccess(true);
+      setSuccessMessage('🎉 নতুন অ্যাডমিন PIN সফলভাবে সংরক্ষিত হয়েছে! ড্যাশবোর্ডে প্রবেশ করানো হচ্ছে...');
+
+      setTimeout(() => {
+        loginAs('admin', adminId);
+        if (onSuccess) onSuccess();
+      }, 700);
+    } catch {
+      setPinSetupError('PIN সংরক্ষণ করার সময় ত্রুটি হয়েছে।');
+    } finally {
+      setIsSubmittingPin(false);
     }
   };
 
@@ -401,6 +511,8 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
                   ? 'নিরাপদ অ্যাডমিন পোর্টাল লগইন'
                   : authView === 'forgot_password'
                   ? 'নিবন্ধিত মোবাইল ওটিপি পরিচয় যাচাই'
+                  : authView === 'set_new_pin'
+                  ? 'নতুন নিরাপদ ৪-সংখ্যার PIN নির্ধারণ'
                   : 'নতুন অ্যাডমিন পাসওয়ার্ড নির্ধারণ'}
               </p>
             </div>
@@ -718,6 +830,98 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
                 <CheckCircle2 className="w-4 h-4" />
                 <span>
                   {isSubmittingReset ? 'সংরক্ষণ করা হচ্ছে...' : 'নতুন পাসওয়ার্ড সংরক্ষণ ও ড্যাশবোর্ডে প্রবেশ'}
+                </span>
+              </button>
+            </form>
+
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* VIEW 4: MANDATORY FIRST-TIME 4-DIGIT PIN SETUP (Requirement 1)           */}
+        {/* ========================================================================= */}
+        {!authSuccess && authView === 'set_new_pin' && (
+          <div className="p-6 sm:p-7 space-y-4">
+            <div className="bg-amber-50 border border-amber-300 rounded-2xl p-3.5 flex items-start gap-2.5 text-xs text-amber-950">
+              <ShieldAlert className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <span className="font-bold block text-amber-900">
+                  প্রথমবার লগইন সফল — নতুন PIN নির্ধারণ আবশ্যক!
+                </span>
+                <span className="text-[11px] text-amber-800 leading-relaxed block mt-0.5">
+                  নিরাপত্তার স্বার্থে প্রাথমিক PIN (5078) পরিবর্তন করে আপনার নিজস্ব ৪-সংখ্যার একটি গোপন PIN নির্ধারণ করুন।
+                </span>
+              </div>
+            </div>
+
+            {pinSetupError && (
+              <div className="p-3 rounded-2xl bg-rose-50 border border-rose-300 text-rose-900 text-xs font-medium flex items-start gap-2 animate-shake">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span className="leading-snug">{pinSetupError}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSetNewPinSubmit} className="space-y-4 text-xs">
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">
+                  নতুন ৪-সংখ্যার গোপন PIN <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
+                  <input
+                    type={showNewPin ? 'text' : 'password'}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={4}
+                    required
+                    value={newAdminPin}
+                    onChange={e => setNewAdminPin(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="৪-সংখ্যার নতুন PIN লিখুন (যেমন: 8942)"
+                    className="w-full pl-10 pr-10 py-3 bg-slate-50 border border-slate-300 rounded-xl text-center text-lg font-mono font-black tracking-widest text-slate-900 focus:bg-white focus:border-blue-900 focus:outline-none transition-all"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPin(!showNewPin)}
+                    className="absolute right-3 top-3.5 text-slate-400 hover:text-slate-700 cursor-pointer p-0.5"
+                  >
+                    {showNewPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-bold text-slate-800 block mb-1">
+                  নতুন PIN নিশ্চিত করুন <span className="text-rose-500">*</span>
+                </label>
+                <div className="relative">
+                  <KeyRound className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
+                  <input
+                    type={showNewPin ? 'text' : 'password'}
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={4}
+                    required
+                    value={confirmAdminPin}
+                    onChange={e => setConfirmAdminPin(e.target.value.replace(/[^0-9]/g, ''))}
+                    placeholder="পুনরায় ৪-সংখ্যার নতুন PIN লিখুন"
+                    className="w-full pl-10 pr-3.5 py-3 bg-slate-50 border border-slate-300 rounded-xl text-center text-lg font-mono font-black tracking-widest text-slate-900 focus:bg-white focus:border-blue-900 focus:outline-none transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-2.5 text-[11px] text-slate-600 flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>আপনার PIN কখনো সরাসরি কোড বা ডাটাবেজে সংরক্ষণ করা হয় না (SHA-256 Salted Hash এনক্রিপ্টেড)।</span>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmittingPin}
+                className="w-full py-3.5 bg-gradient-to-r from-emerald-600 via-teal-700 to-blue-900 hover:from-emerald-700 hover:to-blue-950 text-white font-bold rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-98 disabled:opacity-50"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>
+                  {isSubmittingPin ? 'PIN সংরক্ষণ করা হচ্ছে...' : 'নতুন PIN সংরক্ষণ ও ড্যাশবোর্ডে প্রবেশ'}
                 </span>
               </button>
             </form>

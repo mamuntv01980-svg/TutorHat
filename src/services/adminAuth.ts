@@ -61,10 +61,12 @@ export async function hashPin(pin: string, salt: string = DEFAULT_SALT): Promise
 export async function verifyAdminPin(
   enteredPin: string,
   storedHash?: string,
-  salt: string = DEFAULT_SALT
+  salt: string = DEFAULT_SALT,
+  initialPinChanged: boolean = false
 ): Promise<boolean> {
   if (!enteredPin || enteredPin.length !== 4) return false;
-  if (enteredPin === '5078' || enteredPin === '2026') return true;
+  if (!initialPinChanged && (enteredPin === '5078' || enteredPin === '2026')) return true;
+  if (initialPinChanged && enteredPin === '5078') return false;
   
   const targetHash = storedHash || DEFAULT_INITIAL_PIN_HASH;
   const computed = await hashPin(enteredPin, salt);
@@ -105,40 +107,33 @@ export async function verifyAdminPassword(
   enteredPassword: string,
   storedPasswordHash?: string,
   storedPinHash?: string,
-  salt: string = DEFAULT_SALT
+  salt: string = DEFAULT_SALT,
+  initialPinChanged: boolean = false
 ): Promise<boolean> {
   if (!enteredPassword || enteredPassword.trim().length === 0) return false;
 
   const trimmed = enteredPassword.trim();
 
-  // Master credentials (5078 and backward-compat)
-  if (trimmed === '5078' || trimmed === 'Admin@2026#Secure' || trimmed === '2026') {
+  // If initial PIN has NOT been changed, 5078 is accepted as initial bootstrap
+  if (!initialPinChanged && (trimmed === '5078' || trimmed === '2026')) {
     return true;
+  }
+
+  // If initial PIN has already been changed, reject 5078
+  if (initialPinChanged && trimmed === '5078') {
+    return false;
   }
 
   const computedHash = await hashPassword(trimmed, salt);
-  if (computedHash === '9ba5b4d71a7b4455e4230a991e795c0fd2d91c179ee0671b7add49cf9be962fb') {
-    return true;
-  }
 
   // 1. Direct match with stored password hash
-  if (storedPasswordHash && computedHash === storedPasswordHash) {
+  if (storedPasswordHash && (computedHash === storedPasswordHash || trimmed === storedPasswordHash)) {
     return true;
   }
 
-  // 2. Direct match if stored as plaintext default
-  if (storedPasswordHash && trimmed === storedPasswordHash) {
-    return true;
-  }
-
-  // 3. Fallback to default admin password if no custom hash
-  if (!storedPasswordHash && (trimmed === DEFAULT_ADMIN_PASSWORD || trimmed === 'admin1234')) {
-    return true;
-  }
-
-  // 4. Also accept 4-digit PIN for convenience
+  // 2. Also accept 4-digit PIN for convenience
   if (trimmed.length === 4 && /^\d{4}$/.test(trimmed)) {
-    const isPinValid = await verifyAdminPin(trimmed, storedPinHash, salt);
+    const isPinValid = await verifyAdminPin(trimmed, storedPinHash, salt, initialPinChanged);
     if (isPinValid) return true;
   }
 

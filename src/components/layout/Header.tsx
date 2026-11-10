@@ -18,6 +18,7 @@ import { useApp, AppView } from '../../context/AppContext';
 import { store } from '../../services/store';
 import { BrandLogo } from '../common/BrandLogo';
 import { LanguageToggle } from '../common/LanguageToggle';
+import { DownloadAppButton } from '../pwa/DownloadAppButton';
 import { TRANSLATIONS } from '../../constants/translations';
 
 export const Header: React.FC = () => {
@@ -94,6 +95,9 @@ export const Header: React.FC = () => {
 
           {/* Zone 3: Primary Actions & User State */}
           <div className="flex items-center gap-2.5">
+            {/* PWA Download / Install App Option for Mobile and Desktop */}
+            <DownloadAppButton language={language} variant="navbar" />
+
             <LanguageToggle />
 
             {/* Quick Demo Role Switcher (Convenient for evaluation) */}
@@ -276,6 +280,11 @@ export const Header: React.FC = () => {
       {/* Mobile Navigation Drawer */}
       {mobileMenuOpen && (
         <div className="lg:hidden fixed inset-x-0 top-16 bg-white border-b border-slate-200 shadow-xl p-4 max-h-[85vh] overflow-y-auto animate-in slide-in-from-top-2 duration-150">
+          {/* Prominent App Download Option in Mobile Menu */}
+          <div className="mb-3">
+            <DownloadAppButton language={language} variant="mobile-item" />
+          </div>
+
           <div className="space-y-1 pb-3 border-b border-slate-100">
             {navLinks.map((link) => (
               <button

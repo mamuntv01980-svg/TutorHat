@@ -1,0 +1,129 @@
+{
+  "entities": {
+    "TuitionRequest": {
+      "title": "TuitionRequest",
+      "description": "Guardian tuition request requirements",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "guardianName": { "type": "string" },
+        "guardianPhone": { "type": "string" },
+        "studentClass": { "type": "string" },
+        "medium": { "type": "string" },
+        "subjects": { "type": "array" },
+        "location": { "type": "string" },
+        "area": { "type": "string" },
+        "monthlyBudget": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "verified", "converted_to_job", "cancelled", "completed"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "guardianName", "guardianPhone", "studentClass", "area", "status", "createdAt"]
+    },
+    "TutorProfile": {
+      "title": "TutorProfile",
+      "description": "Tutor registration and verified CV details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "fullName": { "type": "string" },
+        "photo": { "type": "string" },
+        "gender": { "type": "string", "enum": ["male", "female"] },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "district": { "type": "string" },
+        "area": { "type": "string" },
+        "university": { "type": "string" },
+        "verificationStatus": { "type": "string", "enum": ["draft", "pending", "verified", "rejected", "suspended"] },
+        "completionPercentage": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "fullName", "phone", "verificationStatus", "createdAt"]
+    },
+    "TuitionJob": {
+      "title": "TuitionJob",
+      "description": "Published tuition circulars",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "classLevel": { "type": "string" },
+        "medium": { "type": "string" },
+        "subjects": { "type": "array" },
+        "area": { "type": "string" },
+        "district": { "type": "string" },
+        "salary": { "type": "number" },
+        "status": { "type": "string", "enum": ["published", "in_review", "demo_stage", "appointed", "closed"] },
+        "totalApplications": { "type": "number" },
+        "postedDate": { "type": "string" }
+      },
+      "required": ["id", "title", "classLevel", "area", "status", "postedDate"]
+    },
+    "JobApplication": {
+      "title": "JobApplication",
+      "description": "Tutor application for a tuition circular",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "jobId": { "type": "string" },
+        "tutorId": { "type": "string" },
+        "status": { "type": "string", "enum": ["applied", "shortlisted", "demo_scheduled", "selected", "rejected"] },
+        "appliedAt": { "type": "string" }
+      },
+      "required": ["id", "jobId", "tutorId", "status", "appliedAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Platform user account record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "tutor", "guardian"] },
+        "status": { "type": "string", "enum": ["active", "suspended", "pending"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "name", "role", "status", "createdAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Authorized administrator lookup entry",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "role": { "type": "string" },
+        "grantedAt": { "type": "string" }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/requests/{requestId}": {
+      "schema": "TuitionRequest",
+      "description": "Collection of guardian tuition requests"
+    },
+    "/tutors/{tutorId}": {
+      "schema": "TutorProfile",
+      "description": "Collection of tutor profiles and CVs"
+    },
+    "/jobs/{jobId}": {
+      "schema": "TuitionJob",
+      "description": "Collection of available tuition circulars"
+    },
+    "/applications/{applicationId}": {
+      "schema": "JobApplication",
+      "description": "Collection of applications submitted by tutors"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Collection of registered users"
+    },
+    "/admins/{adminId}": {
+      "schema": "AdminRecord",
+      "description": "Admin authorization registry"
+    }
+  }
+}

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Volume2 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { DownloadAppButton } from '../pwa/DownloadAppButton';
 
 export const NoticeBanner: React.FC = () => {
   const { settings } = useApp();
@@ -28,7 +29,9 @@ export const NoticeBanner: React.FC = () => {
             </span>
           </div>
         </div>
-        <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-300 shrink-0">
+        <div className="hidden md:flex items-center gap-3 text-[11px] text-slate-300 shrink-0">
+          <DownloadAppButton language="bn" variant="top-pill" />
+          <span className="w-px h-3.5 bg-blue-800" />
           <span>হেল্পলাইন:</span>
           <a href={`tel:${settings.publicPhone}`} className="hover:text-amber-300 font-semibold text-white tabular-nums">
             {settings.publicPhone}

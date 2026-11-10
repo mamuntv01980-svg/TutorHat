@@ -176,7 +176,8 @@ export const RegisterPage: React.FC = () => {
       role,
       gender,
       location: `${area}, ${district}`,
-      district
+      district,
+      passwordHash: password.trim()
     });
 
     // If tutor, update full CV details

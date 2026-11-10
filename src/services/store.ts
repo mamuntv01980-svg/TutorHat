@@ -28,13 +28,23 @@ import heroImg from '../assets/images/hero_bangladesh_tutoring_1791378378802.jpg
 import tutorProfileImg from '../assets/images/tutor_graduate_profile_1791378392899.jpg';
 import guardianStudyImg from '../assets/images/guardian_student_study_1791378404986.jpg';
 
+import { db, testConnection, uploadTutorPhoto } from './firebase';
+import { 
+  collection, 
+  doc, 
+  setDoc, 
+  deleteDoc, 
+  getDocs, 
+  onSnapshot 
+} from 'firebase/firestore';
+
 export { heroImg, tutorProfileImg, guardianStudyImg };
 
 const DEFAULT_SETTINGS: SystemSettings = {
   appName: 'TutorHat',
-  publicPhone: '+8809638284290',
-  whatsAppRaw: '01610582917',
-  whatsAppIntl: '+8801610582917',
+  publicPhone: '+8801752617360',
+  whatsAppRaw: '01752617360',
+  whatsAppIntl: '+8801752617360',
   officeAddress: 'House 24, Road 10/A, Dhanmondi, Dhaka 1209, Bangladesh',
   supportEmail: 'support@tutorhat.com',
   noticeMarquee: 'স্বাগতম TutorHat-এ! সারাদেশে বিশ্বস্ত ও ভেরিফাইড জেনারেল, আলিয়া ও কওমি মাদ্রাসার টিউটর পেতে আজই ফ্রি রিকোয়েস্ট করুন। নতুন টিউশন সার্কুলার প্রতিদিন প্রকাশিত হয়।',
@@ -43,7 +53,7 @@ const DEFAULT_SETTINGS: SystemSettings = {
   defaultCurrency: '৳',
   socialLinks: {
     facebook: 'https://facebook.com/tutorhatbd',
-    whatsapp: 'https://wa.me/8801610582917',
+    whatsapp: 'https://wa.me/8801752617360',
     youtube: 'https://youtube.com/@tutorhatbd',
     linkedin: 'https://linkedin.com/company/tutorhatbd'
   },
@@ -243,6 +253,8 @@ class Store {
   private state: StoreState;
   private listeners: Set<() => void> = new Set();
 
+  private isFirestoreInitialized = false;
+
   constructor() {
     this.state = this.loadState();
     // Guarantee fresh clean state is persisted to v10
@@ -250,23 +262,147 @@ class Store {
     this.saveState();
 
     if (typeof window !== 'undefined') {
+      // 1. Initialize real-time Firebase Firestore synchronization
+      this.initFirestoreSync();
+
+      // 2. Dual-sync with Express server for backwards compatibility (with generous 8s timeout)
       this.syncWithServer();
-      setInterval(() => this.syncWithServer(), 3000);
+      setInterval(() => this.syncWithServer(), 10000);
       window.addEventListener('focus', () => this.syncWithServer());
+    }
+  }
+
+  // Real-time Firebase Firestore Synchronizer
+  public initFirestoreSync(): void {
+    if (typeof window === 'undefined' || this.isFirestoreInitialized) return;
+    this.isFirestoreInitialized = true;
+
+    testConnection().then((connected) => {
+      console.log('[Store] Firebase Firestore status:', connected ? 'Connected' : 'Offline/Initial');
+      this.setupRealtimeListeners();
+      this.autoMigrateDataIfEmpty();
+    }).catch((err) => {
+      console.warn('[Store] Firestore connection check:', err);
+      this.setupRealtimeListeners();
+    });
+  }
+
+  private setupRealtimeListeners(): void {
+    try {
+      // 1. Live Guardian Tuition Requests (Real-time to Admin from all devices)
+      onSnapshot(collection(db, 'requests'), (snapshot) => {
+        const firestoreReqs = snapshot.docs.map(d => d.data() as TuitionRequest);
+        this.state.requests = firestoreReqs.sort((a, b) => 
+          new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+        );
+        this.saveState();
+        this.notify();
+      }, (err) => console.warn('[Firestore] requests listener note:', err));
+
+      // 2. Live Tutor Profiles & CVs
+      onSnapshot(collection(db, 'tutors'), (snapshot) => {
+        const firestoreTutors = snapshot.docs.map(d => d.data() as TutorProfile);
+        this.state.tutors = firestoreTutors;
+        this.saveState();
+        this.notify();
+      }, (err) => console.warn('[Firestore] tutors listener note:', err));
+
+      // 3. Live Tuition Jobs
+      onSnapshot(collection(db, 'jobs'), (snapshot) => {
+        const firestoreJobs = snapshot.docs.map(d => d.data() as TuitionJob);
+        this.state.jobs = firestoreJobs;
+        this.saveState();
+        this.notify();
+      }, (err) => console.warn('[Firestore] jobs listener note:', err));
+
+      // 4. Live Job Applications
+      onSnapshot(collection(db, 'applications'), (snapshot) => {
+        const firestoreApps = snapshot.docs.map(d => d.data() as JobApplication);
+        this.state.applications = firestoreApps;
+        this.saveState();
+        this.notify();
+      }, (err) => console.warn('[Firestore] applications listener note:', err));
+
+      // 5. Live Users
+      onSnapshot(collection(db, 'users'), (snapshot) => {
+        const firestoreUsers = snapshot.docs.map(d => d.data() as User);
+        const hasAdmin = firestoreUsers.some(u => u.role === 'admin');
+        this.state.users = hasAdmin ? firestoreUsers : [INITIAL_USERS[0], ...firestoreUsers];
+        this.saveState();
+        this.notify();
+      }, (err) => console.warn('[Firestore] users listener note:', err));
+    } catch (err) {
+      console.warn('[Firestore] setupRealtimeListeners failed:', err);
+    }
+  }
+
+  // Automatic one-time migration from local/server state so existing data is never lost
+  private async autoMigrateDataIfEmpty(): Promise<void> {
+    try {
+      const reqSnap = await getDocs(collection(db, 'requests'));
+      if (reqSnap.empty && this.state.requests.length > 0) {
+        console.log('[Firestore Migration] Migrating existing requests to Firestore...');
+        for (const req of this.state.requests) {
+          await this.saveDocToFirestore('requests', req.id, req);
+        }
+      }
+
+      const tutorSnap = await getDocs(collection(db, 'tutors'));
+      if (tutorSnap.empty && this.state.tutors.length > 0) {
+        console.log('[Firestore Migration] Migrating existing tutors to Firestore...');
+        for (const tutor of this.state.tutors) {
+          await this.saveDocToFirestore('tutors', tutor.id, tutor);
+        }
+      }
+
+      const jobSnap = await getDocs(collection(db, 'jobs'));
+      if (jobSnap.empty && this.state.jobs.length > 0) {
+        console.log('[Firestore Migration] Migrating existing jobs to Firestore...');
+        for (const job of this.state.jobs) {
+          await this.saveDocToFirestore('jobs', job.id, job);
+        }
+      }
+
+      const userSnap = await getDocs(collection(db, 'users'));
+      if (userSnap.empty && this.state.users.length > 0) {
+        console.log('[Firestore Migration] Migrating existing users to Firestore...');
+        for (const user of this.state.users) {
+          await this.saveDocToFirestore('users', user.id, user);
+        }
+      }
+    } catch (err) {
+      console.warn('[Firestore Migration] Auto-migrate check note:', err);
+    }
+  }
+
+  // Firestore Document Write & Delete Helpers
+  public async saveDocToFirestore(col: string, id: string, data: any): Promise<void> {
+    try {
+      await setDoc(doc(db, col, id), data);
+    } catch (err) {
+      console.warn(`[Firestore] Failed writing document ${col}/${id}:`, err);
+    }
+  }
+
+  public async deleteDocFromFirestore(col: string, id: string): Promise<void> {
+    try {
+      await deleteDoc(doc(db, col, id));
+    } catch (err) {
+      console.warn(`[Firestore] Failed deleting document ${col}/${id}:`, err);
     }
   }
 
   public async syncWithServer(): Promise<void> {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 2000);
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
       const res = await fetch('/api/sync', { signal: controller.signal });
       clearTimeout(timeoutId);
 
       if (res.ok) {
         const contentType = res.headers.get('content-type') || '';
         if (!contentType.includes('application/json')) {
-          return; // Static host / Netlify HTML fallback, skip safely
+          return;
         }
 
         const json = await res.json();
@@ -274,27 +410,36 @@ class Store {
           const s = json.data;
           let changed = false;
 
-          if (Array.isArray(s.requests)) {
-            this.state.requests = s.requests;
-            changed = true;
+          if (Array.isArray(s.requests) && s.requests.length > 0) {
+            // Only update if local is empty or server has newer items
+            if (this.state.requests.length === 0) {
+              this.state.requests = s.requests;
+              changed = true;
+            }
           }
-          if (Array.isArray(s.jobs)) {
-            this.state.jobs = s.jobs;
-            changed = true;
+          if (Array.isArray(s.jobs) && s.jobs.length > 0) {
+            if (this.state.jobs.length === 0) {
+              this.state.jobs = s.jobs;
+              changed = true;
+            }
           }
-          if (Array.isArray(s.applications)) {
-            this.state.applications = s.applications;
-            changed = true;
+          if (Array.isArray(s.applications) && s.applications.length > 0) {
+            if (this.state.applications.length === 0) {
+              this.state.applications = s.applications;
+              changed = true;
+            }
           }
-          if (Array.isArray(s.tutors)) {
-            this.state.tutors = s.tutors.filter((t: TutorProfile) => !t.id.startsWith('tut_01') && !t.id.startsWith('tut_02') && !t.id.startsWith('tut_03') && !t.id.startsWith('tut_04'));
-            changed = true;
+          if (Array.isArray(s.tutors) && s.tutors.length > 0) {
+            if (this.state.tutors.length === 0) {
+              this.state.tutors = s.tutors;
+              changed = true;
+            }
           }
-          if (Array.isArray(s.users)) {
-            const serverUsers = s.users.filter((u: User) => !u.id.startsWith('user_tutor_') && u.id !== 'user_guardian_01');
-            const hasAdmin = serverUsers.some((u: User) => u.role === 'admin');
-            this.state.users = hasAdmin ? serverUsers : [INITIAL_USERS[0], ...serverUsers];
-            changed = true;
+          if (Array.isArray(s.users) && s.users.length > 0) {
+            if (this.state.users.length === 0) {
+              this.state.users = s.users;
+              changed = true;
+            }
           }
           if (s.adminSecurity) {
             this.state.settings = {
@@ -336,19 +481,29 @@ class Store {
           const cleanTutors = (Array.isArray(parsed.tutors) ? parsed.tutors : [])
             .filter((t: TutorProfile) => !t.id.startsWith('tut_01') && !t.id.startsWith('tut_02') && !t.id.startsWith('tut_03') && !t.id.startsWith('tut_04'));
 
-          return {
-            settings: {
-              ...DEFAULT_SETTINGS,
-              ...(parsed.settings || {}),
-              paymentAccounts: {
-                ...DEFAULT_SETTINGS.paymentAccounts,
-                ...(parsed.settings?.paymentAccounts || {})
-              },
-              adminSecurity: {
-                ...DEFAULT_SETTINGS.adminSecurity,
-                ...(parsed.settings?.adminSecurity || {})
-              }
+          const loadedSettings = {
+            ...DEFAULT_SETTINGS,
+            ...(parsed.settings || {}),
+            publicPhone: (parsed.settings?.publicPhone && parsed.settings.publicPhone !== '+8809638284290') ? parsed.settings.publicPhone : '+8801752617360',
+            whatsAppRaw: (parsed.settings?.whatsAppRaw && parsed.settings.whatsAppRaw !== '01610582917') ? parsed.settings.whatsAppRaw : '01752617360',
+            whatsAppIntl: (parsed.settings?.whatsAppIntl && parsed.settings.whatsAppIntl !== '+8801610582917') ? parsed.settings.whatsAppIntl : '+8801752617360',
+            socialLinks: {
+              ...DEFAULT_SETTINGS.socialLinks,
+              ...(parsed.settings?.socialLinks || {}),
+              whatsapp: 'https://wa.me/8801752617360'
             },
+            paymentAccounts: {
+              ...DEFAULT_SETTINGS.paymentAccounts,
+              ...(parsed.settings?.paymentAccounts || {})
+            },
+            adminSecurity: {
+              ...DEFAULT_SETTINGS.adminSecurity,
+              ...(parsed.settings?.adminSecurity || {})
+            }
+          };
+
+          return {
+            settings: loadedSettings,
             users: finalUsers,
             tutors: cleanTutors,
             requests: Array.isArray(parsed.requests) ? parsed.requests : [],
@@ -526,10 +681,16 @@ class Store {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTutor)
       }).catch(() => {});
+
+      // Central Firestore Real-Time Sync for Tutor
+      this.saveDocToFirestore('tutors', newTutor.id, newTutor);
     }
 
     this.logActivity('USER_REGISTERED', `Created account ${newUser.name} as ${newUser.role}`);
     this.saveState();
+
+    // Central Firestore Real-Time Sync for User
+    this.saveDocToFirestore('users', newUser.id, newUser);
 
     fetch('/api/users', {
       method: 'POST',
@@ -552,6 +713,7 @@ class Store {
     if (updatedUser) {
       this.logActivity('USER_UPDATED', `Updated user details for ${updatedUser.name} (${userId})`);
       this.saveState();
+      this.saveDocToFirestore('users', userId, updatedUser);
     }
     return updatedUser;
   }
@@ -571,6 +733,10 @@ class Store {
     this.state.users = this.state.users.map(u => u.id === guardianId ? { ...u, status } : u);
     this.logActivity('GUARDIAN_STATUS_UPDATED', `Set guardian ${guardianId} status to ${status}`);
     this.saveState();
+    const updated = this.getUserById(guardianId);
+    if (updated) {
+      this.saveDocToFirestore('users', guardianId, updated);
+    }
   }
 
   public deleteGuardian(guardianId: string, performedBy: string = 'Admin') {
@@ -585,6 +751,7 @@ class Store {
     this.logActivity('GUARDIAN_DELETED', `Deleted guardian ${guardian?.name || guardianId}`, performedBy);
     this.saveState();
 
+    this.deleteDocFromFirestore('users', guardianId);
     fetch(`/api/users/${guardianId}`, { method: 'DELETE' }).catch(() => {});
   }
 
@@ -618,6 +785,11 @@ class Store {
     this.logActivity('TUTOR_DELETED', `Deleted tutor ${tutor.fullName} (${tutorId})`, performedBy);
     this.saveState();
 
+    this.deleteDocFromFirestore('tutors', tutorId);
+    if (tutor.userId) {
+      this.deleteDocFromFirestore('users', tutor.userId);
+    }
+
     fetch(`/api/tutors/${tutorId}`, { method: 'DELETE' }).catch(() => {});
     if (tutor.userId) {
       fetch(`/api/users/${tutor.userId}`, { method: 'DELETE' }).catch(() => {});
@@ -638,12 +810,30 @@ class Store {
 
     const currentTutor = this.getTutorById(tutorId);
     if (currentTutor) {
+      // 1. Central Firestore Real-Time Sync
+      this.saveDocToFirestore('tutors', tutorId, currentTutor);
+
+      // 2. Dual-sync with Express server
       fetch('/api/tutors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(currentTutor)
       }).catch(() => {});
     }
+  }
+
+  // Dedicated Tutor Profile Photo management with Cloud Storage
+  public async updateTutorPhoto(tutorId: string, photoDataUrlOrUrl: string): Promise<string> {
+    let finalUrl = photoDataUrlOrUrl;
+    if (photoDataUrlOrUrl && photoDataUrlOrUrl.startsWith('data:')) {
+      finalUrl = await uploadTutorPhoto(tutorId, photoDataUrlOrUrl);
+    }
+    this.updateTutorProfile(tutorId, { photo: finalUrl });
+    return finalUrl;
+  }
+
+  public removeTutorPhoto(tutorId: string) {
+    this.updateTutorProfile(tutorId, { photo: '' });
   }
 
   public submitTutorForVerification(tutorId: string) {
@@ -830,13 +1020,14 @@ class Store {
     this.logActivity('TUITION_REQUEST_SUBMITTED', `New requirement ${id} submitted by ${newReq.guardianName}`);
     this.saveState();
 
-    // Central server sync for multi-device delivery to Admin
+    // 1. Central Real-Time Cloud Firestore Sync (Instantly delivers to Admin Dashboard on all devices)
+    this.saveDocToFirestore('requests', newReq.id, newReq);
+
+    // 2. Dual-sync with Express server
     fetch('/api/requests', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(newReq)
-    }).then(() => {
-      this.syncWithServer().catch(() => {});
     }).catch(() => {});
 
     return newReq;
@@ -888,22 +1079,35 @@ class Store {
     this.logActivity('REQUEST_CONVERTED_TO_JOB', `Converted request ${requestId} to job ${jobId}`);
     this.saveState();
 
-    // Central server sync
+    // 1. Central Firestore Sync for Job and updated Request
+    this.saveDocToFirestore('jobs', newJob.id, newJob);
+    this.saveDocToFirestore('requests', requestId, { ...req, status: 'converted_to_job' });
+
+    // 2. Dual-sync with Express server
     fetch(`/api/requests/${requestId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'converted_to_job', createdJob: newJob })
-    }).then(() => {
-      this.syncWithServer().catch(() => {});
     }).catch(() => {});
 
     return newJob;
   }
 
   public updateTuitionRequest(requestId: string, updates: Partial<TuitionRequest>, performedBy: string = 'Admin') {
-    this.state.requests = this.state.requests.map(r => r.id === requestId ? { ...r, ...updates } : r);
+    let updatedReq: TuitionRequest | undefined;
+    this.state.requests = this.state.requests.map(r => {
+      if (r.id === requestId) {
+        updatedReq = { ...r, ...updates };
+        return updatedReq;
+      }
+      return r;
+    });
     this.logActivity('REQUEST_UPDATED', `Updated tuition requirement ${requestId}`, performedBy);
     this.saveState();
+
+    if (updatedReq) {
+      this.saveDocToFirestore('requests', requestId, updatedReq);
+    }
 
     fetch(`/api/requests/${requestId}`, {
       method: 'PUT',
@@ -916,6 +1120,8 @@ class Store {
     this.state.requests = this.state.requests.filter(r => r.id !== requestId);
     this.logActivity('REQUEST_DELETED', `Deleted tuition requirement ${requestId}`, performedBy);
     this.saveState();
+
+    this.deleteDocFromFirestore('requests', requestId);
 
     fetch(`/api/requests/${requestId}`, {
       method: 'DELETE'
@@ -1112,6 +1318,14 @@ class Store {
     this.logActivity('APPLICATION_SUBMITTED', `${tutor.fullName} applied for job ${job.id}`);
     this.saveState();
 
+    // 1. Central Firestore Real-Time Sync
+    this.saveDocToFirestore('applications', newApp.id, newApp);
+    const targetJob = this.state.jobs.find(j => j.id === params.jobId);
+    if (targetJob) {
+      this.saveDocToFirestore('jobs', targetJob.id, targetJob);
+    }
+
+    // 2. Dual-sync with Express server
     fetch('/api/applications', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1141,6 +1355,9 @@ class Store {
           type: 'application'
         });
       }
+
+      // Central Firestore Real-Time Sync
+      this.saveDocToFirestore('applications', appId, targetApp);
     }
 
     this.saveState();
@@ -1153,9 +1370,20 @@ class Store {
   }
 
   public editApplication(appId: string, updates: Partial<JobApplication>, performedBy: string = 'Admin') {
-    this.state.applications = this.state.applications.map(a => a.id === appId ? { ...a, ...updates } : a);
+    let updatedApp: JobApplication | undefined;
+    this.state.applications = this.state.applications.map(a => {
+      if (a.id === appId) {
+        updatedApp = { ...a, ...updates };
+        return updatedApp;
+      }
+      return a;
+    });
     this.logActivity('APPLICATION_EDITED', `Updated application ${appId}`, performedBy);
     this.saveState();
+
+    if (updatedApp) {
+      this.saveDocToFirestore('applications', appId, updatedApp);
+    }
 
     fetch(`/api/applications/${appId}`, {
       method: 'PUT',
@@ -1177,23 +1405,39 @@ class Store {
       this.logActivity('APPLICATION_DELETED', `Deleted application ${appId} for job ${app.jobId}`, performedBy);
       this.saveState();
 
+      // Central Firestore Real-Time Sync
+      this.deleteDocFromFirestore('applications', appId);
+      const affectedJob = this.state.jobs.find(j => j.id === app.jobId);
+      if (affectedJob) {
+        this.saveDocToFirestore('jobs', affectedJob.id, affectedJob);
+      }
+
       fetch(`/api/applications/${appId}`, {
         method: 'DELETE'
       }).catch(() => {});
     }
   }
 
-  public clearAllRequestsAndApplications(performedBy: string = 'Admin') {
-    this.state.requests = [];
-    this.state.jobs = [];
-    this.state.applications = [];
-    this.logActivity('DATA_RESET', `Cleared all demo guardian requests, tuition circulars and tutor applications`, performedBy);
+  public async cleanTestApplications(): Promise<number> {
+    const identified = this.identifyTestData();
+    for (const app of identified.testApplications) {
+      await this.deleteDocFromFirestore('applications', app.id);
+    }
+    this.state.applications = identified.realApplications;
     this.saveState();
     this.notify();
+    return identified.testApplications.length;
+  }
 
-    fetch('/api/reset-demo', {
-      method: 'POST'
-    }).catch(() => {});
+  public clearAllRequestsAndApplications(performedBy: string = 'Admin') {
+    // Safety check: protect real applications and requests
+    const identified = this.identifyTestData();
+    this.state.requests = identified.realRequests;
+    this.state.jobs = identified.realJobs;
+    this.state.applications = identified.realApplications;
+    this.logActivity('DATA_RESET', `Purged demo items while preserving all real guardians, circulars and tutor applications`, performedBy);
+    this.saveState();
+    this.notify();
   }
 
   // Shortlisting
@@ -2507,6 +2751,204 @@ class Store {
     this.saveState();
   }
 
+  // Test & Demo Data Isolation & Safe Cleanup (Audited for Production)
+  public identifyTestData() {
+    const isTestItem = (item: {
+      id?: string;
+      name?: string;
+      fullName?: string;
+      guardianName?: string;
+      email?: string;
+      phone?: string;
+      guardianPhone?: string;
+      title?: string;
+    }): boolean => {
+      if (!item) return false;
+      const id = (item.id || '').toLowerCase();
+      const name = (item.name || item.fullName || item.guardianName || item.title || '').toLowerCase();
+      const email = (item.email || '').toLowerCase();
+      const phone = (item.phone || item.guardianPhone || '').trim();
+
+      // ABSOLUTELY PROTECTED: Super Admin credentials and real administrative users
+      if (
+        id === 'user_admin_01' ||
+        email === 'admin@tutorhat.com' ||
+        email === 'mamuntv01980@gmail.com' ||
+        phone === '01752617360'
+      ) {
+        return false;
+      }
+
+      // Test identifier signatures
+      if (
+        id.startsWith('test_') ||
+        id.startsWith('test-') ||
+        id.startsWith('tut_live_verify') ||
+        id.startsWith('tut_e2e') ||
+        id.startsWith('req_e2e') ||
+        id.startsWith('app_e2e') ||
+        id.startsWith('job_e2e') ||
+        id.includes('_test_') ||
+        id.includes('demo')
+      ) {
+        return true;
+      }
+
+      // Test wording in names or titles
+      if (
+        name.includes('test') ||
+        name.includes('ডেমো') ||
+        name.includes('পরীক্ষা') ||
+        name.includes('verification') ||
+        name.includes('e2e') ||
+        name.includes('sample')
+      ) {
+        return true;
+      }
+
+      // Test domain emails
+      if (
+        email.endsWith('@example.com') ||
+        email.includes('test@') ||
+        email.includes('e2e@')
+      ) {
+        return true;
+      }
+
+      // Test phone signatures used during automated mock tests
+      if (
+        phone === '01700000000' || 
+        phone === '01800000000' || 
+        phone === '01711112222' || 
+        phone === '01912345678' || 
+        phone === '01812345678'
+      ) {
+        return true;
+      }
+
+      return false;
+    };
+
+    const testRequests = this.state.requests.filter(r => isTestItem({
+      id: r.id,
+      guardianName: r.guardianName,
+      phone: r.phone
+    }));
+    const realRequests = this.state.requests.filter(r => !testRequests.some(tr => tr.id === r.id));
+
+    const testTutors = this.state.tutors.filter(t => isTestItem({
+      id: t.id,
+      fullName: t.fullName,
+      phone: t.phone,
+      email: t.email
+    }));
+    const realTutors = this.state.tutors.filter(t => !testTutors.some(tt => tt.id === t.id));
+
+    const testJobs = this.state.jobs.filter(j => isTestItem({
+      id: j.id,
+      title: j.title
+    }));
+    const realJobs = this.state.jobs.filter(j => !testJobs.some(tj => tj.id === j.id));
+
+    const testApplications = this.state.applications.filter(a => 
+      isTestItem({ id: a.id }) ||
+      testTutors.some(t => t.id === a.tutorId) ||
+      testJobs.some(j => j.id === a.jobId)
+    );
+    const realApplications = this.state.applications.filter(a => !testApplications.some(ta => ta.id === a.id));
+
+    const testUsers = this.state.users.filter(u => u.role !== 'admin' && isTestItem({
+      id: u.id,
+      name: u.name,
+      phone: u.phone,
+      email: u.email
+    }));
+    const realUsers = this.state.users.filter(u => u.role === 'admin' || !testUsers.some(tu => tu.id === u.id));
+
+    return {
+      testRequests,
+      realRequests,
+      testTutors,
+      realTutors,
+      testJobs,
+      realJobs,
+      testApplications,
+      realApplications,
+      testUsers,
+      realUsers,
+      totalTestRecords: testRequests.length + testTutors.length + testJobs.length + testApplications.length + testUsers.length,
+      totalRealRecords: realRequests.length + realTutors.length + realJobs.length + realApplications.length + realUsers.length
+    };
+  }
+
+  // Safe purge: removes ONLY test records from Firestore and Local state, preserving 100% of real users
+  public async cleanOnlyTestAndDemoData(): Promise<{
+    deletedTestCount: number;
+    preservedRealCount: number;
+    details: {
+      requestsPurged: number;
+      tutorsPurged: number;
+      jobsPurged: number;
+      applicationsPurged: number;
+      usersPurged: number;
+    };
+  }> {
+    const identified = this.identifyTestData();
+
+    // 1. Purge test requests from Firestore
+    for (const req of identified.testRequests) {
+      await this.deleteDocFromFirestore('requests', req.id);
+    }
+
+    // 2. Purge test tutors from Firestore
+    for (const tut of identified.testTutors) {
+      await this.deleteDocFromFirestore('tutors', tut.id);
+    }
+
+    // 3. Purge test jobs from Firestore
+    for (const job of identified.testJobs) {
+      await this.deleteDocFromFirestore('jobs', job.id);
+    }
+
+    // 4. Purge test applications from Firestore
+    for (const app of identified.testApplications) {
+      await this.deleteDocFromFirestore('applications', app.id);
+    }
+
+    // 5. Purge test users from Firestore (Super Admin is strictly guarded)
+    for (const u of identified.testUsers) {
+      if (u.id !== 'user_admin_01' && u.email !== 'admin@tutorhat.com' && u.phone !== '01752617360') {
+        await this.deleteDocFromFirestore('users', u.id);
+      }
+    }
+
+    // Retain only genuine real records in local state
+    this.state = {
+      ...this.state,
+      requests: identified.realRequests,
+      tutors: identified.realTutors,
+      jobs: identified.realJobs,
+      applications: identified.realApplications,
+      users: identified.realUsers,
+      settings: { ...this.state.settings, isDemoDataEnabled: false }
+    };
+
+    this.saveState();
+    this.notify();
+
+    return {
+      deletedTestCount: identified.totalTestRecords,
+      preservedRealCount: identified.totalRealRecords,
+      details: {
+        requestsPurged: identified.testRequests.length,
+        tutorsPurged: identified.testTutors.length,
+        jobsPurged: identified.testJobs.length,
+        applicationsPurged: identified.testApplications.length,
+        usersPurged: identified.testUsers.length
+      }
+    };
+  }
+
   // Reset & Clear Demo Data (Section 43)
   public resetDemoData() {
     localStorage.removeItem(STORAGE_KEY);
@@ -2540,3 +2982,4 @@ class Store {
 }
 
 export const store = new Store();
+

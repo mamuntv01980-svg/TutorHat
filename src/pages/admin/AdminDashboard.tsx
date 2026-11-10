@@ -141,6 +141,7 @@ export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('requests');
   const [requestStatusFilter, setRequestStatusFilter] = useState<'all' | 'pending' | 'converted_to_job' | 'rejected'>('all');
   const [requestSubView, setRequestSubView] = useState<'requests' | 'tutors'>('requests');
+  const [isCleaningTestData, setIsCleaningTestData] = useState(false);
 
   // Format request / application submission age in Bengali (Requirement: এতদিন আগে গার্ডিয়ান রিকোয়েস্ট করেছেন)
   const formatRequestAge = (isoString?: string) => {
@@ -413,13 +414,13 @@ export const AdminDashboard: React.FC = () => {
   const [settingsSavedToast, setSettingsSavedToast] = useState(false);
 
   // Official Payment Accounts State (bKash & Nagad)
-  const [editBkash, setEditBkash] = useState(settings.paymentAccounts?.bkashNumber || '01610582917');
+  const [editBkash, setEditBkash] = useState(settings.paymentAccounts?.bkashNumber || '01752617360');
   const [editBkashType, setEditBkashType] = useState(settings.paymentAccounts?.bkashType || 'personal');
-  const [editNagad, setEditNagad] = useState(settings.paymentAccounts?.nagadNumber || '01610582917');
+  const [editNagad, setEditNagad] = useState(settings.paymentAccounts?.nagadNumber || '01752617360');
   const [editNagadType, setEditNagadType] = useState(settings.paymentAccounts?.nagadType || 'personal');
   const [editPaymentInstructions, setEditPaymentInstructions] = useState(
     settings.paymentAccounts?.paymentInstructionsBn || 
-    'বিকাশ অথবা নগদ "Send Money" (সেন্ড মানি) অপশন ব্যবহার করে 01610582917 নম্বরে পেমেন্ট করুন। রেফারেন্সে আপনার নাম বা জব আইডি দিন।'
+    'বিকাশ অথবা নগদ "Send Money" (সেন্ড মানি) অপশন ব্যবহার করে 01752617360 নম্বরে পেমেন্ট করুন। রেফারেন্সে আপনার নাম বা জব আইডি দিন।'
   );
 
   // Admin Security & Strong Password Management State
@@ -1993,9 +1994,21 @@ export const AdminDashboard: React.FC = () => {
                 })
                 .map((tutor) => (
                 <div key={tutor.id} className="py-4 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-bold text-sm text-blue-950">{tutor.fullName}</span>
+                  <div className="flex items-start sm:items-center gap-3">
+                    {tutor.photo ? (
+                      <img
+                        src={tutor.photo}
+                        alt={tutor.fullName}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-xs ring-1 ring-slate-200 shrink-0"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-blue-900 text-amber-300 font-extrabold flex items-center justify-center shrink-0 text-base shadow-xs">
+                        {tutor.fullName ? tutor.fullName.trim().charAt(0).toUpperCase() : 'T'}
+                      </div>
+                    )}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-sm text-blue-950">{tutor.fullName}</span>
                       <span className="font-mono text-[11px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">{tutor.id}</span>
                       
                       <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
@@ -2079,6 +2092,7 @@ export const AdminDashboard: React.FC = () => {
                       <p className="text-[11px] text-rose-600 font-medium">Rejection Note: {tutor.rejectionReason}</p>
                     )}
                   </div>
+                </div>
 
                   <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                     {/* Primary Button: Review KYC Docs */}
@@ -2385,18 +2399,50 @@ export const AdminDashboard: React.FC = () => {
                       {/* Actions: Direct One-Click Approval */}
                       <div className="flex items-center gap-2 shrink-0 flex-wrap lg:flex-col lg:items-end">
                         {req.status === 'pending' && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const newJob = store.convertRequestToJob(req.id);
-                              const count = newJob ? store.notifyMatchingTutorsForJob(newJob) : 0;
-                              showAdminToast(`✓ অভিভাবক রিকোয়েস্ট [${req.id}] সফলভাবে অনুমোদন ও লাইভ জবে প্রকাশিত হয়েছে! ${count > 0 ? `(${count} জন টিউটরকে অটো-নোটিফিকেশন পাঠানো হয়েছে)` : ''}`);
-                            }}
-                            className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold cursor-pointer transition shadow-md text-xs flex items-center gap-1.5 active:scale-95"
-                          >
-                            <CheckCircle2 className="w-4 h-4 text-white" />
-                            <span>✓ অনুমোদন ও লাইভ সার্কুলার প্রকাশ</span>
-                          </button>
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newJob = store.convertRequestToJob(req.id);
+                                const count = newJob ? store.notifyMatchingTutorsForJob(newJob) : 0;
+                                showAdminToast(`✓ অভিভাবক রিকোয়েস্ট [${req.id}] সফলভাবে অনুমোদন ও লাইভ জবে প্রকাশিত হয়েছে! ${count > 0 ? `(${count} জন টিউটরকে অটো-নোটিফিকেশন পাঠানো হয়েছে)` : ''}`);
+                              }}
+                              className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold cursor-pointer transition shadow-md text-xs flex items-center gap-1.5 active:scale-95"
+                            >
+                              <CheckCircle2 className="w-4 h-4 text-white" />
+                              <span>✓ অনুমোদন ও লাইভ সার্কুলার প্রকাশ</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                store.updateTuitionRequest(req.id, { status: 'rejected' });
+                                showAdminToast(`✗ অভিভাবক রিকোয়েস্ট [${req.id}] বাতিল (Rejected) করা হয়েছে। এটি লাইভ বোর্ডে প্রকাশ পাবে না।`);
+                              }}
+                              className="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-300 rounded-xl font-bold cursor-pointer transition text-xs flex items-center gap-1 active:scale-95"
+                              title="Reject Request (আবেদন বাতিল করুন)"
+                            >
+                              <X className="w-4 h-4 text-rose-600" />
+                              <span>রিজেক্ট</span>
+                            </button>
+                          </div>
+                        )}
+                        {req.status === 'rejected' && (
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-rose-600 bg-rose-50 border border-rose-200 px-2.5 py-1 rounded-lg">
+                              ✗ বাতিলকৃত (লাইভ বোর্ডে অপ্রকাশিত)
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const newJob = store.convertRequestToJob(req.id);
+                                const count = newJob ? store.notifyMatchingTutorsForJob(newJob) : 0;
+                                showAdminToast(`✓ পূর্বে বাতিলকৃত রিকোয়েস্ট [${req.id}] পুনঃঅনুমোদন ও লাইভ জবে প্রকাশিত হয়েছে!`);
+                              }}
+                              className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg font-bold text-[11px] cursor-pointer"
+                            >
+                              পুনঃঅনুমোদন করুন
+                            </button>
+                          </div>
                         )}
 
                         <div className="flex items-center gap-1.5">
@@ -2654,15 +2700,17 @@ export const AdminDashboard: React.FC = () => {
                 {storeState.applications.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (window.confirm('আপনি কি সমস্ত আবেদনপত্র খালি করতে চান?')) {
-                        store.clearAllRequestsAndApplications();
-                        showAdminToast('✓ সমস্ত আবেদনপত্র সফলভাবে মুছে ফেলা হয়েছে।');
+                    onClick={async () => {
+                      const count = await store.cleanTestApplications();
+                      if (count > 0) {
+                        showAdminToast(`✓ ${count} টি টেস্ট আবেদনপত্র সফলভাবে মুছে ফেলা হয়েছে। বাস্তব আবেদনপত্র সংরক্ষিত।`);
+                      } else {
+                        showAdminToast('✓ সিস্টেমে কোনো টেস্ট আবেদনপত্র নেই। সকল আবেদনপত্র বাস্তব টিউটরদের।');
                       }
                     }}
                     className="text-xs text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1 rounded-full font-semibold cursor-pointer transition"
                   >
-                    সকল আবেদন মুছুন
+                    টেস্ট আবেদন মুছুন
                   </button>
                 )}
               </div>
@@ -3437,19 +3485,19 @@ export const AdminDashboard: React.FC = () => {
                   অফিসিয়াল পেমেন্ট গ্রহণ একাউন্টস:
                 </span>
                 <p className="text-[11px] text-slate-600">
-                  বিকাশ (Personal): <strong className="font-mono text-pink-700 font-bold">{settings.paymentAccounts?.bkashNumber || '01610582917'}</strong> · নগদ (Personal): <strong className="font-mono text-amber-700 font-bold">{settings.paymentAccounts?.nagadNumber || '01610582917'}</strong>
+                  বিকাশ (Personal): <strong className="font-mono text-pink-700 font-bold">{settings.paymentAccounts?.bkashNumber || '01752617360'}</strong> · নগদ (Personal): <strong className="font-mono text-amber-700 font-bold">{settings.paymentAccounts?.nagadNumber || '01752617360'}</strong>
                 </p>
                 <p className="text-[10px] text-slate-500">
-                  {settings.paymentAccounts?.paymentInstructionsBn || 'বিকাশ অথবা নগদ Send Money অপশন ব্যবহার করে 01610582917 নম্বরে পেমেন্ট করতে হবে।'}
+                  {settings.paymentAccounts?.paymentInstructionsBn || 'বিকাশ অথবা নগদ Send Money অপশন ব্যবহার করে 01752617360 নম্বরে পেমেন্ট করতে হবে।'}
                 </p>
               </div>
               <button
                 type="button"
-                onClick={() => handleCopyText(settings.paymentAccounts?.bkashNumber || '01610582917', 'bkash_manage')}
+                onClick={() => handleCopyText(settings.paymentAccounts?.bkashNumber || '01752617360', 'bkash_manage')}
                 className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 rounded-lg font-semibold text-[11px] flex items-center gap-1 shrink-0 cursor-pointer shadow-xs"
               >
                 <Copy className="w-3.5 h-3.5 text-pink-600" />
-                <span>{copiedField === 'bkash_manage' ? 'কপি হয়েছে!' : '01610582917 কপি করুন'}</span>
+                <span>{copiedField === 'bkash_manage' ? 'কপি হয়েছে!' : '01752617360 কপি করুন'}</span>
               </button>
             </div>
 
@@ -4269,7 +4317,7 @@ export const AdminDashboard: React.FC = () => {
                     required
                     value={editBkash}
                     onChange={e => setEditBkash(e.target.value)}
-                    placeholder="01610582917"
+                    placeholder="01752617360"
                     className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-mono font-bold text-xs tabular-nums text-slate-900"
                   />
                   <div className="flex items-center justify-between text-[11px] text-slate-500">
@@ -4307,7 +4355,7 @@ export const AdminDashboard: React.FC = () => {
                     required
                     value={editNagad}
                     onChange={e => setEditNagad(e.target.value)}
-                    placeholder="01610582917"
+                    placeholder="01752617360"
                     className="w-full p-2 bg-slate-50 border border-slate-200 rounded-lg font-mono font-bold text-xs tabular-nums text-slate-900"
                   />
                   <div className="flex items-center justify-between text-[11px] text-slate-500">
@@ -4594,24 +4642,136 @@ export const AdminDashboard: React.FC = () => {
                         alert('Demo data reloaded.');
                       }
                     }}
-                    className="px-3.5 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold cursor-pointer"
+                    className="px-3.5 py-2 text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl font-semibold cursor-pointer text-xs sm:text-sm"
                   >
                     Reload Demo Seeds
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      if (confirm('Clear all demo data and start with empty database?')) {
+                      if (confirm('সতর্কতা: এটি সম্পূর্ণ ডেটাবেস খালি করবে। আপনি কি নিশ্চিত?')) {
                         store.clearDemoData();
                         alert('Database cleared.');
                       }
                     }}
-                    className="px-3.5 py-2 text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl font-semibold cursor-pointer"
+                    className="px-3.5 py-2 text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded-xl font-semibold cursor-pointer text-xs sm:text-sm"
                   >
                     Clear All Data
                   </button>
                 </div>
               </div>
+
+              {/* Safe Test Data Management & Production Isolation Card */}
+              {(() => {
+                const testStats = store.identifyTestData();
+                return (
+                  <div className="mt-6 p-5 bg-gradient-to-br from-amber-50 to-orange-50/60 border border-amber-200 rounded-2xl shadow-xs">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="p-1.5 bg-amber-100 text-amber-800 rounded-lg text-lg">🛡️</span>
+                          <h4 className="font-bold text-slate-900 text-base">
+                            টেস্ট ও ডেমো ডেটা ক্লিনার (Safe Production Data Purge)
+                          </h4>
+                          <span className="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded-full border border-emerald-200">
+                            বাস্তব ইউজার সুরক্ষিত
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-600 mt-1 max-w-2xl">
+                          এই টুলের মাধ্যমে শুধুমাত্র ডেভেলপার ও সিস্টেম টেস্টিংয়ের জন্য তৈরি হওয়া ডেমো/টেস্ট ডেটা শনাক্ত ও স্থায়ীভাবে মুছে ফেলা যায়।
+                          কোনো বাস্তব অভিভাবক, টিউটর বা চাকরির তথ্য কখনোই মুছে যাবে না।
+                        </p>
+                      </div>
+
+                      <button
+                        type="button"
+                        disabled={isCleaningTestData || testStats.totalTestRecords === 0}
+                        onClick={async () => {
+                          if (testStats.totalTestRecords === 0) {
+                            showAdminToast('✓ সিস্টেমে কোনো টেস্ট বা ডেমো রেকর্ড নেই।');
+                            return;
+                          }
+                          const confirmed = window.confirm(
+                            `আপনি কি শনাক্তকৃত ${testStats.totalTestRecords} টি টেস্ট ও ডেমো রেকর্ড ক্লাউড ফায়ারবেস ও লোকাল স্টোরেজ থেকে মুছে ফেলতে চান?\n\n` +
+                            `• টেস্ট রিকোয়েস্ট: ${testStats.testRequests.length} টি\n` +
+                            `• টেস্ট টিউটর: ${testStats.testTutors.length} টি\n` +
+                            `• টেস্ট জব: ${testStats.testJobs.length} টি\n` +
+                            `• টেস্ট আবেদন: ${testStats.testApplications.length} টি\n\n` +
+                            `নিশ্চিতকরণ: সমস্ত বাস্তব অভিভাবক ও টিউটরের তথ্য (${testStats.totalRealRecords} টি রেকর্ড) অক্ষত থাকবে।`
+                          );
+                          if (!confirmed) return;
+
+                          setIsCleaningTestData(true);
+                          try {
+                            const result = await store.cleanOnlyTestAndDemoData();
+                            showAdminToast(`✓ সফলভাবে ${result.deletedTestCount} টি টেস্ট রেকর্ড মুছে ফেলা হয়েছে। বাস্তব ইউজার সংরক্ষিত।`);
+                          } catch (err) {
+                            showAdminToast('⚠️ টেস্ট ডেটা পরিষ্কার করতে সমস্যা হয়েছে।');
+                          } finally {
+                            setIsCleaningTestData(false);
+                          }
+                        }}
+                        className={`px-4 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 cursor-pointer transition ${
+                          testStats.totalTestRecords > 0
+                            ? 'bg-rose-600 hover:bg-rose-700 text-white shadow-xs'
+                            : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                        }`}
+                      >
+                        {isCleaningTestData ? (
+                          <>
+                            <span className="animate-spin text-sm">⏳</span>
+                            <span>পরিষ্কার করা হচ্ছে...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>🗑️</span>
+                            <span>শুধুমাত্র টেস্ট ডেটা মুছুন ({testStats.totalTestRecords})</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-4 pt-3 border-t border-amber-200/80 text-xs">
+                      <div className="bg-white/80 p-2.5 rounded-xl border border-amber-100">
+                        <span className="text-slate-500 block">টেস্ট রিকোয়েস্ট:</span>
+                        <span className="font-bold text-slate-800 text-sm">
+                          {testStats.testRequests.length} টি
+                        </span>
+                        <span className="text-[10px] text-emerald-600 block">
+                          (বাস্তব: {testStats.realRequests.length})
+                        </span>
+                      </div>
+                      <div className="bg-white/80 p-2.5 rounded-xl border border-amber-100">
+                        <span className="text-slate-500 block">টেস্ট টিউটর:</span>
+                        <span className="font-bold text-slate-800 text-sm">
+                          {testStats.testTutors.length} টি
+                        </span>
+                        <span className="text-[10px] text-emerald-600 block">
+                          (বাস্তব: {testStats.realTutors.length})
+                        </span>
+                      </div>
+                      <div className="bg-white/80 p-2.5 rounded-xl border border-amber-100">
+                        <span className="text-slate-500 block">টেস্ট জব:</span>
+                        <span className="font-bold text-slate-800 text-sm">
+                          {testStats.testJobs.length} টি
+                        </span>
+                        <span className="text-[10px] text-emerald-600 block">
+                          (বাস্তব: {testStats.realJobs.length})
+                        </span>
+                      </div>
+                      <div className="bg-white/80 p-2.5 rounded-xl border border-amber-100">
+                        <span className="text-slate-500 block">টেস্ট আবেদন:</span>
+                        <span className="font-bold text-slate-800 text-sm">
+                          {testStats.testApplications.length} টি
+                        </span>
+                        <span className="text-[10px] text-emerald-600 block">
+                          (বাস্তব: {testStats.realApplications.length})
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
             </form>
           </div>

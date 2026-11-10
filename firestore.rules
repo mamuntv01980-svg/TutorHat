@@ -1,0 +1,143 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helper functions
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isBootstrappedAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'mamuntv01980@gmail.com' ||
+        request.auth.token.email == 'admin@tutorhat.com'
+      );
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Admins collection: managed by bootstrapped admin
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isBootstrappedAdmin();
+    }
+
+    // 1. Guardian Requests Collection
+    // Guardians can submit request from any phone/device even before login
+    // Admin has full view and management
+    match /requests/{requestId} {
+      allow read: if true;
+      allow create: if isValidId(requestId) &&
+        request.resource.data.guardianName is string &&
+        request.resource.data.guardianPhone is string;
+      allow update, delete: if isAdmin() || (
+        isSignedIn() && resource.data.guardianId == request.auth.uid
+      );
+    }
+
+    // 2. Tutors Collection (Profiles & CVs)
+    // Tutors can register and edit their CV; Admin verifies and manages; public can browse
+    match /tutors/{tutorId} {
+      allow read: if true;
+      allow create: if isValidId(tutorId) &&
+        request.resource.data.fullName is string &&
+        request.resource.data.phone is string;
+      allow update: if isAdmin() || (
+        isSignedIn() && resource.data.userId == request.auth.uid
+      ) || (
+        // Allow tutor self-update with matching tutor ID or phone
+        request.resource.data.id == tutorId
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 3. Tuition Jobs Collection (Job Circulars)
+    // Public can view live tuition jobs; Admin publishes and manages
+    match /jobs/{jobId} {
+      allow read: if true;
+      allow create: if isAdmin() || (
+        request.resource.data.title is string &&
+        request.resource.data.area is string
+      );
+      allow update, delete: if isAdmin();
+    }
+
+    // 4. Job Applications Collection
+    // Tutors can apply; Admin & Job Guardians can view; Admin can update status
+    match /applications/{applicationId} {
+      allow read: if true;
+      allow create: if isValidId(applicationId) &&
+        request.resource.data.jobId is string &&
+        request.resource.data.tutorId is string;
+      allow update: if isAdmin() || (
+        isSignedIn() && resource.data.tutorId == request.auth.uid
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 5. Users Collection
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isValidId(userId) && request.resource.data.name is string;
+      allow update: if isAdmin() || (isSignedIn() && request.auth.uid == userId) || (request.resource.data.id == userId);
+      allow delete: if isAdmin();
+    }
+
+    // 6. Settings & Demo Collections
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /demos/{demoId} {
+      allow read, write: if true;
+    }
+
+    match /confirmations/{confId} {
+      allow read, write: if true;
+    }
+
+    match /attendance/{attId} {
+      allow read, write: if true;
+    }
+
+    match /payments/{paymentId} {
+      allow read, write: if true;
+    }
+
+    match /certificates/{certId} {
+      allow read, write: if true;
+    }
+
+    match /reviews/{reviewId} {
+      allow read: if true;
+      allow create, update: if true;
+      allow delete: if isAdmin();
+    }
+
+    match /notifications/{notifId} {
+      allow read, write: if true;
+    }
+
+    match /chat_messages/{msgId} {
+      allow read, write: if true;
+    }
+
+    match /chat_conversations/{convId} {
+      allow read, write: if true;
+    }
+  }
+}

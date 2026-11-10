@@ -27,13 +27,56 @@ import {
   MADRASA_DIVISIONS
 } from '../../constants/bangladeshData';
 import { TutorCategoryType } from '../../types';
+import { TutorPhotoUpload } from '../../components/tutor/TutorPhotoUpload';
 
 export const TutorProfileEdit: React.FC = () => {
-  const { activeTutorProfile, storeState, navigateTo, language } = useApp();
+  const { activeTutorProfile, storeState, navigateTo, language, currentUser } = useApp();
 
-  const tutor = activeTutorProfile || storeState.tutors[0];
+  const currentUserTutor = storeState.tutors.find(t => t.userId === currentUser?.id);
+  const tutor = activeTutorProfile || currentUserTutor || storeState.tutors[0] || {
+    id: `tut_${Date.now()}`,
+    userId: currentUser?.id || 'guest',
+    fullName: currentUser?.name || 'Tutor',
+    photo: '',
+    gender: 'male',
+    phone: currentUser?.phone || '',
+    email: currentUser?.email || '',
+    currentAddress: '',
+    permanentAddress: '',
+    district: 'Dhaka',
+    area: 'Dhanmondi',
+    preferredAreas: [],
+    aboutMe: '',
+    university: '',
+    department: '',
+    programDegree: '',
+    admissionYear: '',
+    currentYearSemester: '',
+    institution: '',
+    ssc: { schoolOrCollege: '', gpa: '', passingYear: '' },
+    hsc: { schoolOrCollege: '', gpa: '', passingYear: '' },
+    teachingExperienceYears: 1,
+    teachingMethod: '',
+    preferredClasses: [],
+    preferredSubjects: [],
+    preferredMediums: [],
+    categories: [],
+    onlineTeaching: true,
+    homeTuition: true,
+    coachingGroupTuition: false,
+    availableDays: [],
+    availableTime: '',
+    expectedSalary: 5000,
+    preferredStudentGender: 'any',
+    preferredClassLevel: '',
+    verificationStatus: 'pending',
+    completionPercentage: 20,
+    rating: 5.0,
+    totalReviews: 0
+  };
 
   // Local state for all fields
+  const [photo, setPhoto] = useState(tutor.photo || '');
   const [fullName, setFullName] = useState(tutor.fullName);
   const [gender, setGender] = useState<'male' | 'female'>(tutor.gender || 'male');
   const [dateOfBirth, setDateOfBirth] = useState(tutor.dateOfBirth || '');
@@ -151,6 +194,7 @@ export const TutorProfileEdit: React.FC = () => {
 
     store.updateTutorProfile(tutor.id, {
       fullName,
+      photo,
       gender,
       dateOfBirth,
       phone,
@@ -209,6 +253,7 @@ export const TutorProfileEdit: React.FC = () => {
       // First save all current fields
       store.updateTutorProfile(tutor.id, {
         fullName,
+        photo,
         gender,
         dateOfBirth,
         phone,
@@ -313,6 +358,18 @@ export const TutorProfileEdit: React.FC = () => {
 
       <form onSubmit={handleSave} className="space-y-8">
         
+        {/* Profile Photo Upload, Live Preview, Replace & Delete */}
+        <TutorPhotoUpload
+          currentPhoto={photo}
+          tutorName={fullName || tutor.fullName}
+          onPhotoChanged={(newPhotoUrl) => {
+            setPhoto(newPhotoUrl);
+            if (tutor.id) {
+              store.updateTutorPhoto(tutor.id, newPhotoUrl);
+            }
+          }}
+        />
+
         {/* Section 1: Basic Information */}
         <div className="bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-xs space-y-4 text-xs">
           <h2 className="text-sm font-bold text-blue-950 uppercase tracking-wider pb-2 border-b border-slate-100">
