@@ -475,7 +475,7 @@ export const TutorDetailPage: React.FC = () => {
               </div>
               <div>
                 <span className="text-slate-400 block font-medium">{language === 'bn' ? 'উপলব্ধ বার:' : 'Available Days:'}</span>
-                <span className="text-slate-700">{tutor.availableDays.join(', ') || 'Any 3-4 days'}</span>
+                <span className="text-slate-700">{(Array.isArray(tutor.availableDays) && tutor.availableDays.length > 0) ? tutor.availableDays.join(', ') : 'Any 3-4 days'}</span>
               </div>
             </div>
 

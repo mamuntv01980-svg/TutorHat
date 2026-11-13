@@ -21,10 +21,6 @@
   "payments": [],
   "certificates": [],
   "reviews": [],
-  "referrals": [],
-  "activityLogs": [],
-  "conversations": [],
-  "chatMessages": [],
   "settings": {
     "siteName": "TutorHat",
     "tagline": "Smart Tutoring & Education Ecosystem Bangladesh",
@@ -53,5 +49,9 @@
     "adminAccountConfigured": true,
     "primaryAdminName": "Super Admin Mamun"
   },
-  "lastUpdated": "2026-10-29T13:00:00.000Z"
+  "lastUpdated": "2026-11-13T14:02:26.970Z",
+  "referrals": [],
+  "activityLogs": [],
+  "conversations": [],
+  "chatMessages": []
 }

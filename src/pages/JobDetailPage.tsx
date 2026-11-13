@@ -218,7 +218,7 @@ export const JobDetailPage: React.FC = () => {
             {language === 'bn' ? 'পাঠদানের বিষয়সমূহ' : 'Subjects Required'}
           </h3>
           <div className="flex flex-wrap gap-2">
-            {job.subjects.map((sub) => (
+            {(Array.isArray(job.subjects) && job.subjects.length > 0 ? job.subjects : ['সব বিষয়']).map((sub) => (
               <span key={sub} className="px-3 py-1 rounded-xl bg-blue-50 text-blue-900 text-xs font-semibold border border-blue-100">
                 {sub}
               </span>

@@ -72,10 +72,11 @@ export const RequestTutorPage: React.FC = () => {
     e.preventDefault();
 
     const guardianId = currentUser?.id || `user_guardian_${Date.now()}`;
-    const allSubjects = [...selectedSubjects];
+    const allSubjects = Array.isArray(selectedSubjects) ? [...selectedSubjects] : [];
     if (customSubjectText.trim() && !allSubjects.includes(customSubjectText.trim())) {
       allSubjects.push(customSubjectText.trim());
     }
+    const finalSubjects = allSubjects.length > 0 ? allSubjects : ['সব বিষয়'];
 
     // Combine custom notes into customRequirements
     const customNotes: string[] = [];
@@ -84,7 +85,7 @@ export const RequestTutorPage: React.FC = () => {
     if (customMediumText.trim()) customNotes.push(`কারিকুলাম: ${customMediumText.trim()}`);
     if (customScheduleText.trim()) customNotes.push(`শিডিউল: ${customScheduleText.trim()}`);
     if (customModeText.trim()) customNotes.push(`মোড: ${customModeText.trim()}`);
-    const finalCustomRequirements = customNotes.join(' | ');
+    const finalCustomRequirements = (Array.isArray(customNotes) ? customNotes : []).join(' | ');
 
     const finalClass = customClassText.trim() ? customClassText.trim() : studentClass;
     const finalMedium = customMediumText.trim() ? customMediumText.trim() : medium;
@@ -98,7 +99,7 @@ export const RequestTutorPage: React.FC = () => {
       studentClass: finalClass,
       studentGender,
       medium: finalMedium,
-      subjects: allSubjects,
+      subjects: finalSubjects,
       daysPerWeek: Number(daysPerWeek),
       preferredDays,
       preferredTime: customScheduleText.trim() ? `${preferredTime} (${customScheduleText.trim()})` : preferredTime,

@@ -1222,7 +1222,7 @@ export const RegisterPage: React.FC = () => {
                   <p><strong>University:</strong> {university} ({department})</p>
                   <p><strong>Present Address (বর্তমান ঠিকানা):</strong> {area}, {district}</p>
                   <p><strong>Expected Fee:</strong> ৳{expectedSalary}/month</p>
-                  <p><strong>Preferred Subjects:</strong> {preferredSubjects.join(', ')}</p>
+                  <p><strong>Preferred Subjects:</strong> {(Array.isArray(preferredSubjects) && preferredSubjects.length > 0) ? preferredSubjects.join(', ') : 'All Subjects'}</p>
                 </div>
 
                 <div className="pt-2">

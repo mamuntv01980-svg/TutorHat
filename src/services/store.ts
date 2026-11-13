@@ -62,11 +62,11 @@ const DEFAULT_SETTINGS: SystemSettings = {
   jobAutoApprove: false,
   isDemoDataEnabled: false,
   paymentAccounts: {
-    bkashNumber: '01752617360',
+    bkashNumber: '01610582917',
     bkashType: 'personal',
-    nagadNumber: '01752617360',
+    nagadNumber: '01610582917',
     nagadType: 'personal',
-    paymentInstructionsBn: 'বিকাশ অথবা নগদ "Send Money" (সেন্ড মানি) অপশন ব্যবহার করে 01752617360 নম্বরে পেমেন্ট করুন। রেফারেন্সে আপনার নাম বা জব আইডি দিন।'
+    paymentInstructionsBn: 'বিকাশ অথবা নগদ "Send Money" (সেন্ড মানি) অপশন ব্যবহার করে 01610582917 নম্বরে পেমেন্ট করুন। রেফারেন্সে আপনার নাম বা জব আইডি দিন।'
   },
   adminSecurity: {
     requireStrongPassword: false,
@@ -254,6 +254,18 @@ class Store {
   private listeners: Set<() => void> = new Set();
 
   private isFirestoreInitialized = false;
+  private firestoreSynced: Record<string, boolean> = {
+    requests: false,
+    tutors: false,
+    jobs: false,
+    applications: false,
+    users: false,
+    demos: false,
+    confirmations: false,
+    payments: false,
+    certificates: false,
+    reviews: false
+  };
 
   constructor() {
     this.state = this.loadState();
@@ -262,12 +274,12 @@ class Store {
     this.saveState();
 
     if (typeof window !== 'undefined') {
-      // 1. Initialize real-time Firebase Firestore synchronization
+      // 1. Initialize real-time Firebase Firestore synchronization (Source of Truth)
       this.initFirestoreSync();
 
-      // 2. Dual-sync with Express server for backwards compatibility (with generous 8s timeout)
+      // 2. Sync server fallback only if Firestore has not yet delivered data
       this.syncWithServer();
-      setInterval(() => this.syncWithServer(), 10000);
+      setInterval(() => this.syncWithServer(), 15000);
       window.addEventListener('focus', () => this.syncWithServer());
     }
   }
@@ -280,7 +292,6 @@ class Store {
     testConnection().then((connected) => {
       console.log('[Store] Firebase Firestore status:', connected ? 'Connected' : 'Offline/Initial');
       this.setupRealtimeListeners();
-      this.autoMigrateDataIfEmpty();
     }).catch((err) => {
       console.warn('[Store] Firestore connection check:', err);
       this.setupRealtimeListeners();
@@ -291,7 +302,26 @@ class Store {
     try {
       // 1. Live Guardian Tuition Requests (Real-time to Admin from all devices)
       onSnapshot(collection(db, 'requests'), (snapshot) => {
-        const firestoreReqs = snapshot.docs.map(d => d.data() as TuitionRequest);
+        const firestoreReqs = snapshot.docs.map(d => {
+          const data = d.data() as any;
+          return {
+            ...data,
+            id: d.id || data.id,
+            subjects: Array.isArray(data.subjects) ? data.subjects : [],
+            preferredDays: Array.isArray(data.preferredDays) ? data.preferredDays : [],
+            customSubjects: Array.isArray(data.customSubjects) ? data.customSubjects : [],
+            guardianName: data.guardianName || 'Guardian',
+            phone: data.phone || data.guardianPhone || '',
+            studentClass: data.studentClass || 'Class 9',
+            medium: data.medium || 'Bangla Medium',
+            area: data.area || 'Dhanmondi',
+            location: data.location || data.area || 'Dhaka',
+            monthlyBudget: typeof data.monthlyBudget === 'number' ? data.monthlyBudget : (Number(data.monthlyBudget) || 0),
+            status: data.status || 'pending',
+            createdAt: data.createdAt || new Date().toISOString()
+          } as TuitionRequest;
+        });
+        this.firestoreSynced.requests = true;
         this.state.requests = firestoreReqs.sort((a, b) => 
           new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
         );
@@ -301,7 +331,23 @@ class Store {
 
       // 2. Live Tutor Profiles & CVs
       onSnapshot(collection(db, 'tutors'), (snapshot) => {
-        const firestoreTutors = snapshot.docs.map(d => d.data() as TutorProfile);
+        const firestoreTutors = snapshot.docs.map(d => {
+          const data = d.data() as any;
+          return {
+            ...data,
+            id: d.id || data.id,
+            preferredSubjects: Array.isArray(data.preferredSubjects) ? data.preferredSubjects : [],
+            preferredClasses: Array.isArray(data.preferredClasses) ? data.preferredClasses : [],
+            preferredMediums: Array.isArray(data.preferredMediums) ? data.preferredMediums : [],
+            preferredAreas: Array.isArray(data.preferredAreas) ? data.preferredAreas : [],
+            categories: Array.isArray(data.categories) ? data.categories : [],
+            availableDays: Array.isArray(data.availableDays) ? data.availableDays : [],
+            customSubjects: Array.isArray(data.customSubjects) ? data.customSubjects : [],
+            customClasses: Array.isArray(data.customClasses) ? data.customClasses : [],
+            customMediums: Array.isArray(data.customMediums) ? data.customMediums : []
+          } as TutorProfile;
+        });
+        this.firestoreSynced.tutors = true;
         this.state.tutors = firestoreTutors;
         this.saveState();
         this.notify();
@@ -309,7 +355,22 @@ class Store {
 
       // 3. Live Tuition Jobs
       onSnapshot(collection(db, 'jobs'), (snapshot) => {
-        const firestoreJobs = snapshot.docs.map(d => d.data() as TuitionJob);
+        const firestoreJobs = snapshot.docs.map(d => {
+          const data = d.data() as any;
+          return {
+            ...data,
+            id: d.id || data.id,
+            subjects: Array.isArray(data.subjects) ? data.subjects : [],
+            classLevel: data.classLevel || 'Class 9',
+            medium: data.medium || 'Bangla Medium',
+            area: data.area || 'Dhanmondi',
+            district: data.district || 'Dhaka',
+            status: data.status || 'published',
+            salary: typeof data.salary === 'number' ? data.salary : (Number(data.salary) || 0),
+            totalApplications: typeof data.totalApplications === 'number' ? data.totalApplications : 0
+          } as TuitionJob;
+        });
+        this.firestoreSynced.jobs = true;
         this.state.jobs = firestoreJobs;
         this.saveState();
         this.notify();
@@ -317,7 +378,14 @@ class Store {
 
       // 4. Live Job Applications
       onSnapshot(collection(db, 'applications'), (snapshot) => {
-        const firestoreApps = snapshot.docs.map(d => d.data() as JobApplication);
+        const firestoreApps = snapshot.docs.map(d => {
+          const data = d.data() as any;
+          return {
+            ...data,
+            id: d.id || data.id
+          } as JobApplication;
+        });
+        this.firestoreSynced.applications = true;
         this.state.applications = firestoreApps;
         this.saveState();
         this.notify();
@@ -327,58 +395,57 @@ class Store {
       onSnapshot(collection(db, 'users'), (snapshot) => {
         const firestoreUsers = snapshot.docs.map(d => d.data() as User);
         const hasAdmin = firestoreUsers.some(u => u.role === 'admin');
+        this.firestoreSynced.users = true;
         this.state.users = hasAdmin ? firestoreUsers : [INITIAL_USERS[0], ...firestoreUsers];
         this.saveState();
         this.notify();
       }, (err) => console.warn('[Firestore] users listener note:', err));
+
+      // 6. Live Demos, Confirmations, Payments, Certificates, Reviews
+      onSnapshot(collection(db, 'demos'), (snapshot) => {
+        this.firestoreSynced.demos = true;
+        this.state.demos = snapshot.docs.map(d => ({ ...(d.data() as any), id: d.id } as DemoClass));
+        this.saveState();
+        this.notify();
+      }, () => {});
+
+      onSnapshot(collection(db, 'confirmations'), (snapshot) => {
+        this.firestoreSynced.confirmations = true;
+        this.state.confirmations = snapshot.docs.map(d => ({ ...(d.data() as any), id: d.id } as TuitionConfirmation));
+        this.saveState();
+        this.notify();
+      }, () => {});
+
+      onSnapshot(collection(db, 'payments'), (snapshot) => {
+        this.firestoreSynced.payments = true;
+        this.state.payments = snapshot.docs.map(d => ({ ...(d.data() as any), id: d.id } as PaymentRecord));
+        this.saveState();
+        this.notify();
+      }, () => {});
+
+      onSnapshot(collection(db, 'certificates'), (snapshot) => {
+        this.firestoreSynced.certificates = true;
+        this.state.certificates = snapshot.docs.map(d => ({ ...(d.data() as any), id: d.id } as CertificateRecord));
+        this.saveState();
+        this.notify();
+      }, () => {});
+
+      onSnapshot(collection(db, 'reviews'), (snapshot) => {
+        this.firestoreSynced.reviews = true;
+        this.state.reviews = snapshot.docs.map(d => ({ ...(d.data() as any), id: d.id } as ReviewRecord));
+        this.saveState();
+        this.notify();
+      }, () => {});
     } catch (err) {
       console.warn('[Firestore] setupRealtimeListeners failed:', err);
-    }
-  }
-
-  // Automatic one-time migration from local/server state so existing data is never lost
-  private async autoMigrateDataIfEmpty(): Promise<void> {
-    try {
-      const reqSnap = await getDocs(collection(db, 'requests'));
-      if (reqSnap.empty && this.state.requests.length > 0) {
-        console.log('[Firestore Migration] Migrating existing requests to Firestore...');
-        for (const req of this.state.requests) {
-          await this.saveDocToFirestore('requests', req.id, req);
-        }
-      }
-
-      const tutorSnap = await getDocs(collection(db, 'tutors'));
-      if (tutorSnap.empty && this.state.tutors.length > 0) {
-        console.log('[Firestore Migration] Migrating existing tutors to Firestore...');
-        for (const tutor of this.state.tutors) {
-          await this.saveDocToFirestore('tutors', tutor.id, tutor);
-        }
-      }
-
-      const jobSnap = await getDocs(collection(db, 'jobs'));
-      if (jobSnap.empty && this.state.jobs.length > 0) {
-        console.log('[Firestore Migration] Migrating existing jobs to Firestore...');
-        for (const job of this.state.jobs) {
-          await this.saveDocToFirestore('jobs', job.id, job);
-        }
-      }
-
-      const userSnap = await getDocs(collection(db, 'users'));
-      if (userSnap.empty && this.state.users.length > 0) {
-        console.log('[Firestore Migration] Migrating existing users to Firestore...');
-        for (const user of this.state.users) {
-          await this.saveDocToFirestore('users', user.id, user);
-        }
-      }
-    } catch (err) {
-      console.warn('[Firestore Migration] Auto-migrate check note:', err);
     }
   }
 
   // Firestore Document Write & Delete Helpers
   public async saveDocToFirestore(col: string, id: string, data: any): Promise<void> {
     try {
-      await setDoc(doc(db, col, id), data);
+      const sanitized = JSON.parse(JSON.stringify(data));
+      await setDoc(doc(db, col, id), sanitized);
     } catch (err) {
       console.warn(`[Firestore] Failed writing document ${col}/${id}:`, err);
     }
@@ -410,36 +477,33 @@ class Store {
           const s = json.data;
           let changed = false;
 
-          if (Array.isArray(s.requests) && s.requests.length > 0) {
-            // Only update if local is empty or server has newer items
-            if (this.state.requests.length === 0) {
-              this.state.requests = s.requests;
-              changed = true;
-            }
+          // Only use server fallback if Firestore listener has NOT synced yet (prevents resurrecting deleted docs)
+          if (!this.firestoreSynced.requests && Array.isArray(s.requests) && s.requests.length > 0 && this.state.requests.length === 0) {
+            this.state.requests = s.requests.map((r: any) => ({
+              ...r,
+              subjects: Array.isArray(r.subjects) ? r.subjects : [],
+              preferredDays: Array.isArray(r.preferredDays) ? r.preferredDays : []
+            }));
+            changed = true;
           }
-          if (Array.isArray(s.jobs) && s.jobs.length > 0) {
-            if (this.state.jobs.length === 0) {
-              this.state.jobs = s.jobs;
-              changed = true;
-            }
+          if (!this.firestoreSynced.jobs && Array.isArray(s.jobs) && s.jobs.length > 0 && this.state.jobs.length === 0) {
+            this.state.jobs = s.jobs.map((j: any) => ({
+              ...j,
+              subjects: Array.isArray(j.subjects) ? j.subjects : []
+            }));
+            changed = true;
           }
-          if (Array.isArray(s.applications) && s.applications.length > 0) {
-            if (this.state.applications.length === 0) {
-              this.state.applications = s.applications;
-              changed = true;
-            }
+          if (!this.firestoreSynced.applications && Array.isArray(s.applications) && s.applications.length > 0 && this.state.applications.length === 0) {
+            this.state.applications = s.applications;
+            changed = true;
           }
-          if (Array.isArray(s.tutors) && s.tutors.length > 0) {
-            if (this.state.tutors.length === 0) {
-              this.state.tutors = s.tutors;
-              changed = true;
-            }
+          if (!this.firestoreSynced.tutors && Array.isArray(s.tutors) && s.tutors.length > 0 && this.state.tutors.length === 0) {
+            this.state.tutors = s.tutors;
+            changed = true;
           }
-          if (Array.isArray(s.users) && s.users.length > 0) {
-            if (this.state.users.length === 0) {
-              this.state.users = s.users;
-              changed = true;
-            }
+          if (!this.firestoreSynced.users && Array.isArray(s.users) && s.users.length > 0 && this.state.users.length === 0) {
+            this.state.users = s.users;
+            changed = true;
           }
           if (s.adminSecurity) {
             this.state.settings = {
@@ -494,7 +558,9 @@ class Store {
             },
             paymentAccounts: {
               ...DEFAULT_SETTINGS.paymentAccounts,
-              ...(parsed.settings?.paymentAccounts || {})
+              ...(parsed.settings?.paymentAccounts || {}),
+              bkashNumber: '01610582917',
+              nagadNumber: '01610582917'
             },
             adminSecurity: {
               ...DEFAULT_SETTINGS.adminSecurity,
@@ -505,9 +571,23 @@ class Store {
           return {
             settings: loadedSettings,
             users: finalUsers,
-            tutors: cleanTutors,
-            requests: Array.isArray(parsed.requests) ? parsed.requests : [],
-            jobs: Array.isArray(parsed.jobs) ? parsed.jobs : [],
+            tutors: cleanTutors.map((t: TutorProfile) => ({
+              ...t,
+              preferredSubjects: Array.isArray(t.preferredSubjects) ? t.preferredSubjects : [],
+              preferredClasses: Array.isArray(t.preferredClasses) ? t.preferredClasses : [],
+              preferredMediums: Array.isArray(t.preferredMediums) ? t.preferredMediums : [],
+              availableDays: Array.isArray(t.availableDays) ? t.availableDays : []
+            })),
+            requests: (Array.isArray(parsed.requests) ? parsed.requests : []).map((r: TuitionRequest) => ({
+              ...r,
+              subjects: Array.isArray(r.subjects) ? r.subjects : [],
+              preferredDays: Array.isArray(r.preferredDays) ? r.preferredDays : [],
+              customSubjects: Array.isArray(r.customSubjects) ? r.customSubjects : []
+            })),
+            jobs: (Array.isArray(parsed.jobs) ? parsed.jobs : []).map((j: TuitionJob) => ({
+              ...j,
+              subjects: Array.isArray(j.subjects) ? j.subjects : []
+            })),
             applications: Array.isArray(parsed.applications) ? parsed.applications : [],
             _freshCleanV10: true,
             demos: Array.isArray(parsed.demos) ? parsed.demos : [],
@@ -741,17 +821,53 @@ class Store {
 
   public deleteGuardian(guardianId: string, performedBy: string = 'Admin') {
     const guardian = this.getUserById(guardianId);
+    const linkedRequests = this.state.requests.filter(r => r.guardianId === guardianId);
+    const linkedJobs = this.state.jobs.filter(j => j.guardianId === guardianId);
+    const linkedDemos = this.state.demos.filter(d => d.guardianId === guardianId);
+    const linkedConfs = this.state.confirmations.filter(c => c.guardianId === guardianId);
+    const linkedAtt = this.state.attendance.filter(a => a.guardianId === guardianId);
+    const linkedPays = this.state.payments.filter(p => p.guardianId === guardianId);
+    const linkedRevs = this.state.reviews.filter(r => r.guardianId === guardianId);
+    const linkedConvs = this.state.conversations.filter(c => c.guardianId === guardianId);
+
+    // Cascade-delete linked requests & their converted live jobs first
+    linkedRequests.forEach(req => this.deleteTuitionRequest(req.id, performedBy));
+    linkedJobs.forEach(job => {
+      if (this.state.jobs.some(j => j.id === job.id)) {
+        this.deleteJob(job.id, performedBy);
+      }
+    });
+
     this.state.users = this.state.users.filter(u => u.id !== guardianId);
-    this.state.requests = this.state.requests.filter(r => r.guardianId !== guardianId);
     this.state.demos = this.state.demos.filter(d => d.guardianId !== guardianId);
     this.state.confirmations = this.state.confirmations.filter(c => c.guardianId !== guardianId);
     this.state.attendance = this.state.attendance.filter(a => a.guardianId !== guardianId);
     this.state.payments = this.state.payments.filter(p => p.guardianId !== guardianId);
     this.state.reviews = this.state.reviews.filter(r => r.guardianId !== guardianId);
-    this.logActivity('GUARDIAN_DELETED', `Deleted guardian ${guardian?.name || guardianId}`, performedBy);
+    linkedConvs.forEach(c => this.deleteConversation(c.id));
+
+    this.logActivity('GUARDIAN_DELETED', `Deleted guardian ${guardian?.name || guardianId} and all linked records`, performedBy);
     this.saveState();
 
     this.deleteDocFromFirestore('users', guardianId);
+    linkedDemos.forEach(d => {
+      this.deleteDocFromFirestore('demos', d.id);
+      fetch(`/api/demos/${d.id}`, { method: 'DELETE' }).catch(() => {});
+    });
+    linkedConfs.forEach(c => {
+      this.deleteDocFromFirestore('confirmations', c.id);
+      fetch(`/api/confirmations/${c.id}`, { method: 'DELETE' }).catch(() => {});
+    });
+    linkedAtt.forEach(a => this.deleteDocFromFirestore('attendance', a.id));
+    linkedPays.forEach(p => {
+      this.deleteDocFromFirestore('payments', p.id);
+      fetch(`/api/payments/${p.id}`, { method: 'DELETE' }).catch(() => {});
+    });
+    linkedRevs.forEach(r => {
+      this.deleteDocFromFirestore('reviews', r.id);
+      fetch(`/api/reviews/${r.id}`, { method: 'DELETE' }).catch(() => {});
+    });
+
     fetch(`/api/users/${guardianId}`, { method: 'DELETE' }).catch(() => {});
   }
 
@@ -770,9 +886,39 @@ class Store {
 
   public deleteTutor(tutorId: string, performedBy: string = 'Admin') {
     const tutor = this.getTutorById(tutorId);
-    if (!tutor) return;
+    const linkedApps = this.state.applications.filter(a => a.tutorId === tutorId);
+    const linkedDemos = this.state.demos.filter(d => d.tutorId === tutorId);
+    const linkedConfs = this.state.confirmations.filter(c => c.tutorId === tutorId);
+    const linkedAtt = this.state.attendance.filter(a => a.tutorId === tutorId);
+    const linkedPays = this.state.payments.filter(p => p.tutorId === tutorId);
+    const linkedRevs = this.state.reviews.filter(r => r.tutorId === tutorId);
+    const linkedCerts = this.state.certificates.filter(c => c.tutorId === tutorId);
+    const linkedConvs = this.state.conversations.filter(c => c.tutorId === tutorId);
+
+    // Update jobs that had applications from this tutor or had this tutor assigned
+    const affectedJobs: TuitionJob[] = [];
+    this.state.jobs = this.state.jobs.map(j => {
+      const appCountForTutor = linkedApps.filter(a => a.jobId === j.id).length;
+      const isAssigned = j.assignedTutorId === tutorId;
+      if (appCountForTutor > 0 || isAssigned) {
+        const updatedJob: TuitionJob = {
+          ...j,
+          totalApplications: Math.max(0, (j.totalApplications || 0) - appCountForTutor),
+          ...(isAssigned ? {
+            status: 'published',
+            assignedTutorId: undefined,
+            assignedTutorName: undefined,
+            assignedDate: undefined
+          } : {})
+        };
+        affectedJobs.push(updatedJob);
+        return updatedJob;
+      }
+      return j;
+    });
+
     this.state.tutors = this.state.tutors.filter(t => t.id !== tutorId);
-    if (tutor.userId) {
+    if (tutor?.userId) {
       this.state.users = this.state.users.filter(u => u.id !== tutor.userId);
     }
     this.state.applications = this.state.applications.filter(a => a.tutorId !== tutorId);
@@ -782,18 +928,48 @@ class Store {
     this.state.payments = this.state.payments.filter(p => p.tutorId !== tutorId);
     this.state.reviews = this.state.reviews.filter(r => r.tutorId !== tutorId);
     this.state.certificates = this.state.certificates.filter(c => c.tutorId !== tutorId);
-    this.logActivity('TUTOR_DELETED', `Deleted tutor ${tutor.fullName} (${tutorId})`, performedBy);
+    linkedConvs.forEach(c => this.deleteConversation(c.id));
+
+    this.logActivity('TUTOR_DELETED', `Deleted tutor ${tutor?.fullName || tutorId} (${tutorId}) and all linked records`, performedBy);
     this.saveState();
 
+    // Cascade delete from Firestore & Express
     this.deleteDocFromFirestore('tutors', tutorId);
-    if (tutor.userId) {
-      this.deleteDocFromFirestore('users', tutor.userId);
-    }
-
     fetch(`/api/tutors/${tutorId}`, { method: 'DELETE' }).catch(() => {});
-    if (tutor.userId) {
+
+    if (tutor?.userId) {
+      this.deleteDocFromFirestore('users', tutor.userId);
       fetch(`/api/users/${tutor.userId}`, { method: 'DELETE' }).catch(() => {});
     }
+
+    linkedApps.forEach(a => {
+      this.deleteDocFromFirestore('applications', a.id);
+      fetch(`/api/applications/${a.id}`, { method: 'DELETE' }).catch(() => {});
+    });
+    linkedDemos.forEach(d => {
+      this.deleteDocFromFirestore('demos', d.id);
+      fetch(`/api/demos/${d.id}`, { method: 'DELETE' }).catch(() => {});
+    });
+    linkedConfs.forEach(c => {
+      this.deleteDocFromFirestore('confirmations', c.id);
+      fetch(`/api/confirmations/${c.id}`, { method: 'DELETE' }).catch(() => {});
+    });
+    linkedAtt.forEach(a => this.deleteDocFromFirestore('attendance', a.id));
+    linkedPays.forEach(p => {
+      this.deleteDocFromFirestore('payments', p.id);
+      fetch(`/api/payments/${p.id}`, { method: 'DELETE' }).catch(() => {});
+    });
+    linkedRevs.forEach(r => {
+      this.deleteDocFromFirestore('reviews', r.id);
+      fetch(`/api/reviews/${r.id}`, { method: 'DELETE' }).catch(() => {});
+    });
+    linkedCerts.forEach(c => {
+      this.deleteDocFromFirestore('certificates', c.id);
+      fetch(`/api/certificates/${c.id}`, { method: 'DELETE' }).catch(() => {});
+    });
+    affectedJobs.forEach(j => {
+      this.saveDocToFirestore('jobs', j.id, j);
+    });
   }
 
   public updateTutorProfile(tutorId: string, updates: Partial<TutorProfile>) {
@@ -899,6 +1075,7 @@ class Store {
 
     const updatedTutor = this.getTutorById(tutorId);
     if (updatedTutor) {
+      this.saveDocToFirestore('tutors', tutorId, updatedTutor);
       fetch('/api/tutors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -943,6 +1120,16 @@ class Store {
 
     this.logActivity('TUTOR_KYC_SUBMITTED', `Tutor ${tutor.fullName} submitted KYC documents for admin review.`);
     this.saveState();
+
+    const updatedTutor = this.getTutorById(tutorId);
+    if (updatedTutor) {
+      this.saveDocToFirestore('tutors', tutorId, updatedTutor);
+      fetch('/api/tutors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedTutor)
+      }).catch(() => {});
+    }
   }
 
   public reviewTutorKycVerification(
@@ -997,6 +1184,16 @@ class Store {
 
     this.logActivity('TUTOR_KYC_REVIEWED', `Tutor ${tutor.fullName} KYC set to ${params.status} (Score: ${trustScore}%) by ${params.performedBy || 'Admin'}`);
     this.saveState();
+
+    const updatedTutor = this.getTutorById(tutorId);
+    if (updatedTutor) {
+      this.saveDocToFirestore('tutors', tutorId, updatedTutor);
+      fetch('/api/tutors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedTutor)
+      }).catch(() => {});
+    }
   }
 
   // Tuition Requests (Guardians)
@@ -1044,8 +1241,8 @@ class Store {
       category: req.medium.includes('English Medium') ? 'English Medium' : req.medium.includes('Quran') ? 'Arabic & Quran' : 'Bangla Medium',
       classLevel: req.studentClass,
       medium: req.medium,
-      subjects: req.subjects,
-      district: req.location,
+      subjects: Array.isArray(req.subjects) && req.subjects.length > 0 ? req.subjects : ['সব বিষয়'],
+      district: req.location || 'Dhaka',
       area: req.area,
       daysPerWeek: req.daysPerWeek,
       preferredTime: req.preferredTime,
@@ -1117,8 +1314,9 @@ class Store {
   }
 
   public deleteTuitionRequest(requestId: string, performedBy: string = 'Admin') {
+    const linkedJobs = this.state.jobs.filter(j => j.guardianRequestId === requestId);
     this.state.requests = this.state.requests.filter(r => r.id !== requestId);
-    this.logActivity('REQUEST_DELETED', `Deleted tuition requirement ${requestId}`, performedBy);
+    this.logActivity('REQUEST_DELETED', `Deleted tuition requirement ${requestId} (and ${linkedJobs.length} linked live jobs)`, performedBy);
     this.saveState();
 
     this.deleteDocFromFirestore('requests', requestId);
@@ -1126,6 +1324,11 @@ class Store {
     fetch(`/api/requests/${requestId}`, {
       method: 'DELETE'
     }).catch(() => {});
+
+    // Cascade-delete any live job circulars created from this guardian request
+    linkedJobs.forEach(job => {
+      this.deleteJob(job.id, performedBy, true);
+    });
   }
 
   // Automatic Notification to matching tutors based on their preferred areas and location (Requirement 3)
@@ -1199,6 +1402,12 @@ class Store {
     }
 
     this.saveState();
+    this.saveDocToFirestore('jobs', newJob.id, newJob);
+    fetch('/api/jobs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newJob)
+    }).catch(() => {});
     return newJob;
   }
 
@@ -1212,26 +1421,82 @@ class Store {
     }
 
     this.saveState();
+    if (updatedJob) {
+      this.saveDocToFirestore('jobs', jobId, updatedJob);
+      fetch(`/api/jobs/${jobId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      }).catch(() => {});
+    }
   }
 
   public updateJobStatus(jobId: string, status: TuitionJobStatus) {
     this.state.jobs = this.state.jobs.map(j => j.id === jobId ? { ...j, status } : j);
     this.logActivity('JOB_STATUS_UPDATED', `Set job ${jobId} status to ${status}`);
 
-    if (status === 'published') {
-      const updatedJob = this.state.jobs.find(j => j.id === jobId);
-      if (updatedJob) {
-        this.notifyMatchingTutorsForJob(updatedJob);
-      }
+    const updatedJob = this.state.jobs.find(j => j.id === jobId);
+    if (status === 'published' && updatedJob) {
+      this.notifyMatchingTutorsForJob(updatedJob);
     }
 
     this.saveState();
+    if (updatedJob) {
+      this.saveDocToFirestore('jobs', jobId, updatedJob);
+      fetch(`/api/jobs/${jobId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      }).catch(() => {});
+    }
   }
 
-  public deleteJob(jobId: string, performedBy: string = 'Admin') {
+  public deleteJob(jobId: string, performedBy: string = 'Admin', skipRequestUpdate: boolean = false) {
+    const targetJob = this.state.jobs.find(j => j.id === jobId);
+    const linkedApps = this.state.applications.filter(a => a.jobId === jobId);
+    const linkedDemos = this.state.demos.filter(d => d.jobId === jobId);
+    const linkedConfs = this.state.confirmations.filter(c => c.jobId === jobId);
+    const linkedConvs = this.state.conversations.filter(c => c.jobId === jobId);
+
     this.state.jobs = this.state.jobs.filter(j => j.id !== jobId);
-    this.logActivity('JOB_DELETED', `Deleted tuition job ${jobId}`, performedBy);
+    this.state.applications = this.state.applications.filter(a => a.jobId !== jobId);
+    this.state.demos = this.state.demos.filter(d => d.jobId !== jobId);
+    this.state.confirmations = this.state.confirmations.filter(c => c.jobId !== jobId);
+    linkedConvs.forEach(c => this.deleteConversation(c.id));
+
+    // If this job was created from a guardian request and the request wasn't itself deleted, mark it rejected/unlisted
+    if (!skipRequestUpdate && targetJob?.guardianRequestId) {
+      const linkedReq = this.state.requests.find(r => r.id === targetJob.guardianRequestId);
+      if (linkedReq && linkedReq.status === 'converted_to_job') {
+        const updatedReq: TuitionRequest = { ...linkedReq, status: 'rejected' };
+        this.state.requests = this.state.requests.map(r => r.id === linkedReq.id ? updatedReq : r);
+        this.saveDocToFirestore('requests', linkedReq.id, updatedReq);
+        fetch(`/api/requests/${linkedReq.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'rejected' })
+        }).catch(() => {});
+      }
+    }
+
+    this.logActivity('JOB_DELETED', `Deleted tuition job ${jobId} (and ${linkedApps.length} linked applications)`, performedBy);
     this.saveState();
+
+    this.deleteDocFromFirestore('jobs', jobId);
+    fetch(`/api/jobs/${jobId}`, { method: 'DELETE' }).catch(() => {});
+
+    linkedApps.forEach(a => {
+      this.deleteDocFromFirestore('applications', a.id);
+      fetch(`/api/applications/${a.id}`, { method: 'DELETE' }).catch(() => {});
+    });
+    linkedDemos.forEach(d => {
+      this.deleteDocFromFirestore('demos', d.id);
+      fetch(`/api/demos/${d.id}`, { method: 'DELETE' }).catch(() => {});
+    });
+    linkedConfs.forEach(c => {
+      this.deleteDocFromFirestore('confirmations', c.id);
+      fetch(`/api/confirmations/${c.id}`, { method: 'DELETE' }).catch(() => {});
+    });
   }
 
   public assignTutorToJob(jobId: string, tutorId: string, tutorName: string) {
@@ -1260,6 +1525,21 @@ class Store {
 
     this.logActivity('JOB_TUTOR_ASSIGNED', `Assigned ${tutorName} to job ${jobId}`);
     this.saveState();
+
+    const updatedJob = this.state.jobs.find(j => j.id === jobId);
+    if (updatedJob) {
+      this.saveDocToFirestore('jobs', jobId, updatedJob);
+      fetch(`/api/jobs/${jobId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'filled',
+          assignedTutorId: tutorId,
+          assignedTutorName: tutorName,
+          assignedDate: updatedJob.assignedDate
+        })
+      }).catch(() => {});
+    }
   }
 
   // Applications
@@ -1494,6 +1774,7 @@ class Store {
 
     this.logActivity('DEMO_SCHEDULED', `Scheduled demo for tutor ${demoData.tutorName} on ${demoData.date}`);
     this.saveState();
+    this.saveDocToFirestore('demos', newDemo.id, newDemo);
     return newDemo;
   }
 
@@ -1580,6 +1861,9 @@ class Store {
 
     this.logActivity('DEMO_RESCHEDULED', `Demo ${demoId} rescheduled to ${newDate} at ${newTime}`);
     this.saveState();
+    if (targetDemo) {
+      this.saveDocToFirestore('demos', demoId, targetDemo);
+    }
   }
 
   public cancelDemo(demoId: string, reason?: string) {
@@ -1609,6 +1893,9 @@ class Store {
 
     this.logActivity('DEMO_CANCELLED', `Demo ${demoId} was cancelled`);
     this.saveState();
+    if (targetDemo) {
+      this.saveDocToFirestore('demos', demoId, targetDemo);
+    }
   }
 
   public deleteDemoClass(demoId: string, performedBy: string = 'Admin') {
@@ -1617,6 +1904,7 @@ class Store {
     this.logActivity('DEMO_DELETED', `Deleted demo class ${demoId} (${demo?.tutorName || ''})`, performedBy);
     this.saveState();
 
+    this.deleteDocFromFirestore('demos', demoId);
     fetch(`/api/demos/${demoId}`, { method: 'DELETE' }).catch(() => {});
   }
 
@@ -1657,6 +1945,9 @@ class Store {
 
     this.logActivity('DEMO_RESULT_UPDATED', `Demo ${demoId} result updated to ${result}`);
     this.saveState();
+    if (targetDemo) {
+      this.saveDocToFirestore('demos', demoId, targetDemo);
+    }
   }
 
   public hireTutorAfterDemo(
@@ -1713,6 +2004,7 @@ class Store {
 
     this.logActivity('TUITION_CONFIRMED', `Confirmed tuition ${id} between tutor ${confirmationData.tutorName} and guardian ${confirmationData.guardianName}`);
     this.saveState();
+    this.saveDocToFirestore('confirmations', newConf.id, newConf);
     return newConf;
   }
 
@@ -1746,6 +2038,9 @@ class Store {
 
     this.logActivity('CONFIRMATION_STATUS_UPDATED', `Tuition ${confId} status updated to ${status}`);
     this.saveState();
+    if (target) {
+      this.saveDocToFirestore('confirmations', confId, target);
+    }
   }
 
   public deleteTuitionConfirmation(confId: string, performedBy: string = 'Admin') {
@@ -1754,6 +2049,7 @@ class Store {
     this.logActivity('CONFIRMATION_DELETED', `Deleted tuition confirmation ${confId} (${conf?.jobTitle || ''})`, performedBy);
     this.saveState();
 
+    this.deleteDocFromFirestore('confirmations', confId);
     fetch(`/api/confirmations/${confId}`, { method: 'DELETE' }).catch(() => {});
   }
 
@@ -1770,12 +2066,15 @@ class Store {
     this.state.attendance = [newRecord, ...this.state.attendance];
 
     // Increment completed classes count in TuitionConfirmation if matching
+    const updatedConfs: TuitionConfirmation[] = [];
     this.state.confirmations = this.state.confirmations.map(c => {
       if ((c.jobId && c.jobId === record.jobId) || (c.tutorId === record.tutorId && c.guardianId === record.guardianId)) {
-        return {
+        const updated = {
           ...c,
           completedClassesCount: (c.completedClassesCount || 0) + 1
         };
+        updatedConfs.push(updated);
+        return updated;
       }
       return c;
     });
@@ -1790,6 +2089,7 @@ class Store {
 
     this.logActivity('ATTENDANCE_LOGGED', `Tutor ${record.tutorName} logged attendance for ${record.studentName} on ${record.date}`);
     this.saveState();
+    updatedConfs.forEach(c => this.saveDocToFirestore('confirmations', c.id, c));
     return newRecord;
   }
 
@@ -1826,6 +2126,7 @@ class Store {
     this.state.attendance = this.state.attendance.filter(a => a.id !== attendanceId);
     this.logActivity('ATTENDANCE_DELETED', `Attendance ${attendanceId} removed`);
     this.saveState();
+    this.deleteDocFromFirestore('attendance', attendanceId);
   }
 
   // Feature 5: Tuition Salary & Fee Payment Receipts
@@ -1871,7 +2172,9 @@ class Store {
       p => p.tutorId === paymentData.tutorId && p.guardianId === paymentData.guardianId && p.month === paymentData.month && p.status === 'due'
     );
 
+    let replacedDueId: string | null = null;
     if (existingDueIndex >= 0) {
+      replacedDueId = this.state.payments[existingDueIndex].id;
       this.state.payments[existingDueIndex] = newPayment;
     } else {
       this.state.payments = [newPayment, ...this.state.payments];
@@ -1896,6 +2199,10 @@ class Store {
 
     this.logActivity('PAYMENT_RECORDED', `Payment of ৳${paymentData.amount} recorded by ${paymentData.guardianName} for tutor ${paymentData.tutorName} (Receipt: ${receiptNumber})`);
     this.saveState();
+    if (replacedDueId && replacedDueId !== newPayment.id) {
+      this.deleteDocFromFirestore('payments', replacedDueId);
+    }
+    this.saveDocToFirestore('payments', newPayment.id, newPayment);
     return newPayment;
   }
 
@@ -1919,6 +2226,9 @@ class Store {
 
     this.logActivity('PAYMENT_ACKNOWLEDGED', `Payment ${paymentId} acknowledged by tutor`);
     this.saveState();
+    if (target) {
+      this.saveDocToFirestore('payments', paymentId, target);
+    }
   }
 
   public requestSalaryInvoice(tutorId: string, guardianId: string, jobId: string, month: string, amount: number, notes?: string): PaymentRecord {
@@ -1951,6 +2261,7 @@ class Store {
 
     this.logActivity('INVOICE_REQUESTED', `Tutor ${tutor?.fullName} sent salary invoice of ৳${amount} for ${month} to guardian`);
     this.saveState();
+    this.saveDocToFirestore('payments', newBill.id, newBill);
     return newBill;
   }
 
@@ -1964,12 +2275,23 @@ class Store {
     const newRecord: PaymentRecord = { ...record, id };
     this.state.payments = [newRecord, ...this.state.payments];
     this.saveState();
+    this.saveDocToFirestore('payments', newRecord.id, newRecord);
     return newRecord;
   }
 
   public updatePaymentStatus(paymentId: string, status: PaymentRecord['status']) {
-    this.state.payments = this.state.payments.map(p => p.id === paymentId ? { ...p, status } : p);
+    let updated: PaymentRecord | undefined;
+    this.state.payments = this.state.payments.map(p => {
+      if (p.id === paymentId) {
+        updated = { ...p, status };
+        return updated;
+      }
+      return p;
+    });
     this.saveState();
+    if (updated) {
+      this.saveDocToFirestore('payments', paymentId, updated);
+    }
   }
 
   public deletePayment(paymentId: string, performedBy: string = 'Admin') {
@@ -1977,6 +2299,7 @@ class Store {
     this.logActivity('PAYMENT_DELETED', `Deleted payment record ${paymentId}`, performedBy);
     this.saveState();
 
+    this.deleteDocFromFirestore('payments', paymentId);
     fetch(`/api/payments/${paymentId}`, { method: 'DELETE' }).catch(() => {});
   }
 
@@ -2005,6 +2328,7 @@ class Store {
 
     this.logActivity('CERTIFICATE_ISSUED', `Issued certificate "${cert.title}" to tutor ${cert.tutorName} (${verificationCode})`);
     this.saveState();
+    this.saveDocToFirestore('certificates', newCert.id, newCert);
     return newCert;
   }
 
@@ -2015,13 +2339,18 @@ class Store {
   }
 
   public updateCertificateStatus(certId: string, status: 'active' | 'revoked') {
+    let updated: CertificateRecord | undefined;
     this.state.certificates = this.state.certificates.map(c => {
       if (c.id === certId) {
-        return { ...c, status };
+        updated = { ...c, status };
+        return updated;
       }
       return c;
     });
     this.saveState();
+    if (updated) {
+      this.saveDocToFirestore('certificates', certId, updated);
+    }
   }
 
   public deleteCertificate(certId: string, performedBy: string = 'Admin') {
@@ -2029,6 +2358,7 @@ class Store {
     this.logActivity('CERTIFICATE_DELETED', `Deleted certificate ${certId}`, performedBy);
     this.saveState();
 
+    this.deleteDocFromFirestore('certificates', certId);
     fetch(`/api/certificates/${certId}`, { method: 'DELETE' }).catch(() => {});
   }
 
@@ -2069,6 +2399,7 @@ class Store {
 
     this.logActivity('REVIEW_SUBMITTED', `Review submitted by ${review.guardianName} for tutor ${tutor?.fullName || review.tutorId}`);
     this.saveState();
+    this.saveDocToFirestore('reviews', newReview.id, newReview);
     return newReview;
   }
 
@@ -2113,6 +2444,9 @@ class Store {
 
     this.logActivity('REVIEW_MODERATED', `Review ${reviewId} was ${status}`);
     this.saveState();
+    if (target) {
+      this.saveDocToFirestore('reviews', reviewId, target);
+    }
   }
 
   public replyToReview(reviewId: string, replyText: string, tutorName?: string) {
@@ -2122,9 +2456,10 @@ class Store {
     const tutor = this.getTutorById(review.tutorId);
     const resolvedName = tutorName || tutor?.fullName || 'শিক্ষক';
 
+    let updatedReview: ReviewRecord | undefined;
     this.state.reviews = this.state.reviews.map(r => {
       if (r.id === reviewId) {
-        return {
+        updatedReview = {
           ...r,
           tutorReply: {
             tutorName: resolvedName,
@@ -2132,6 +2467,7 @@ class Store {
             repliedAt: new Date().toISOString().split('T')[0]
           }
         };
+        return updatedReview;
       }
       return r;
     });
@@ -2146,19 +2482,27 @@ class Store {
 
     this.logActivity('REVIEW_REPLIED', `Tutor replied to review ${reviewId}`);
     this.saveState();
+    if (updatedReview) {
+      this.saveDocToFirestore('reviews', reviewId, updatedReview);
+    }
   }
 
   public markReviewHelpful(reviewId: string) {
+    let updated: ReviewRecord | undefined;
     this.state.reviews = this.state.reviews.map(r => {
       if (r.id === reviewId) {
-        return {
+        updated = {
           ...r,
           helpfulCount: (r.helpfulCount || 0) + 1
         };
+        return updated;
       }
       return r;
     });
     this.saveState();
+    if (updated) {
+      this.saveDocToFirestore('reviews', reviewId, updated);
+    }
   }
 
   public deleteReview(reviewId: string) {
@@ -2178,6 +2522,8 @@ class Store {
 
     this.logActivity('REVIEW_DELETED', `Deleted review ${reviewId}`);
     this.saveState();
+
+    this.deleteDocFromFirestore('reviews', reviewId);
   }
 
   // Notice Board (Section 35)
@@ -2202,6 +2548,7 @@ class Store {
   public deleteNotice(noticeId: string) {
     this.state.notices = this.state.notices.filter(n => n.id !== noticeId);
     this.saveState();
+    this.deleteDocFromFirestore('notices', noticeId);
   }
 
   public getPublishedNotices(category?: string): NoticeItem[] {
@@ -2240,6 +2587,13 @@ class Store {
     this.saveState();
   }
 
+  public deleteContactMessage(msgId: string, performedBy: string = 'Admin') {
+    this.state.messages = this.state.messages.filter(m => m.id !== msgId);
+    this.logActivity('CONTACT_MESSAGE_DELETED', `Deleted contact message ${msgId}`, performedBy);
+    this.saveState();
+    this.deleteDocFromFirestore('messages', msgId);
+  }
+
   // Referral System (Section 36)
   public createReferral(data: Omit<ReferralRecord, 'id' | 'date'>): ReferralRecord {
     const id = `ref_${Date.now()}`;
@@ -2276,6 +2630,7 @@ class Store {
     this.state.referrals = this.state.referrals.filter(r => r.id !== referralId);
     this.logActivity('REFERRAL_DELETED', `Deleted referral record ${referralId}`, performedBy);
     this.saveState();
+    this.deleteDocFromFirestore('referrals', referralId);
   }
 
   // Admin Notes (Section 34, 42)
@@ -2391,6 +2746,7 @@ class Store {
     this.state.users = this.state.users.filter(u => u.id !== adminId);
     this.logActivity('ADMIN_DELETED', `Revoked and deleted admin account ${target.name} (${target.email})`, performedBy);
     this.saveState();
+    this.deleteDocFromFirestore('users', adminId);
     return { success: true, message: `Admin ${target.name} deleted successfully.` };
   }
 
@@ -2426,7 +2782,7 @@ class Store {
       csv += headers.map(sanitize).join(',') + '\n';
       this.state.jobs.forEach(j => {
         csv += [
-          j.id, j.title, j.classLevel, j.medium, j.subjects.join('; '), j.district, j.area,
+          j.id, j.title, j.classLevel, j.medium, (Array.isArray(j.subjects) ? j.subjects : []).join('; '), j.district, j.area,
           j.salary, j.daysPerWeek, j.teachingType, j.tutorGenderPreference, j.status,
           j.totalApplications, j.assignedTutorName || '', j.deadline, j.postedDate
         ].map(sanitize).join(',') + '\n';
@@ -2465,7 +2821,7 @@ class Store {
       csv += headers.map(sanitize).join(',') + '\n';
       this.state.requests.forEach(r => {
         csv += [
-          r.id, r.guardianName, r.phone, r.studentClass, r.medium, r.subjects.join('; '), r.area, r.monthlyBudget, r.status, r.createdAt
+          r.id, r.guardianName, r.phone, r.studentClass, r.medium, (Array.isArray(r.subjects) ? r.subjects : []).join('; '), r.area, r.monthlyBudget, r.status, r.createdAt
         ].map(sanitize).join(',') + '\n';
       });
       csv += '\n';
@@ -2677,10 +3033,13 @@ class Store {
   }
 
   public deleteConversation(conversationId: string) {
+    const msgsToDelete = this.state.chatMessages.filter(m => m.conversationId === conversationId);
     this.state.conversations = this.state.conversations.filter(c => c.id !== conversationId);
     this.state.chatMessages = this.state.chatMessages.filter(m => m.conversationId !== conversationId);
     this.logActivity('CONVERSATION_DELETED', `Conversation ${conversationId} deleted by admin`);
     this.saveState();
+    this.deleteDocFromFirestore('chat_conversations', conversationId);
+    msgsToDelete.forEach(m => this.deleteDocFromFirestore('chat_messages', m.id));
   }
 
   public getUnreadChatCountForUser(userId: string): number {
@@ -2749,6 +3108,7 @@ class Store {
     this.state.progressReports = this.state.progressReports.filter(r => r.id !== reportId);
     this.logActivity('PROGRESS_REPORT_DELETED', `Progress report ${reportId} deleted`);
     this.saveState();
+    this.deleteDocFromFirestore('progress_reports', reportId);
   }
 
   // Test & Demo Data Isolation & Safe Cleanup (Audited for Production)
@@ -2956,12 +3316,39 @@ class Store {
     this.notify();
   }
 
-  public clearDemoData() {
-    // Keep admin, clear sample items
-    const adminUser = this.state.users.find(u => u.role === 'admin') || INITIAL_USERS[0];
+  public async clearDemoData() {
+    // Delete all non-admin records from Firestore as well as local state
+    const nonAdminUsers = this.state.users.filter(
+      u => u.role !== 'admin' && u.id !== 'user_admin_01' && u.email !== 'admin@tutorhat.com' && u.phone !== '01752617360'
+    );
+    const deletePromises: Promise<void>[] = [
+      ...nonAdminUsers.map(u => this.deleteDocFromFirestore('users', u.id)),
+      ...this.state.tutors.map(t => this.deleteDocFromFirestore('tutors', t.id)),
+      ...this.state.requests.map(r => this.deleteDocFromFirestore('requests', r.id)),
+      ...this.state.jobs.map(j => this.deleteDocFromFirestore('jobs', j.id)),
+      ...this.state.applications.map(a => this.deleteDocFromFirestore('applications', a.id)),
+      ...this.state.demos.map(d => this.deleteDocFromFirestore('demos', d.id)),
+      ...this.state.confirmations.map(c => this.deleteDocFromFirestore('confirmations', c.id)),
+      ...this.state.attendance.map(a => this.deleteDocFromFirestore('attendance', a.id)),
+      ...this.state.payments.map(p => this.deleteDocFromFirestore('payments', p.id)),
+      ...this.state.certificates.map(c => this.deleteDocFromFirestore('certificates', c.id)),
+      ...this.state.reviews.map(r => this.deleteDocFromFirestore('reviews', r.id)),
+      ...this.state.notifications.map(n => this.deleteDocFromFirestore('notifications', n.id)),
+      ...this.state.messages.map(m => this.deleteDocFromFirestore('messages', m.id)),
+      ...this.state.referrals.map(r => this.deleteDocFromFirestore('referrals', r.id)),
+      ...this.state.notices.map(n => this.deleteDocFromFirestore('notices', n.id)),
+      ...this.state.progressReports.map(p => this.deleteDocFromFirestore('progress_reports', p.id)),
+      ...this.state.conversations.map(c => this.deleteDocFromFirestore('chat_conversations', c.id)),
+      ...this.state.chatMessages.map(m => this.deleteDocFromFirestore('chat_messages', m.id)),
+    ];
+
+    // Keep admins, clear all sample/application data
+    const adminUsers = this.state.users.filter(
+      u => u.role === 'admin' || u.id === 'user_admin_01' || u.email === 'admin@tutorhat.com'
+    );
     this.state = {
       ...this.state,
-      users: [adminUser],
+      users: adminUsers.length > 0 ? adminUsers : [INITIAL_USERS[0]],
       tutors: [],
       requests: [],
       jobs: [],
@@ -2975,9 +3362,17 @@ class Store {
       notifications: [],
       messages: [],
       referrals: [],
+      notices: [],
+      progressReports: [],
+      conversations: [],
+      chatMessages: [],
       settings: { ...this.state.settings, isDemoDataEnabled: false }
     };
     this.saveState();
+    this.notify();
+
+    await Promise.allSettled(deletePromises);
+    await fetch('/api/reset-demo', { method: 'POST' }).catch(() => {});
   }
 }
 

@@ -166,8 +166,17 @@ async function startServer() {
     db.jobs = [];
     db.applications = [];
     db.tutors = [];
+    db.demos = [];
+    db.confirmations = [];
+    db.attendance = [];
+    db.payments = [];
+    db.certificates = [];
+    db.reviews = [];
+    db.users = (db.users || []).filter(
+      (u: any) => u.role === 'admin' || u.id === 'user_admin_01' || u.email === 'admin@tutorhat.com' || u.phone === '01752617360'
+    );
     saveDb(db);
-    res.json({ success: true, message: 'All demo requests, jobs, applications, and tutors wiped cleanly.' });
+    res.json({ success: true, message: 'All non-admin requests, jobs, applications, tutors, and related records wiped cleanly.' });
   });
 
   // 3. Guardian Tuition Requests
@@ -223,9 +232,16 @@ async function startServer() {
   app.delete('/api/requests/:id', (req: Request, res: Response) => {
     const db = loadDb();
     const { id } = req.params;
-    db.requests = db.requests.filter(r => r.id !== id);
+    const linkedJobIds = (db.jobs || []).filter(j => j.guardianRequestId === id).map(j => j.id);
+    db.requests = (db.requests || []).filter(r => r.id !== id);
+    if (linkedJobIds.length > 0) {
+      db.jobs = (db.jobs || []).filter(j => j.guardianRequestId !== id);
+      db.applications = (db.applications || []).filter(a => !linkedJobIds.includes(a.jobId));
+      db.demos = (db.demos || []).filter(d => !linkedJobIds.includes(d.jobId));
+      db.confirmations = (db.confirmations || []).filter(c => !linkedJobIds.includes(c.jobId));
+    }
     saveDb(db);
-    res.json({ success: true, message: `Request ${id} deleted` });
+    res.json({ success: true, message: `Request ${id} and ${linkedJobIds.length} linked job(s) deleted` });
   });
 
   // 4. Tutor Profiles & CV Registrations
@@ -271,9 +287,42 @@ async function startServer() {
   app.delete('/api/tutors/:id', (req: Request, res: Response) => {
     const db = loadDb();
     const { id } = req.params;
-    db.tutors = db.tutors.filter(t => t.id !== id);
+    const targetTutor = (db.tutors || []).find(t => t.id === id);
+    const tutorApps = (db.applications || []).filter(a => a.tutorId === id);
+
+    db.tutors = (db.tutors || []).filter(t => t.id !== id);
+    if (targetTutor?.userId) {
+      db.users = (db.users || []).filter(u => u.id !== targetTutor.userId);
+    }
+    db.applications = (db.applications || []).filter(a => a.tutorId !== id);
+    db.demos = (db.demos || []).filter(d => d.tutorId !== id);
+    db.confirmations = (db.confirmations || []).filter(c => c.tutorId !== id);
+    db.attendance = (db.attendance || []).filter(a => a.tutorId !== id);
+    db.payments = (db.payments || []).filter(p => p.tutorId !== id);
+    db.reviews = (db.reviews || []).filter(r => r.tutorId !== id);
+    db.certificates = (db.certificates || []).filter(c => c.tutorId !== id);
+
+    db.jobs = (db.jobs || []).map(j => {
+      const removedApps = tutorApps.filter(a => a.jobId === j.id).length;
+      const wasAssigned = j.assignedTutorId === id;
+      if (removedApps > 0 || wasAssigned) {
+        const nextJob = {
+          ...j,
+          totalApplications: Math.max(0, (j.totalApplications || 0) - removedApps)
+        };
+        if (wasAssigned) {
+          nextJob.status = 'published';
+          delete nextJob.assignedTutorId;
+          delete nextJob.assignedTutorName;
+          delete nextJob.assignedDate;
+        }
+        return nextJob;
+      }
+      return j;
+    });
+
     saveDb(db);
-    res.json({ success: true, message: `Tutor ${id} deleted` });
+    res.json({ success: true, message: `Tutor ${id} and all linked records deleted` });
   });
 
   // 5. Tuition Jobs (Circulars)
@@ -314,10 +363,20 @@ async function startServer() {
   app.delete('/api/jobs/:id', (req: Request, res: Response) => {
     const db = loadDb();
     const { id } = req.params;
-    db.jobs = db.jobs.filter(j => j.id !== id);
-    db.applications = db.applications.filter(a => a.jobId !== id);
+    const targetJob = (db.jobs || []).find(j => j.id === id);
+    db.jobs = (db.jobs || []).filter(j => j.id !== id);
+    db.applications = (db.applications || []).filter(a => a.jobId !== id);
+    db.demos = (db.demos || []).filter(d => d.jobId !== id);
+    db.confirmations = (db.confirmations || []).filter(c => c.jobId !== id);
+    if (targetJob?.guardianRequestId) {
+      db.requests = (db.requests || []).map(r =>
+        r.id === targetJob.guardianRequestId && r.status === 'converted_to_job'
+          ? { ...r, status: 'rejected' }
+          : r
+      );
+    }
     saveDb(db);
-    res.json({ success: true, message: `Job ${id} deleted` });
+    res.json({ success: true, message: `Job ${id} and linked records deleted` });
   });
 
   // 6. Tutor Job Applications
@@ -405,9 +464,38 @@ async function startServer() {
   app.delete('/api/users/:id', (req: Request, res: Response) => {
     const db = loadDb();
     const { id } = req.params;
+    const linkedReqIds = (db.requests || []).filter(r => r.guardianId === id).map(r => r.id);
+    const linkedJobIds = (db.jobs || [])
+      .filter(j => j.guardianId === id || linkedReqIds.includes(j.guardianRequestId))
+      .map(j => j.id);
+    const linkedTutorIds = (db.tutors || []).filter(t => t.userId === id).map(t => t.id);
+
     db.users = (db.users || []).filter(u => u.id !== id);
+    db.requests = (db.requests || []).filter(r => r.guardianId !== id);
+    db.jobs = (db.jobs || []).filter(j => !linkedJobIds.includes(j.id));
+    db.tutors = (db.tutors || []).filter(t => t.userId !== id);
+    db.applications = (db.applications || []).filter(
+      a => !linkedJobIds.includes(a.jobId) && !linkedTutorIds.includes(a.tutorId)
+    );
+    db.demos = (db.demos || []).filter(
+      d => d.guardianId !== id && !linkedJobIds.includes(d.jobId) && !linkedTutorIds.includes(d.tutorId)
+    );
+    db.confirmations = (db.confirmations || []).filter(
+      c => c.guardianId !== id && !linkedJobIds.includes(c.jobId) && !linkedTutorIds.includes(c.tutorId)
+    );
+    db.attendance = (db.attendance || []).filter(
+      a => a.guardianId !== id && !linkedTutorIds.includes(a.tutorId)
+    );
+    db.payments = (db.payments || []).filter(
+      p => p.guardianId !== id && !linkedTutorIds.includes(p.tutorId)
+    );
+    db.reviews = (db.reviews || []).filter(
+      r => r.guardianId !== id && !linkedTutorIds.includes(r.tutorId)
+    );
+    db.certificates = (db.certificates || []).filter(c => !linkedTutorIds.includes(c.tutorId));
+
     saveDb(db);
-    res.json({ success: true, message: `User ${id} deleted` });
+    res.json({ success: true, message: `User ${id} and all linked records deleted` });
   });
 
   app.delete('/api/demos/:id', (req: Request, res: Response) => {

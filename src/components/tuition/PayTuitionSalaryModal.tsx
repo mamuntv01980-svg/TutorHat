@@ -138,12 +138,12 @@ export const PayTuitionSalaryModal: React.FC<PayTuitionSalaryModalProps> = ({
               <div>
                 <span className="font-bold text-pink-700 block text-[11px]">বিকাশ (Personal)</span>
                 <span className="font-mono font-bold text-slate-900 text-xs">
-                  {settings.paymentAccounts?.bkashNumber || '01752617360'}
+                  {settings.paymentAccounts?.bkashNumber || '01610582917'}
                 </span>
               </div>
               <button
                 type="button"
-                onClick={() => handleCopyNumber(settings.paymentAccounts?.bkashNumber || '01752617360', 'bkash')}
+                onClick={() => handleCopyNumber(settings.paymentAccounts?.bkashNumber || '01610582917', 'bkash')}
                 className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 cursor-pointer"
                 title="Copy bKash Number"
               >
@@ -156,12 +156,12 @@ export const PayTuitionSalaryModal: React.FC<PayTuitionSalaryModalProps> = ({
               <div>
                 <span className="font-bold text-amber-700 block text-[11px]">নগদ (Personal)</span>
                 <span className="font-mono font-bold text-slate-900 text-xs">
-                  {settings.paymentAccounts?.nagadNumber || '01752617360'}
+                  {settings.paymentAccounts?.nagadNumber || '01610582917'}
                 </span>
               </div>
               <button
                 type="button"
-                onClick={() => handleCopyNumber(settings.paymentAccounts?.nagadNumber || '01752617360', 'nagad')}
+                onClick={() => handleCopyNumber(settings.paymentAccounts?.nagadNumber || '01610582917', 'nagad')}
                 className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 cursor-pointer"
                 title="Copy Nagad Number"
               >

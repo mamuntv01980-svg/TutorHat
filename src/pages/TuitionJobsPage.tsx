@@ -133,7 +133,7 @@ export const TuitionJobsPage: React.FC = () => {
           job.title.toLowerCase().includes(term) ||
           job.id.toLowerCase().includes(term) ||
           job.area.toLowerCase().includes(term) ||
-          job.subjects.some(s => s.toLowerCase().includes(term));
+          (Array.isArray(job.subjects) && job.subjects.some(s => s.toLowerCase().includes(term)));
         if (!matches) return false;
       }
 
@@ -141,7 +141,7 @@ export const TuitionJobsPage: React.FC = () => {
       if (selectedArea !== 'All' && selectedArea.trim() !== '' && !job.area.toLowerCase().includes(selectedArea.toLowerCase())) return false;
       if (selectedMedium !== 'All' && job.medium !== selectedMedium) return false;
       if (selectedClass !== 'All' && job.classLevel !== selectedClass) return false;
-      if (selectedSubject !== 'All' && !job.subjects.includes(selectedSubject)) return false;
+      if (selectedSubject !== 'All' && (!Array.isArray(job.subjects) || !job.subjects.includes(selectedSubject))) return false;
       if (selectedMode !== 'all' && job.teachingType !== selectedMode) return false;
       if (selectedGenderPref !== 'all' && job.tutorGenderPreference !== selectedGenderPref) return false;
       if (job.salary < minSalary) return false;
@@ -466,7 +466,7 @@ export const TuitionJobsPage: React.FC = () => {
 
                     {/* Subjects */}
                     <div className="flex flex-wrap gap-1.5 pt-1">
-                      {job.subjects.map((sub) => (
+                      {(Array.isArray(job.subjects) && job.subjects.length > 0 ? job.subjects : ['সব বিষয়']).map((sub) => (
                         <span key={sub} className="text-[11px] font-medium text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
                           {sub}
                         </span>
