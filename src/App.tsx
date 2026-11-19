@@ -73,6 +73,10 @@ const AppContent: React.FC = () => {
         return <LoginPage />;
       case 'register':
         return <RegisterPage />;
+      case 'register-guardian':
+        return <RegisterPage initialRole="guardian" />;
+      case 'register-tutor':
+        return <RegisterPage initialRole="tutor" />;
       case 'tutor-dashboard':
         return <TutorDashboard />;
       case 'tutor-profile-edit':

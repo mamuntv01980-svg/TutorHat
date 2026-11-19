@@ -7,13 +7,17 @@ interface TutorPhotoUploadProps {
   tutorName: string;
   onPhotoChanged: (photoUrl: string) => void;
   disabled?: boolean;
+  title?: string;
+  subtitle?: string;
 }
 
 export const TutorPhotoUpload: React.FC<TutorPhotoUploadProps> = ({
   currentPhoto = '',
   tutorName,
   onPhotoChanged,
-  disabled = false
+  disabled = false,
+  title,
+  subtitle
 }) => {
   const [previewUrl, setPreviewUrl] = useState<string>(currentPhoto);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -110,11 +114,13 @@ export const TutorPhotoUpload: React.FC<TutorPhotoUploadProps> = ({
         <div className="flex-1 text-center sm:text-left space-y-2.5">
           <div>
             <h3 className="text-sm font-bold text-slate-900 flex items-center justify-center sm:justify-start gap-1.5">
-              <span>প্রোফাইল ছবি (Tutor Profile Photo)</span>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 font-semibold">ভেরিফিকেশনের জন্য আবশ্যক</span>
+              <span>{title || 'প্রোফাইল ছবি (Tutor Profile Photo)'}</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 font-semibold">
+                {title ? 'প্রোফাইল সম্পূর্ণতা' : 'ভেরিফিকেশনের জন্য আবশ্যক'}
+              </span>
             </h3>
             <p className="text-[11px] text-slate-500 mt-0.5">
-              অভিভাবকদের আস্থা অর্জনের জন্য আপনার একটি স্পষ্ট ও প্রফেশনাল পাসপোর্ট সাইজের ছবি আপলোড করুন। ফোনের গ্যালারি বা ক্যামেরা উভয়টি ব্যবহার করতে পারেন।
+              {subtitle || 'অভিভাবকদের আস্থা অর্জনের জন্য আপনার একটি স্পষ্ট ও প্রফেশনাল পাসপোর্ট সাইজের ছবি আপলোড করুন। ফোনের গ্যালারি বা ক্যামেরা উভয়টি ব্যবহার করতে পারেন।'}
             </p>
           </div>
 

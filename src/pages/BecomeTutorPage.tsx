@@ -38,7 +38,7 @@ export const BecomeTutorPage: React.FC = () => {
         <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
           <button
             type="button"
-            onClick={() => navigateTo('register')}
+            onClick={() => navigateTo('register-tutor')}
             className="px-6 py-3.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md flex items-center gap-2"
           >
             <span>{language === 'bn' ? 'টিউটর হিসেবে রেজিস্ট্রেশন করুন' : 'Register as a Tutor'}</span>
@@ -132,7 +132,7 @@ export const BecomeTutorPage: React.FC = () => {
         <div className="text-center pt-4">
           <button
             type="button"
-            onClick={() => navigateTo('register')}
+            onClick={() => navigateTo('register-tutor')}
             className="px-8 py-3.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold shadow-md"
           >
             {language === 'bn' ? 'এখনই আবেদন শুরু করুন' : 'Start Application Now'}

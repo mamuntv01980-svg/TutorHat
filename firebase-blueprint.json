@@ -21,7 +21,7 @@
     },
     "TutorProfile": {
       "title": "TutorProfile",
-      "description": "Tutor registration and verified CV details",
+      "description": "Tutor registration and multi-category verified CV details",
       "type": "object",
       "properties": {
         "id": { "type": "string" },
@@ -34,11 +34,15 @@
         "district": { "type": "string" },
         "area": { "type": "string" },
         "university": { "type": "string" },
+        "tutorCategory": { "type": "string", "enum": ["general", "qawmi_madrasa", "alia_madrasa"] },
+        "selectedCategories": { "type": "array" },
+        "categoryCvs": { "type": "object" },
+        "categoryCompletion": { "type": "object" },
         "verificationStatus": { "type": "string", "enum": ["draft", "pending", "verified", "rejected", "suspended"] },
         "completionPercentage": { "type": "number" },
         "createdAt": { "type": "string" }
       },
-      "required": ["id", "fullName", "phone", "verificationStatus", "createdAt"]
+      "required": ["id", "userId", "verificationStatus"]
     },
     "TuitionJob": {
       "title": "TuitionJob",
@@ -83,9 +87,19 @@
         "email": { "type": "string" },
         "role": { "type": "string", "enum": ["admin", "tutor", "guardian"] },
         "status": { "type": "string", "enum": ["active", "suspended", "pending"] },
+        "location": { "type": "string" },
+        "district": { "type": "string" },
+        "avatar": { "type": "string" },
+        "firebaseUid": { "type": "string" },
+        "authEmail": { "type": "string" },
+        "authProvider": { "type": "string" },
+        "firebaseAuthSynced": { "type": "boolean" },
+        "studentInfo": { "type": "string" },
+        "preferredMedium": { "type": "string" },
+        "bio": { "type": "string" },
         "createdAt": { "type": "string" }
       },
-      "required": ["id", "name", "role", "status", "createdAt"]
+      "required": ["id", "role", "status", "createdAt"]
     },
     "AdminRecord": {
       "title": "AdminRecord",

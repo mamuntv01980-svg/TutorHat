@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Users, 
   Search, 
@@ -38,10 +38,14 @@ import {
   FileText,
   Printer,
   Award,
-  TrendingUp
+  TrendingUp,
+  Save,
+  UserCheck
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { store, tutorProfileImg } from '../../services/store';
+import { store, tutorProfileImg, calculateGuardianCompletion } from '../../services/store';
+import { BD_DISTRICTS, MEDIUMS } from '../../constants/bangladeshData';
+import { TutorPhotoUpload } from '../../components/tutor/TutorPhotoUpload';
 import { CallButton } from '../../components/common/CallButton';
 import { WhatsAppButton } from '../../components/common/WhatsAppButton';
 import { TRANSLATIONS } from '../../constants/translations';
@@ -65,7 +69,7 @@ export const GuardianDashboard: React.FC = () => {
   } = useApp();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'requests' | 'shortlist' | 'applications' | 'demos' | 'confirmations' | 'attendance' | 'payments' | 'messages' | 'progress' | 'reviews' | 'notices' | 'referrals'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'requests' | 'shortlist' | 'applications' | 'demos' | 'confirmations' | 'attendance' | 'payments' | 'messages' | 'progress' | 'reviews' | 'notices' | 'referrals'>('overview');
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [selectedTutorForReview, setSelectedTutorForReview] = useState<string>('tut_01');
   const [ratingScore, setRatingScore] = useState(5);
@@ -171,9 +175,87 @@ export const GuardianDashboard: React.FC = () => {
     setTimeout(() => setDemoActionToast(null), 4000);
   };
 
+  // Step-by-step Guardian Profile Form state
+  const [gName, setGName] = useState(currentUser?.name || '');
+  const [gGender, setGGender] = useState<'male' | 'female' | 'other'>(currentUser?.gender || 'male');
+  const [gPhone, setGPhone] = useState(currentUser?.phone || '');
+  const [gEmail, setGEmail] = useState(currentUser?.email || '');
+  const [gDistrict, setGDistrict] = useState(currentUser?.district || '');
+  const [gLocation, setGLocation] = useState(currentUser?.location || '');
+  const [gStudentInfo, setGStudentInfo] = useState(currentUser?.studentInfo || '');
+  const [gPreferredMedium, setGPreferredMedium] = useState(currentUser?.preferredMedium || '');
+  const [gBio, setGBio] = useState(currentUser?.bio || '');
+  const [profileSavedToast, setProfileSavedToast] = useState(false);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    setGName(currentUser.name || '');
+    setGGender(currentUser.gender || 'male');
+    setGPhone(currentUser.phone || '');
+    setGEmail(currentUser.email || '');
+    setGDistrict(currentUser.district || '');
+    setGLocation(currentUser.location || '');
+    setGStudentInfo(currentUser.studentInfo || '');
+    setGPreferredMedium(currentUser.preferredMedium || '');
+    setGBio(currentUser.bio || '');
+  }, [currentUser?.id]);
+
   const t = TRANSLATIONS[language];
-  const guardianId = currentUser?.id || 'user_guardian_01';
-  const myReferralCode = currentUser?.referralCode || 'FARHANA-TH88';
+
+  if (!currentUser || currentUser.role !== 'guardian') {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-16 text-center space-y-5">
+        <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto">
+          <Users className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-blue-950">
+          {language === 'bn' ? 'অভিভাবক ড্যাশবোর্ডে প্রবেশ করতে লগইন করুন' : 'Sign in to access your Guardian Dashboard'}
+        </h2>
+        <p className="text-xs text-slate-600 leading-relaxed">
+          {language === 'bn'
+            ? 'নতুন অভিভাবক অ্যাকাউন্ট খুলতে মাত্র Gmail বা মোবাইল নম্বর এবং পাসওয়ার্ড দিন, অথবা লগইন করুন।'
+            : 'Register as a Guardian with only Gmail or mobile number and password, or sign in to continue.'}
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => navigateTo('login')}
+            className="px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold cursor-pointer"
+          >
+            {language === 'bn' ? 'সাইন ইন করুন' : 'Sign In'}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateTo('register-guardian')}
+            className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold cursor-pointer"
+          >
+            Become a Guardian
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const guardianId = currentUser.id;
+  const myReferralCode = currentUser.referralCode || 'GUARDIAN-TH';
+  const completionData = calculateGuardianCompletion(currentUser);
+
+  const handleSaveGuardianProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    store.updateUser(guardianId, {
+      name: gName.trim(),
+      gender: gGender,
+      phone: gPhone.trim(),
+      email: gEmail.trim().toLowerCase(),
+      district: gDistrict.trim(),
+      location: gLocation.trim(),
+      studentInfo: gStudentInfo.trim(),
+      preferredMedium: gPreferredMedium.trim(),
+      bio: gBio.trim()
+    });
+    setProfileSavedToast(true);
+    setTimeout(() => setProfileSavedToast(false), 3500);
+  };
 
   // Notices for Guardians (Section 35)
   const publishedNotices = store.getPublishedNotices('guardians');
@@ -250,7 +332,7 @@ export const GuardianDashboard: React.FC = () => {
                 </span>
                 <span className="hidden sm:inline-block text-xs text-slate-400">·</span>
                 <span className="hidden sm:inline-block text-xs text-slate-600">
-                  {currentUser?.name}
+                  {currentUser.name || currentUser.email || currentUser.phone || 'নতুন অভিভাবক'}
                 </span>
               </div>
             </div>
@@ -303,6 +385,55 @@ export const GuardianDashboard: React.FC = () => {
           </button>
         </div>
 
+        {/* Step-by-Step Guardian Profile Completion Banner (0% to 100%) */}
+        <div className={`rounded-2xl border p-5 space-y-3 text-xs ${
+          completionData.percent === 100
+            ? 'bg-emerald-50/60 border-emerald-200'
+            : 'bg-amber-50/70 border-amber-200'
+        }`}>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span className="font-bold text-sm text-blue-950 block">
+                {language === 'bn'
+                  ? `অভিভাবক প্রোফাইল সম্পূর্ণতা: ${completionData.percent}%`
+                  : `Guardian Profile Completion: ${completionData.percent}%`}
+              </span>
+              <span className="text-[11px] text-slate-600">
+                {completionData.percent === 100
+                  ? (language === 'bn'
+                      ? 'আপনার অভিভাবক প্রোফাইল ১০০% সম্পূর্ণ হয়েছে!'
+                      : 'Your Guardian profile is 100% complete!')
+                  : (language === 'bn'
+                      ? 'ধাপে ধাপে আপনার ছবি, নাম, ঠিকানা, যোগাযোগ এবং শিক্ষার্থীর তথ্য যুক্ত করুন।'
+                      : 'Complete your photo, name, address, contact details & student info step-by-step.')}
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('profile')}
+              className="px-3.5 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-bold text-xs cursor-pointer self-start sm:self-auto"
+            >
+              {language === 'bn' ? '📷 প্রোফাইল ও ছবি আপডেট করুন' : '📷 Update Profile & Photo'}
+            </button>
+          </div>
+
+          <div className="w-full bg-white/80 rounded-full h-2.5 overflow-hidden border border-slate-200/70">
+            <div
+              className={`h-2.5 rounded-full transition-all duration-300 ${
+                completionData.percent === 100 ? 'bg-emerald-600' : 'bg-amber-600'
+              }`}
+              style={{ width: `${completionData.percent}%` }}
+            />
+          </div>
+
+          {Array.isArray(completionData.missing) && completionData.missing.length > 0 && (
+            <p className="text-[11px] text-amber-900">
+              <strong>{language === 'bn' ? 'বাকি ধাপসমূহ:' : 'Remaining steps:'}</strong> {completionData.missing.join(', ')}
+            </p>
+          )}
+        </div>
+
         {/* Quick Stats Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
@@ -330,6 +461,7 @@ export const GuardianDashboard: React.FC = () => {
         <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs font-semibold">
           {[
             { id: 'overview', label: 'Overview' },
+            { id: 'profile', label: `${language === 'bn' ? 'আমার প্রোফাইল ও ছবি' : 'Profile & Photo'} (${completionData.percent}%)` },
             { id: 'messages', label: `${language === 'bn' ? 'মেসেজ ও চ্যাট' : 'Live Chat'} ${unreadChatCount > 0 ? `(${unreadChatCount})` : `(${myConversations.length})`}` },
             { id: 'progress', label: `${language === 'bn' ? 'প্রগ্রেস রিপোর্ট' : 'Progress'} (${myReports.length})` },
             { id: 'confirmations', label: `${language === 'bn' ? 'টিউশন চুক্তি' : 'Agreements'} (${myConfirmations.length})` },
@@ -1700,6 +1832,188 @@ export const GuardianDashboard: React.FC = () => {
           </div>
         )}
 
+        {/* Tab: Guardian Profile & Photo (Step-by-Step 0-100%) */}
+        {activeTab === 'profile' && (
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-6 text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-base text-blue-950 flex items-center gap-2">
+                  <UserCheck className="w-5 h-5 text-amber-600" />
+                  <span>{language === 'bn' ? 'অভিভাবক প্রোফাইল ও ছবি (ধাপে ধাপে পূরণ করুন)' : 'Guardian Profile & Photo'}</span>
+                </h3>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {language === 'bn'
+                    ? 'আপনার ছবি, ঠিকানা ও শিক্ষার্থীর তথ্য যুক্ত করে প্রোফাইল ১০০% সম্পূর্ণ করুন।'
+                    : 'Complete your photo, address, and student details to reach 100%.'}
+                </p>
+              </div>
+              <div className="px-3.5 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-950 font-bold tabular-nums">
+                {language === 'bn' ? 'সম্পূর্ণ:' : 'Completion:'} {completionData.percent}%
+              </div>
+            </div>
+
+            {profileSavedToast && (
+              <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{language === 'bn' ? 'অভিভাবক প্রোফাইলের তথ্য সফলভাবে সংরক্ষিত হয়েছে!' : 'Guardian profile updated successfully!'}</span>
+              </div>
+            )}
+
+            <TutorPhotoUpload
+              currentPhoto={currentUser.avatar}
+              tutorName={gName || currentUser.email || currentUser.phone || 'Guardian'}
+              title={language === 'bn' ? 'অভিভাবক প্রোফাইল ছবি (Guardian Photo)' : 'Guardian Profile Photo'}
+              subtitle={language === 'bn' ? 'আপনার প্রোফাইলের জন্য একটি পরিষ্কার ছবি আপলোড বা পরিবর্তন করুন। ফোনের গ্যালারি বা ক্যামেরা ব্যবহার করতে পারেন।' : 'Upload or update your profile photo from gallery or camera.'}
+              onPhotoChanged={(newUrl) => {
+                if (newUrl) {
+                  store.updateGuardianPhoto(guardianId, newUrl);
+                } else {
+                  store.removeGuardianPhoto(guardianId);
+                }
+              }}
+            />
+
+            <form onSubmit={handleSaveGuardianProfile} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="font-semibold text-slate-900 block mb-1">
+                    {language === 'bn' ? 'অভিভাবকের পূর্ণ নাম *' : 'Full Name *'}
+                  </label>
+                  <input
+                    type="text"
+                    value={gName}
+                    onChange={(e) => setGName(e.target.value)}
+                    placeholder="যেমন: ফারহানা রহমান"
+                    className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-900 block mb-1">
+                    {language === 'bn' ? 'লিঙ্গ (Gender)' : 'Gender'}
+                  </label>
+                  <select
+                    value={gGender}
+                    onChange={(e) => setGGender(e.target.value as any)}
+                    className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs"
+                  >
+                    <option value="male">Male (পুরুষ)</option>
+                    <option value="female">Female (মহিলা)</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-900 block mb-1">
+                    {language === 'bn' ? 'মোবাইল নম্বর' : 'Mobile Number'}
+                  </label>
+                  <input
+                    type="tel"
+                    value={gPhone}
+                    onChange={(e) => setGPhone(e.target.value)}
+                    placeholder="017XXXXXXXX"
+                    className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-900 block mb-1">
+                    {language === 'bn' ? 'Gmail / ইমেইল ঠিকানা' : 'Gmail / Email Address'}
+                  </label>
+                  <input
+                    type="email"
+                    value={gEmail}
+                    onChange={(e) => setGEmail(e.target.value)}
+                    placeholder="name@gmail.com"
+                    className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-900 block mb-1">
+                    {language === 'bn' ? 'জেলা (District - A to Z)' : 'District'}
+                  </label>
+                  <select
+                    value={gDistrict}
+                    onChange={(e) => setGDistrict(e.target.value)}
+                    className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs"
+                  >
+                    <option value="">জেলা নির্বাচন করুন</option>
+                    {BD_DISTRICTS.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-900 block mb-1">
+                    {language === 'bn' ? 'বর্তমান ঠিকানা / এলাকা' : 'Present Address / Area'}
+                  </label>
+                  <input
+                    type="text"
+                    value={gLocation}
+                    onChange={(e) => setGLocation(e.target.value)}
+                    placeholder="যেমন: বাড়ি-১২, রোড-৪, ধানমন্ডি"
+                    className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-900 block mb-1">
+                    {language === 'bn' ? 'শিক্ষার্থীর শ্রেণি ও স্কুল/কলেজ' : 'Student Class & School'}
+                  </label>
+                  <input
+                    type="text"
+                    value={gStudentInfo}
+                    onChange={(e) => setGStudentInfo(e.target.value)}
+                    placeholder="যেমন: ক্লাস ৮, ভিকারুননিসা নূন স্কুল"
+                    className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-semibold text-slate-900 block mb-1">
+                    {language === 'bn' ? 'পছন্দের শিক্ষা মাধ্যম (Medium)' : 'Preferred Medium'}
+                  </label>
+                  <select
+                    value={gPreferredMedium}
+                    onChange={(e) => setGPreferredMedium(e.target.value)}
+                    className="w-full py-2.5 px-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs"
+                  >
+                    <option value="">মাধ্যম নির্বাচন করুন</option>
+                    {MEDIUMS.map(m => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="font-semibold text-slate-900 block mb-1">
+                  {language === 'bn' ? 'শিক্ষার্থী সম্পর্কে অতিরিক্ত তথ্য (ঐচ্ছিক)' : 'Additional Notes (Optional)'}
+                </label>
+                <textarea
+                  rows={2}
+                  value={gBio}
+                  onChange={(e) => setGBio(e.target.value)}
+                  placeholder="টিউটর খুঁজতে কোন কোন বিষয়ে বিশেষ মনোযোগ প্রয়োজন তা সংক্ষেপে লিখুন..."
+                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white text-xs"
+                />
+              </div>
+
+              <div className="flex justify-end pt-2">
+                <button
+                  type="submit"
+                  className="px-6 py-3 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-bold text-xs flex items-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{language === 'bn' ? 'প্রোফাইল সংরক্ষণ করুন' : 'Save Guardian Profile'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
       </div>
 
       {/* Review Modal */}
@@ -1790,7 +2104,7 @@ export const GuardianDashboard: React.FC = () => {
                     G
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm">{currentUser?.name}</h3>
+                    <h3 className="font-bold text-sm">{currentUser.name || currentUser.email || currentUser.phone || 'Guardian'}</h3>
                     <p className="text-[11px] text-slate-300">Guardian Account</p>
                   </div>
                 </div>
@@ -1811,6 +2125,15 @@ export const GuardianDashboard: React.FC = () => {
                 >
                   <Users className="w-4 h-4 text-blue-700" />
                   <span>Dashboard</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => { setActiveTab('profile'); setSidebarOpen(false); }}
+                  className="w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-50"
+                >
+                  <UserCheck className="w-4 h-4 text-amber-600" />
+                  <span>আমার প্রোফাইল ও ছবি ({completionData.percent}%)</span>
                 </button>
 
                 <button

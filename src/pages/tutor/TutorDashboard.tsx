@@ -44,13 +44,19 @@ import {
   TrendingUp
 } from 'lucide-react';
 import { useApp, AppView } from '../../context/AppContext';
-import { store, calculateCvCompletion } from '../../services/store';
+import { 
+  store, 
+  calculateCvCompletion, 
+  calculateOverallTutorProfileCompletion, 
+  getTutorSelectedCategories 
+} from '../../services/store';
 import { CallButton } from '../../components/common/CallButton';
 import { WhatsAppButton } from '../../components/common/WhatsAppButton';
 import { TutorVerificationBadge } from '../../components/common/TutorVerificationBadge';
 import { TutorKycVerificationModal } from '../../components/tutor/TutorKycVerificationModal';
+import { TutorPhotoUpload } from '../../components/tutor/TutorPhotoUpload';
 import { TRANSLATIONS } from '../../constants/translations';
-import { TutorProfile, DemoClass, TuitionConfirmation, PaymentRecord, AttendanceRecord, CertificateRecord, StudentProgressReport } from '../../types';
+import { TutorProfile, TutorCategoryType, DemoClass, TuitionConfirmation, PaymentRecord, AttendanceRecord, CertificateRecord, StudentProgressReport } from '../../types';
 import { TuitionAgreementSlipModal } from '../../components/tuition/TuitionAgreementSlipModal';
 import { ClassAttendanceModal } from '../../components/tuition/ClassAttendanceModal';
 import { PaymentReceiptModal } from '../../components/tuition/PaymentReceiptModal';
@@ -72,10 +78,11 @@ export const TutorDashboard: React.FC = () => {
   } = useApp();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'applications' | 'demos' | 'confirmations' | 'attendance' | 'payments' | 'certificates' | 'messages' | 'progress' | 'notifications' | 'notices' | 'referrals' | 'reviews'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'profile' | 'applications' | 'demos' | 'confirmations' | 'attendance' | 'payments' | 'certificates' | 'messages' | 'progress' | 'notifications' | 'notices' | 'referrals' | 'reviews'>('overview');
   const [modalMessage, setModalMessage] = useState<string | null>(null);
   const [codeCopied, setCodeCopied] = useState(false);
   const [kycModalOpen, setKycModalOpen] = useState(false);
+  const [photoModalOpen, setPhotoModalOpen] = useState(false);
   const [replyTextMap, setReplyTextMap] = useState<Record<string, string>>({});
   const [replyInputOpenId, setReplyInputOpenId] = useState<string | null>(null);
 
@@ -137,55 +144,59 @@ export const TutorDashboard: React.FC = () => {
   };
 
   const t = TRANSLATIONS[language];
-  const tutor = activeTutorProfile || storeState.tutors[0] || ({
-    id: 'tut_01',
-    userId: 'user_tutor_01',
-    fullName: 'Rahim Chowdhury',
-    gender: 'male',
-    phone: '01711223344',
-    email: 'tutor@example.com',
-    currentAddress: 'Dhanmondi, Dhaka',
-    permanentAddress: 'Dhaka',
-    district: 'Dhaka',
-    area: 'Dhanmondi',
-    preferredAreas: ['Dhanmondi'],
-    aboutMe: 'Experienced tutor.',
-    tutorCategory: 'general',
-    university: 'BUET',
-    department: 'CSE',
-    currentYearOrStatus: '3rd Year',
-    studentIdNumber: '',
-    teachingExperienceYears: 3,
-    preferredClasses: ['Class 9'],
-    preferredSubjects: ['Physics'],
-    preferredMediums: ['Bangla Medium'],
-    categories: ['Bangla Medium'],
-    onlineTeaching: true,
-    homeTuition: true,
-    coachingGroupTuition: false,
-    availableDays: ['Saturday'],
-    availableTime: 'Evening',
-    expectedSalary: 7000,
-    preferredStudentGender: 'any',
-    preferredClassLevel: 'Secondary',
-    verificationStatus: 'verified',
-    completionPercentage: 100,
-    rating: 4.9,
-    totalReviews: 10,
-    trustScore: 100
-  } as unknown as TutorProfile);
-  const myReferralCode = currentUser?.referralCode || 'RAHIM-TH10';
+  const matchedTutor =
+    activeTutorProfile ||
+    (currentUser?.role === 'tutor'
+      ? storeState.tutors.find((item) => item.userId === currentUser.id)
+      : undefined);
+
+  if (!currentUser || currentUser.role !== 'tutor' || !matchedTutor) {
+    return (
+      <div className="max-w-lg mx-auto px-4 py-16 text-center space-y-5">
+        <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-900 flex items-center justify-center mx-auto">
+          <GraduationCap className="w-8 h-8" />
+        </div>
+        <h2 className="text-xl font-bold text-blue-950">
+          {language === 'bn' ? 'টিউটর ড্যাশবোর্ডে প্রবেশ করতে লগইন করুন' : 'Sign in to access your Tutor Dashboard'}
+        </h2>
+        <p className="text-xs text-slate-600 leading-relaxed">
+          {language === 'bn'
+            ? 'নতুন টিউটর অ্যাকাউন্ট খুলতে মাত্র Gmail বা মোবাইল নম্বর এবং পাসওয়ার্ড দিন, অথবা লগইন করুন।'
+            : 'Register as a Tutor with only Gmail or mobile number and password, or sign in to continue.'}
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+          <button
+            type="button"
+            onClick={() => navigateTo('login')}
+            className="px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white rounded-xl text-xs font-bold cursor-pointer"
+          >
+            {language === 'bn' ? 'সাইন ইন করুন' : 'Sign In'}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigateTo('register-tutor')}
+            className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold cursor-pointer"
+          >
+            Become a Tutor
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const tutor: TutorProfile = matchedTutor;
+  const myReferralCode = currentUser.referralCode || 'TUTOR-TH';
 
   // Feature 2: Reviews for this tutor
-  const myReviews = storeState.reviews.filter(r => r.tutorId === tutor?.id);
+  const myReviews = storeState.reviews.filter(r => r.tutorId === tutor.id);
 
   // Published Notices for Tutors (Section 35)
   const publishedNotices = store.getPublishedNotices('tutors');
   // Referral transactions for this tutor (Section 36)
-  const tutorReferrals = store.getUserReferrals(currentUser?.id || tutor?.userId || '');
+  const tutorReferrals = store.getUserReferrals(currentUser.id);
 
   // Applications
-  const tutorApplications = storeState.applications.filter(a => a.tutorId === tutor?.id);
+  const tutorApplications = storeState.applications.filter(a => a.tutorId === tutor.id);
   const appliedCount = tutorApplications.filter(a => a.status === 'applied').length;
   const shortlistedCount = tutorApplications.filter(a => a.status === 'shortlisted').length;
   const appointedCount = tutorApplications.filter(a => a.status === 'appointed' || a.status === 'demo_scheduled').length;
@@ -193,24 +204,29 @@ export const TutorDashboard: React.FC = () => {
   const cancelledCount = tutorApplications.filter(a => a.status === 'cancelled' || a.status === 'rejected').length;
 
   // Demos & Confirmations
-  const tutorDemos = storeState.demos.filter(d => d.tutorId === tutor?.id);
-  const tutorConfirmations = storeState.confirmations.filter(c => c.tutorId === tutor?.id);
-  const tutorAttendance = storeState.attendance.filter(att => att.tutorId === tutor?.id);
-  const tutorPayments = storeState.payments.filter(p => p.tutorId === tutor?.id);
-  const tutorCertificates = storeState.certificates.filter(c => c.tutorId === tutor?.id);
+  const tutorDemos = storeState.demos.filter(d => d.tutorId === tutor.id);
+  const tutorConfirmations = storeState.confirmations.filter(c => c.tutorId === tutor.id);
+  const tutorAttendance = storeState.attendance.filter(att => att.tutorId === tutor.id);
+  const tutorPayments = storeState.payments.filter(p => p.tutorId === tutor.id);
+  const tutorCertificates = storeState.certificates.filter(c => c.tutorId === tutor.id);
   // Feature 6: In-App Chat & Student Progress Reports
-  const tutorReports = storeState.progressReports.filter(r => r.tutorId === tutor?.id || r.tutorName === tutor?.fullName);
-  const tutorConversations = store.getConversationsForUser(currentUser?.id || tutor?.userId || 'user_tutor_01');
+  const tutorReports = storeState.progressReports.filter(r => r.tutorId === tutor.id || (tutor.fullName && r.tutorName === tutor.fullName));
+  const tutorConversations = store.getConversationsForUser(currentUser.id);
   const unreadChatCount = tutorConversations.reduce((acc, c) => acc + (c.unreadCountTutor || 0), 0);
-  const tutorNotifications = storeState.notifications.filter(n => n.userId === currentUser?.id);
+  const tutorNotifications = storeState.notifications.filter(n => n.userId === currentUser.id);
   const unreadJobNotifs = tutorNotifications.filter(n => !n.read && (n.type === 'job' || n.title.includes('টিউশন') || n.title.includes('সার্কুলার')));
 
-  // CV Completion
+  // CV Completion (Multi-category + Overall)
+  const overallCompletion = calculateOverallTutorProfileCompletion(tutor);
   const completionData = calculateCvCompletion(tutor);
+  const selectedCategories = getTutorSelectedCategories(tutor);
 
   // Matching nearby jobs
   const nearbyJobs = storeState.jobs.filter(j => 
-    j.status === 'published' && (j.district === tutor.district || tutor.preferredAreas.includes(j.area))
+    j.status === 'published' && (
+      (tutor.district && j.district === tutor.district) ||
+      (Array.isArray(tutor.preferredAreas) && tutor.preferredAreas.includes(j.area))
+    )
   );
 
   const handleSidebarItemClick = (tabKey: any, directView?: AppView) => {
@@ -245,7 +261,7 @@ export const TutorDashboard: React.FC = () => {
                 </span>
                 <span className="hidden sm:inline-block text-xs text-slate-400">·</span>
                 <span className="hidden sm:inline-block text-xs text-slate-600 truncate max-w-[180px]">
-                  {tutor.fullName}
+                  {tutor.fullName || currentUser.email || currentUser.phone || 'নতুন টিউটর'}
                 </span>
               </div>
             </div>
@@ -265,10 +281,22 @@ export const TutorDashboard: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => navigateTo('tutor-profile-edit')}
-                className="px-3 py-1.5 bg-blue-900 text-white rounded-xl text-xs font-semibold hover:bg-blue-800 transition-colors"
+                onClick={() => setActiveTab('profile')}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-colors cursor-pointer ${
+                  activeTab === 'profile'
+                    ? 'bg-amber-500 text-blue-950'
+                    : 'bg-slate-100 text-blue-950 hover:bg-slate-200'
+                }`}
               >
-                {language === 'bn' ? 'সিভি এডিট' : 'Edit CV'}
+                {language === 'bn' ? 'প্রোফাইল ও ক্যাটাগরি' : 'Profile & CV'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigateTo('tutor-profile-edit', { tutorCategory: selectedCategories[0] || 'general' })}
+                className="px-3 py-1.5 bg-blue-900 text-white rounded-xl text-xs font-semibold hover:bg-blue-800 transition-colors cursor-pointer"
+              >
+                Edit CV
               </button>
             </div>
 
@@ -403,7 +431,7 @@ export const TutorDashboard: React.FC = () => {
                       store.submitTutorForVerification(tutor.id);
                       setModalMessage(language === 'bn' ? 'সিভি সফলভাবে ভেরিফিকেশনের জন্য পাঠানো হয়েছে!' : 'CV submitted for admin verification!');
                     } catch (err: any) {
-                      alert(err.message);
+                      setModalMessage(err.message);
                     }
                   }}
                   className="px-3.5 py-2 bg-emerald-600 text-white rounded-xl text-xs font-semibold hover:bg-emerald-700 shrink-0 cursor-pointer"
@@ -477,35 +505,231 @@ export const TutorDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Profile Completion Indicator (0% to 100%) */}
-          {completionData.percent < 100 && (
-            <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 space-y-2 text-xs">
-              <div className="flex items-center justify-between font-semibold text-amber-950">
-                <span>{language === 'bn' ? 'সিভি সম্পূর্ণতা' : 'CV Completion'}: {completionData.percent}%</span>
-                <button
-                  type="button"
-                  onClick={() => navigateTo('tutor-profile-edit')}
-                  className="text-amber-800 underline font-bold hover:text-amber-950"
-                >
-                  {language === 'bn' ? 'সিভি সম্পূর্ণ করুন' : 'Complete Your CV'}
-                </button>
+          {/* Multi-Category Profile & CV Center (Overall + Per-Category Completion) */}
+          <div className="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs space-y-5 text-xs">
+            {/* Overall Profile Completion Header */}
+            <div className={`rounded-2xl border p-4 sm:p-5 space-y-3 ${
+              overallCompletion.percent === 100
+                ? 'bg-emerald-50/70 border-emerald-200'
+                : 'bg-amber-50/70 border-amber-200'
+            }`}>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-sm sm:text-base text-blue-950">
+                      Overall Tutor Profile Completion: {overallCompletion.percent}%
+                    </span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      overallCompletion.percent === 100
+                        ? 'bg-emerald-600 text-white'
+                        : 'bg-amber-200 text-amber-950'
+                    }`}>
+                      {overallCompletion.percent === 100 ? '100% Complete' : `${selectedCategories.length} Category Selected`}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600 mt-0.5">
+                    {overallCompletion.percent === 100
+                      ? (language === 'bn'
+                          ? 'অভিনন্দন! আপনার সাধারণ তথ্য ও নির্বাচিত প্রতিটি ক্যাটাগরির সিভি ১০০% সম্পূর্ণ হয়েছে।'
+                          : 'Your basic details and all selected category CVs are 100% complete.')
+                      : (language === 'bn'
+                          ? 'এক বা একাধিক টিউটর ক্যাটাগরি নির্বাচন করুন এবং প্রতিটি ক্যাটাগরির আবশ্যিক তথ্য ধাপে ধাপে পূরণ করুন।'
+                          : 'Select one or multiple tutor categories below and complete the required CV fields for each category.')}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setPhotoModalOpen(true)}
+                    className="px-3 py-2 bg-white hover:bg-slate-50 border border-slate-300 text-blue-950 rounded-xl font-bold text-xs cursor-pointer"
+                  >
+                    {tutor.photo
+                      ? (language === 'bn' ? '📷 ছবি পরিবর্তন' : '📷 Update Photo')
+                      : (language === 'bn' ? '📷 ছবি আপলোড' : '📷 Upload Photo')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('tutor-detail', { tutorId: tutor.id })}
+                    className="px-3.5 py-2 bg-white hover:bg-blue-50 border border-blue-200 text-blue-950 rounded-xl font-bold text-xs cursor-pointer"
+                  >
+                    View Profile
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigateTo('tutor-profile-edit', { tutorCategory: selectedCategories[0] || 'general' })}
+                    className="px-3.5 py-2 bg-blue-900 hover:bg-blue-800 text-white rounded-xl font-bold text-xs cursor-pointer"
+                  >
+                    {overallCompletion.percent < 100 ? 'Complete CV' : 'Edit CV'}
+                  </button>
+                </div>
               </div>
 
-              {/* Progress Bar */}
-              <div className="w-full bg-amber-200/60 rounded-full h-2 overflow-hidden">
+              {/* Overall Progress Bar (0-100%) */}
+              <div className="w-full bg-white/90 rounded-full h-3 overflow-hidden border border-slate-200/80">
                 <div
-                  className="bg-amber-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${completionData.percent}%` }}
+                  className={`h-3 rounded-full transition-all duration-300 ${
+                    overallCompletion.percent === 100 ? 'bg-emerald-600' : 'bg-amber-600'
+                  }`}
+                  style={{ width: `${overallCompletion.percent}%` }}
                 />
               </div>
 
-              {Array.isArray(completionData?.missing) && completionData.missing.length > 0 && (
-                <p className="text-[11px] text-amber-800">
-                  {language === 'bn' ? 'বাকি তথ্য:' : 'Missing fields:'} {completionData.missing.join(', ')}
-                </p>
+              {/* Missing Basic Info & Overall Remaining Required Info */}
+              {overallCompletion.basicMissing.length > 0 && (
+                <div className="p-2.5 rounded-xl bg-white/80 border border-amber-200 text-[11px] text-amber-950">
+                  <strong>Basic Profile Missing ({overallCompletion.basicPercent}%):</strong> {overallCompletion.basicMissing.join(', ')}
+                </div>
+              )}
+              {overallCompletion.missing.length > 0 && (
+                <div className="text-[11px] text-slate-700 leading-relaxed">
+                  <strong className="text-amber-950">Missing Required Information ({overallCompletion.missing.length}):</strong>{' '}
+                  {overallCompletion.missing.slice(0, 6).join(' • ')}
+                  {overallCompletion.missing.length > 6 ? ` (+${overallCompletion.missing.length - 6} more)` : ''}
+                </div>
               )}
             </div>
-          )}
+
+            {/* 1. Prominent Tutor Category Selector (One or Multiple) */}
+            <div className="space-y-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                <div>
+                  <h3 className="font-bold text-sm text-blue-950">
+                    {language === 'bn' ? 'টিউটর ক্যাটাগরি নির্বাচন করুন (এক বা একাধিক)' : 'Select Your Tutor Category (One or Multiple)'}
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    {language === 'bn'
+                      ? 'আপনার যোগ্যতা অনুযায়ী General Tutor, Qawmi Madrasa Tutor বা Alia Madrasa Tutor বেছে নিয়ে আলাদা আলাদা CV পূরণ ও সংরক্ষণ করুন।'
+                      : 'Choose one or more categories matching your background. Each category maintains its own dedicated CV and completion bar.'}
+                  </p>
+                </div>
+                <span className="text-[11px] font-bold text-blue-900 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 self-start sm:self-auto">
+                  {selectedCategories.length}/3 Categories Active
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                {[
+                  {
+                    key: 'general' as TutorCategoryType,
+                    title: 'General Tutor',
+                    subtitleBn: 'জেনারেল টিউটর',
+                    desc: 'Bangla Medium, English Medium, English Version, University/College Academics',
+                    accentBorder: 'border-blue-300',
+                    accentBg: 'bg-blue-50/70',
+                    badgeBg: 'bg-blue-900 text-white'
+                  },
+                  {
+                    key: 'qawmi_madrasa' as TutorCategoryType,
+                    title: 'Qawmi Madrasa Tutor',
+                    subtitleBn: 'কওমি মাদ্রাসা টিউটর',
+                    desc: 'Dawra-e-Hadith, Fazilat, Hifz, Tajweed, Qirat, Quran & Arabic Specialization',
+                    accentBorder: 'border-amber-300',
+                    accentBg: 'bg-amber-50/70',
+                    badgeBg: 'bg-amber-700 text-white'
+                  },
+                  {
+                    key: 'alia_madrasa' as TutorCategoryType,
+                    title: 'Alia Madrasa Tutor',
+                    subtitleBn: 'আলিয়া মাদ্রাসা টিউটর',
+                    desc: 'Dakhil, Alim, Fazil, Kamil, Madrasa Board & Islamic Arabic University',
+                    accentBorder: 'border-emerald-300',
+                    accentBg: 'bg-emerald-50/70',
+                    badgeBg: 'bg-emerald-700 text-white'
+                  }
+                ].map((catItem) => {
+                  const isSelected = selectedCategories.includes(catItem.key);
+                  const catProg = overallCompletion.categoriesProgress[catItem.key];
+                  return (
+                    <div
+                      key={catItem.key}
+                      className={`rounded-2xl border p-4 flex flex-col justify-between gap-3 transition-all ${
+                        isSelected
+                          ? `${catItem.accentBg} ${catItem.accentBorder} ring-1 ring-inset ring-blue-900/10 shadow-xs`
+                          : 'bg-slate-50/60 border-slate-200 hover:border-slate-300'
+                      }`}
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <h4 className="font-bold text-sm text-blue-950">{catItem.title}</h4>
+                            <span className="text-[11px] font-semibold text-slate-600">{catItem.subtitleBn}</span>
+                          </div>
+                          {isSelected ? (
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${catItem.badgeBg}`}>
+                              Selected ✓
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200 text-slate-600">
+                              Not Selected
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed">{catItem.desc}</p>
+
+                        {/* Separate Per-Category Completion Progress Bar when Selected */}
+                        {isSelected && (
+                          <div className="pt-1 space-y-1.5">
+                            <div className="flex items-center justify-between text-[11px] font-bold">
+                              <span className="text-slate-800">{catItem.title} CV Progress</span>
+                              <span className={catProg.percent === 100 ? 'text-emerald-700' : 'text-amber-800'}>
+                                {catProg.percent}% ({catProg.completedCount}/{catProg.totalRequired})
+                              </span>
+                            </div>
+                            <div className="w-full bg-white rounded-full h-2 overflow-hidden border border-slate-200">
+                              <div
+                                className={`h-2 rounded-full transition-all duration-300 ${
+                                  catProg.percent === 100 ? 'bg-emerald-600' : 'bg-blue-900'
+                                }`}
+                                style={{ width: `${catProg.percent}%` }}
+                              />
+                            </div>
+                            {catProg.missing.length > 0 ? (
+                              <p className="text-[10px] text-rose-800 bg-white/80 p-2 rounded-lg border border-rose-200 leading-relaxed">
+                                <strong>Missing Required:</strong> {catProg.missing.join(', ')}
+                              </p>
+                            ) : (
+                              <p className="text-[10px] text-emerald-800 bg-white/80 p-2 rounded-lg border border-emerald-200 font-semibold">
+                                ✓ All required fields completed for {catItem.title} CV
+                              </p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-wrap pt-1">
+                        <button
+                          type="button"
+                          onClick={() => store.toggleTutorCategory(tutor.id, catItem.key, !isSelected)}
+                          className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-colors cursor-pointer ${
+                            isSelected
+                              ? 'bg-white border border-slate-300 text-slate-700 hover:bg-slate-100'
+                              : 'bg-blue-900 text-white hover:bg-blue-800'
+                          }`}
+                        >
+                          {isSelected ? 'Deselect' : 'Select Category'}
+                        </button>
+
+                        {isSelected && (
+                          <button
+                            type="button"
+                            onClick={() => navigateTo('tutor-profile-edit', { tutorCategory: catItem.key })}
+                            className={`px-3 py-1.5 rounded-xl text-[11px] font-bold transition-colors cursor-pointer flex-1 text-center ${
+                              catProg.percent < 100
+                                ? 'bg-amber-500 hover:bg-amber-400 text-blue-950'
+                                : 'bg-blue-900 hover:bg-blue-800 text-white'
+                            }`}
+                          >
+                            {catProg.percent < 100 ? 'Complete CV' : 'Edit CV'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
 
         </div>
 
@@ -565,12 +789,12 @@ export const TutorDashboard: React.FC = () => {
 
               <button
                 type="button"
-                onClick={() => navigateTo('tutor-profile-edit')}
+                onClick={() => navigateTo('tutor-profile-edit', { tutorCategory: selectedCategories[0] || 'general' })}
                 className="p-3.5 rounded-2xl bg-white border border-slate-200 text-left hover:border-blue-900 transition-colors shadow-xs"
               >
                 <GraduationCap className="w-5 h-5 text-indigo-600 mb-1.5" />
-                <h4 className="font-bold text-xs text-blue-950">Complete Profile</h4>
-                <p className="text-[11px] text-slate-500">{completionData.percent}% filled</p>
+                <h4 className="font-bold text-xs text-blue-950">Complete CV</h4>
+                <p className="text-[11px] text-slate-500">{overallCompletion.percent}% overall filled</p>
               </button>
 
               <button
@@ -579,8 +803,8 @@ export const TutorDashboard: React.FC = () => {
                 className="p-3.5 rounded-2xl bg-white border border-slate-200 text-left hover:border-blue-900 transition-colors shadow-xs"
               >
                 <Users className="w-5 h-5 text-emerald-600 mb-1.5" />
-                <h4 className="font-bold text-xs text-blue-950">Public CV Preview</h4>
-                <p className="text-[11px] text-slate-500">View as guardian sees</p>
+                <h4 className="font-bold text-xs text-blue-950">View Profile</h4>
+                <p className="text-[11px] text-slate-500">Public CV Preview</p>
               </button>
             </div>
 
@@ -718,6 +942,105 @@ export const TutorDashboard: React.FC = () => {
               )}
             </div>
 
+          </div>
+        )}
+
+        {/* Tab: Profile & Multi-Category CV Summary */}
+        {activeTab === 'profile' && (
+          <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-xs space-y-5 text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div>
+                <h3 className="font-bold text-base text-blue-950">
+                  {language === 'bn' ? 'প্রোফাইল ও মাল্টি-ক্যাটাগরি সিভি ম্যানেজমেন্ট' : 'Profile & Multi-Category CV Management'}
+                </h3>
+                <p className="text-slate-500">
+                  {language === 'bn'
+                    ? 'উপরের ৩টি ক্যাটাগরি থেকে এক বা একাধিক ক্যাটাগরি নির্বাচন করে আলাদা আলাদা সিভি সম্পাদনা ও সংরক্ষণ করুন।'
+                    : 'Manage your basic details and edit each selected category CV independently.'}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => navigateTo('tutor-detail', { tutorId: tutor.id })}
+                  className="px-3.5 py-2 rounded-xl border border-slate-300 text-blue-950 font-bold hover:bg-slate-50 cursor-pointer"
+                >
+                  View Profile
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigateTo('tutor-profile-edit', { tutorCategory: selectedCategories[0] || 'general' })}
+                  className="px-4 py-2 rounded-xl bg-blue-900 hover:bg-blue-800 text-white font-bold cursor-pointer"
+                >
+                  Edit CV
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-[10px] text-slate-500 block">Full Name</span>
+                <span className="font-bold text-slate-900">{tutor.fullName || 'Not set yet'}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-[10px] text-slate-500 block">Phone / Email</span>
+                <span className="font-bold text-slate-900">{tutor.phone || tutor.email || 'Not set yet'}</span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-[10px] text-slate-500 block">Location</span>
+                <span className="font-bold text-slate-900">
+                  {[tutor.area, tutor.district].filter(Boolean).join(', ') || 'Not set yet'}
+                </span>
+              </div>
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                <span className="text-[10px] text-slate-500 block">Overall Completion</span>
+                <span className="font-bold text-blue-950">{overallCompletion.percent}%</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="font-bold text-sm text-blue-950">
+                Selected Categories Breakdown ({selectedCategories.length})
+              </h4>
+              {selectedCategories.length === 0 ? (
+                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-950">
+                  No category selected yet. Please click <strong>Select Category</strong> above on General Tutor, Qawmi Madrasa Tutor, or Alia Madrasa Tutor.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  {selectedCategories.map((cat) => {
+                    const catProg = overallCompletion.categoriesProgress[cat];
+                    const title = cat === 'general' ? 'General Tutor CV' : cat === 'qawmi_madrasa' ? 'Qawmi Madrasa Tutor CV' : 'Alia Madrasa Tutor CV';
+                    return (
+                      <div key={cat} className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-blue-950">{title}</span>
+                          <span className="font-bold text-xs text-blue-900">{catProg.percent}%</span>
+                        </div>
+                        <div className="w-full bg-white rounded-full h-2 border border-slate-200 overflow-hidden">
+                          <div
+                            className={`h-2 rounded-full ${catProg.percent === 100 ? 'bg-emerald-600' : 'bg-blue-900'}`}
+                            style={{ width: `${catProg.percent}%` }}
+                          />
+                        </div>
+                        {catProg.missing.length > 0 ? (
+                          <p className="text-[11px] text-rose-700">Missing: {catProg.missing.join(', ')}</p>
+                        ) : (
+                          <p className="text-[11px] text-emerald-700 font-semibold">✓ All required fields complete</p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => navigateTo('tutor-profile-edit', { tutorCategory: cat })}
+                          className="w-full py-2 rounded-lg bg-blue-900 hover:bg-blue-800 text-white font-bold text-xs cursor-pointer"
+                        >
+                          {catProg.percent < 100 ? 'Complete CV' : 'Edit CV'}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -2103,11 +2426,11 @@ export const TutorDashboard: React.FC = () => {
 
                 <button
                   type="button"
-                  onClick={() => handleSidebarItemClick(null, 'tutor-profile-edit')}
-                  className="w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 hover:bg-slate-50"
+                  onClick={() => handleSidebarItemClick('profile')}
+                  className={`w-full text-left px-3 py-2.5 rounded-xl flex items-center gap-3 ${activeTab === 'profile' ? 'bg-blue-50 text-blue-900 font-bold' : 'hover:bg-slate-50'}`}
                 >
                   <GraduationCap className="w-4 h-4 text-slate-500" />
-                  <span>My Profile & CV</span>
+                  <span>My Profile & CV ({selectedCategories.length})</span>
                 </button>
 
                 <button
@@ -2301,6 +2624,44 @@ export const TutorDashboard: React.FC = () => {
         isOpen={kycModalOpen}
         onClose={() => setKycModalOpen(false)}
       />
+
+      {/* Quick Profile Photo Upload Modal */}
+      {photoModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+              <h3 className="font-bold text-sm text-blue-950">
+                {language === 'bn' ? 'টিউটর প্রোফাইল ছবি আপলোড করুন' : 'Upload Tutor Profile Photo'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setPhotoModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <TutorPhotoUpload
+              currentPhoto={tutor.photo}
+              tutorName={tutor.fullName || currentUser.email || currentUser.phone || 'Tutor'}
+              onPhotoChanged={(newPhotoUrl) => {
+                store.updateTutorPhoto(tutor.id, newPhotoUrl);
+              }}
+            />
+
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => setPhotoModalOpen(false)}
+                className="px-5 py-2 bg-blue-900 text-white rounded-xl text-xs font-bold hover:bg-blue-800 cursor-pointer"
+              >
+                {language === 'bn' ? 'সম্পন্ন' : 'Done'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Feature 4: Tutor Student Assessment & Feedback Modal */}
       {tutorFeedbackModalOpen && selectedDemoForFeedback && (

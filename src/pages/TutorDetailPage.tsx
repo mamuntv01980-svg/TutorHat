@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { TRANSLATIONS } from '../constants/translations';
-import { tutorProfileImg } from '../services/store';
+import { tutorProfileImg, getTutorSelectedCategories, getCategoryCvData } from '../services/store';
 import { TutorVerificationBadge } from '../components/common/TutorVerificationBadge';
 import { TutorReviewsSection } from '../components/review/TutorReviewsSection';
 import { BookDemoModal } from '../components/demo/BookDemoModal';
@@ -104,20 +104,31 @@ export const TutorDetailPage: React.FC = () => {
                   ID: {tutor.id}
                 </span>
 
-                {/* Tutor Category Pill */}
-                {tutor.tutorCategory === 'qawmi_madrasa' ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                    📖 কওমি মাদ্রাসা টিউটর
-                  </span>
-                ) : tutor.tutorCategory === 'alia_madrasa' ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
-                    🕌 আলিয়া মাদ্রাসা টিউটর
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-200">
-                    🎓 জেনারেল টিউটর
-                  </span>
-                )}
+                {/* Multi-Category Tutor Pills */}
+                {(getTutorSelectedCategories(tutor).length > 0
+                  ? getTutorSelectedCategories(tutor)
+                  : [tutor.tutorCategory || 'general']
+                ).map((cat) => {
+                  if (cat === 'qawmi_madrasa') {
+                    return (
+                      <span key={cat} className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                        📖 কওমি মাদ্রাসা টিউটর
+                      </span>
+                    );
+                  }
+                  if (cat === 'alia_madrasa') {
+                    return (
+                      <span key={cat} className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+                        🕌 আলিয়া মাদ্রাসা টিউটর
+                      </span>
+                    );
+                  }
+                  return (
+                    <span key={cat} className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-200">
+                      🎓 জেনারেল টিউটর
+                    </span>
+                  );
+                })}
 
                 {/* Hafiz-e-Quran Badge if applicable */}
                 {tutor.madrasaDetails?.isHafiz && (
@@ -245,93 +256,146 @@ export const TutorDetailPage: React.FC = () => {
             </h3>
 
             <div className="space-y-4 text-xs text-slate-700">
-              {/* Madrasa Credentials Card (for Alia and Qawmi Madrasa tutors) */}
-              {tutor.madrasaDetails && (tutor.tutorCategory === 'qawmi_madrasa' || tutor.tutorCategory === 'alia_madrasa') && (
-                <div className={`p-4 rounded-xl border ${
-                  tutor.tutorCategory === 'qawmi_madrasa' 
-                    ? 'bg-amber-50/70 border-amber-300' 
-                    : 'bg-emerald-50/70 border-emerald-300'
-                }`}>
-                  <div className="flex items-center justify-between gap-2 border-b border-black/10 pb-2 mb-3">
-                    <span className="font-bold text-xs flex items-center gap-1.5 text-slate-900">
-                      {tutor.tutorCategory === 'qawmi_madrasa' ? '📖 কওমি মাদ্রাসা ও সানাদ বিবরণ' : '🕌 আলিয়া মাদ্রাসা ও ডিগ্রি বিবরণ'}
-                    </span>
-                    {tutor.madrasaDetails.sanadDivisionOrGpa && (
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-800">
-                        {tutor.madrasaDetails.sanadDivisionOrGpa}
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                    <div>
-                      <span className="text-[11px] text-slate-500 block">সর্বোচ্চ সনদ / ডিগ্রি:</span>
-                      <span className="font-bold text-slate-900">{tutor.madrasaDetails.highestSanadOrDegree || tutor.programDegree}</span>
-                    </div>
-                    <div>
-                      <span className="text-[11px] text-slate-500 block">মাদরাসা শিক্ষাবোর্ড:</span>
-                      <span className="font-semibold text-slate-800">{tutor.madrasaDetails.madrasaBoard || 'বেফাক / হাইয়াতুল উলয়া'}</span>
-                    </div>
-                    {tutor.madrasaDetails.specializationDept && (
-                      <div>
-                        <span className="text-[11px] text-slate-500 block">বিশেষ তাকাহ্হুস / বিভাগ:</span>
-                        <span className="font-semibold text-slate-800">{tutor.madrasaDetails.specializationDept}</span>
+              {/* Category-wise CV Details for Every Selected Category */}
+              {(() => {
+                const cats = getTutorSelectedCategories(tutor);
+                const activeCats = cats.length > 0 ? cats : [tutor.tutorCategory || 'general'];
+                return activeCats.map((cat) => {
+                  if (cat === 'qawmi_madrasa') {
+                    const q = getCategoryCvData(tutor, 'qawmi_madrasa');
+                    return (
+                      <div key={cat} className="p-4 rounded-xl border bg-amber-50/70 border-amber-300 space-y-2.5">
+                        <div className="flex items-center justify-between gap-2 border-b border-black/10 pb-2">
+                          <span className="font-bold text-xs text-amber-950">📖 কওমি মাদ্রাসা সিভি ও যোগ্যতা</span>
+                          {q.examDivisionOrResult && (
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white border border-amber-200 text-amber-900">
+                              {q.examDivisionOrResult}
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          <div>
+                            <span className="text-[11px] text-slate-500 block">মাদ্রাসার নাম:</span>
+                            <span className="font-bold text-slate-900">{q.madrasaName || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-[11px] text-slate-500 block">সর্বোচ্চ স্তর / সনদ:</span>
+                            <span className="font-bold text-slate-900">{q.educationLevel || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-[11px] text-slate-500 block">মাদরাসা বোর্ড:</span>
+                            <span className="font-semibold text-slate-800">{q.madrasaBoard || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-[11px] text-slate-500 block">কুরআন, তাজবীদ ও আরবি দক্ষতা:</span>
+                            <span className="font-semibold text-teal-900">
+                              {[q.isHafiz ? 'হাফেজ-এ-কুরআন' : '', q.tajweedQiratSkill, q.quranArabicSkills].filter(Boolean).join(' · ') || '—'}
+                            </span>
+                          </div>
+                          {q.qawmiSubjects.length > 0 && (
+                            <div className="sm:col-span-2">
+                              <span className="text-[11px] text-slate-500 block">কওমি পাঠদানের বিষয়:</span>
+                              <span className="font-semibold text-slate-800">{q.qawmiSubjects.join(', ')}</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    )}
-                    {tutor.madrasaDetails.qiratTajweedCertificate && (
-                      <div>
-                        <span className="text-[11px] text-slate-500 block">ক্বেরাত ও তাজবীদ সনদ:</span>
-                        <span className="font-semibold text-teal-800">{tutor.madrasaDetails.qiratTajweedCertificate}</span>
+                    );
+                  }
+
+                  if (cat === 'alia_madrasa') {
+                    const a = getCategoryCvData(tutor, 'alia_madrasa');
+                    return (
+                      <div key={cat} className="p-4 rounded-xl border bg-emerald-50/70 border-emerald-300 space-y-2.5">
+                        <div className="flex items-center justify-between gap-2 border-b border-black/10 pb-2">
+                          <span className="font-bold text-xs text-emerald-950">🕌 আলিয়া মাদ্রাসা সিভি ও ডিগ্রি</span>
+                          {a.examResult && (
+                            <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white border border-emerald-200 text-emerald-900">
+                              {a.examResult} {a.examYear ? `(${a.examYear})` : ''}
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                          <div>
+                            <span className="text-[11px] text-slate-500 block">মাদ্রাসার নাম:</span>
+                            <span className="font-bold text-slate-900">{a.madrasaName || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-[11px] text-slate-500 block">ডিগ্রি ও স্তর:</span>
+                            <span className="font-bold text-slate-900">{[a.highestDegree, a.educationLevel].filter(Boolean).join(' · ') || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-[11px] text-slate-500 block">বোর্ড / বিশ্ববিদ্যালয়:</span>
+                            <span className="font-semibold text-slate-800">{a.boardName || '—'}</span>
+                          </div>
+                          <div>
+                            <span className="text-[11px] text-slate-500 block">পাঠদানের বিষয়:</span>
+                            <span className="font-semibold text-slate-800">{a.teachingSubjects.join(', ') || '—'}</span>
+                          </div>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                </div>
-              )}
+                    );
+                  }
 
-              {/* University */}
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h4 className="font-bold text-sm text-blue-950">{tutor.university}</h4>
-                    <p className="text-slate-600 mt-0.5">{tutor.programDegree} in {tutor.department}</p>
-                  </div>
-                  <span className="text-blue-800 font-mono text-[11px] font-semibold bg-blue-100/80 px-2 py-0.5 rounded">
-                    {tutor.currentYearSemester || 'Current'}
-                  </span>
-                </div>
-              </div>
+                  // General Tutor CV card
+                  const g = getCategoryCvData(tutor, 'general');
+                  return (
+                    <div key={cat} className="space-y-3">
+                      <div className="p-3.5 rounded-xl bg-blue-50/50 border border-blue-200">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <span className="text-[10px] font-bold uppercase text-blue-800 block mb-0.5">🎓 General Tutor CV</span>
+                            <h4 className="font-bold text-sm text-blue-950">{g.institution || tutor.university || 'University'}</h4>
+                            <p className="text-slate-600 mt-0.5">
+                              {[g.programDegree || tutor.programDegree, g.department || tutor.department].filter(Boolean).join(' in ')}
+                            </p>
+                          </div>
+                          {(g.currentYearSemester || tutor.currentYearSemester) && (
+                            <span className="text-blue-800 font-mono text-[11px] font-semibold bg-blue-100/80 px-2 py-0.5 rounded">
+                              {g.currentYearSemester || tutor.currentYearSemester}
+                            </span>
+                          )}
+                        </div>
+                        {g.preferredMediums.length > 0 && (
+                          <p className="text-[11px] text-slate-600 mt-2">
+                            <strong>Mediums:</strong> {g.preferredMediums.join(', ')}
+                          </p>
+                        )}
+                      </div>
 
-              {/* HSC */}
-              {tutor.hsc && (
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="font-bold text-xs text-slate-900">Higher Secondary (HSC)</h4>
-                      <p className="text-slate-600 mt-0.5">{tutor.hsc.schoolOrCollege}</p>
-                      <p className="text-slate-500 text-[11px]">Group: {tutor.hsc.groupOrMajor || 'Science'} · Board: {tutor.hsc.board || 'Dhaka'}</p>
+                      {g.hsc?.schoolOrCollege && (
+                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h4 className="font-bold text-xs text-slate-900">Higher Secondary (HSC)</h4>
+                              <p className="text-slate-600 mt-0.5">{g.hsc.schoolOrCollege}</p>
+                              <p className="text-slate-500 text-[11px]">Board: {g.hsc.board || 'Dhaka'}</p>
+                            </div>
+                            <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-xs">
+                              GPA {g.hsc.gpa} ({g.hsc.passingYear})
+                            </span>
+                          </div>
+                        </div>
+                      )}
+
+                      {g.ssc?.schoolOrCollege && (
+                        <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h4 className="font-bold text-xs text-slate-900">Secondary School (SSC)</h4>
+                              <p className="text-slate-600 mt-0.5">{g.ssc.schoolOrCollege}</p>
+                              <p className="text-slate-500 text-[11px]">Board: {g.ssc.board || 'Dhaka'}</p>
+                            </div>
+                            <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-xs">
+                              GPA {g.ssc.gpa} ({g.ssc.passingYear})
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-xs">
-                      GPA {tutor.hsc.gpa} ({tutor.hsc.passingYear})
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* SSC */}
-              {tutor.ssc && (
-                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h4 className="font-bold text-xs text-slate-900">Secondary School (SSC)</h4>
-                      <p className="text-slate-600 mt-0.5">{tutor.ssc.schoolOrCollege}</p>
-                      <p className="text-slate-500 text-[11px]">Group: {tutor.ssc.groupOrMajor || 'Science'} · Board: {tutor.ssc.board || 'Dhaka'}</p>
-                    </div>
-                    <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-xs">
-                      GPA {tutor.ssc.gpa} ({tutor.ssc.passingYear})
-                    </span>
-                  </div>
-                </div>
-              )}
+                  );
+                });
+              })()}
             </div>
           </div>
 

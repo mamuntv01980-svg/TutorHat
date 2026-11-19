@@ -39,7 +39,7 @@ import {
 } from '../../services/adminAuth';
 
 interface AdminAuthBarrierProps {
-  onSuccess?: () => void;
+  onSuccess?: (adminId?: string) => void;
   onCancel?: () => void;
   isModal?: boolean;
 }
@@ -237,9 +237,11 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
         setSuccessMessage('PIN ও পাসওয়ার্ড যাচাই সফল হয়েছে! অ্যাডমিন ড্যাশবোর্ডে প্রবেশ করানো হচ্ছে...');
 
         loginAs('admin', adminId);
-        setTimeout(() => {
-          if (onSuccess) onSuccess();
-        }, 120);
+        if (onSuccess) {
+          setTimeout(() => {
+            onSuccess(adminId);
+          }, 120);
+        }
       } else {
         // Record failed attempt
         const updatedLockout = recordFailedAttempt();
@@ -332,7 +334,7 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
 
       setTimeout(() => {
         loginAs('admin', adminId);
-        if (onSuccess) onSuccess();
+        if (onSuccess) onSuccess(adminId);
       }, 700);
     } catch {
       setPinSetupError('PIN সংরক্ষণ করার সময় ত্রুটি হয়েছে।');
@@ -363,7 +365,7 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
 
         setTimeout(() => {
           loginAs('admin', adminId);
-          if (onSuccess) onSuccess();
+          if (onSuccess) onSuccess(adminId);
         }, 600);
       } else {
         setLoginError(result.error || 'বায়োমেট্রিক স্ক্যান ব্যর্থ হয়েছে। পাসওয়ার্ড দিয়ে লগইন করুন।');
@@ -463,7 +465,7 @@ export const AdminAuthBarrier: React.FC<AdminAuthBarrierProps> = ({
 
       setTimeout(() => {
         loginAs('admin', adminId);
-        if (onSuccess) onSuccess();
+        if (onSuccess) onSuccess(adminId);
       }, 700);
     } catch {
       setResetError('পাসওয়ার্ড সংরক্ষণ করার সময় সমস্যা হয়েছে।');

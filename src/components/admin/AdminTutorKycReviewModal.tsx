@@ -11,8 +11,13 @@ import {
   Award,
   FileText
 } from 'lucide-react';
-import { TutorProfile } from '../../types';
-import { store } from '../../services/store';
+import { TutorProfile, TutorCategoryType } from '../../types';
+import {
+  store,
+  calculateOverallTutorProfileCompletion,
+  getTutorSelectedCategories,
+  getCategoryCvData
+} from '../../services/store';
 
 interface AdminTutorKycReviewModalProps {
   tutor: TutorProfile | null;
@@ -42,6 +47,12 @@ export const AdminTutorKycReviewModal: React.FC<AdminTutorKycReviewModalProps> =
   const [adminNotes, setAdminNotes] = useState(tutor.verificationNotes || '');
   const [rejectionReason, setRejectionReason] = useState(tutor.rejectionReason || '');
   const [zoomImage, setZoomImage] = useState<{ url: string; title: string } | null>(null);
+
+  const overallCompletion = calculateOverallTutorProfileCompletion(tutor);
+  const selectedCategories = getTutorSelectedCategories(tutor);
+  const categoriesToDisplay: TutorCategoryType[] = selectedCategories.length > 0
+    ? selectedCategories
+    : (tutor.tutorCategory ? [tutor.tutorCategory] : []);
 
   const handleApprove = () => {
     store.reviewTutorKycVerification(tutor.id, {
@@ -148,6 +159,126 @@ export const AdminTutorKycReviewModal: React.FC<AdminTutorKycReviewModalProps> =
             <span className="text-slate-400 block text-[11px]">NID নম্বর</span>
             <span className="font-bold text-blue-950 font-mono">{tutor.nidNumber || 'তথ্য দেওয়া হয়নি'}</span>
           </div>
+        </div>
+
+        {/* Multi-Category CV Breakdown & Completion */}
+        <div className="space-y-3 p-4 rounded-2xl bg-blue-50/40 border border-blue-200 text-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-blue-200/70">
+            <div>
+              <h3 className="font-bold text-sm text-blue-950">
+                মাল্টি-ক্যাটাগরি সিভি ও প্রোফাইল সম্পূর্ণতা (Category-wise CV Audit)
+              </h3>
+              <p className="text-[11px] text-slate-600">
+                নির্বাচিত ক্যাটাগরি: {categoriesToDisplay.length > 0 ? categoriesToDisplay.length : 0} টি · সামগ্রিক প্রোফাইল সম্পূর্ণতা: <strong>{overallCompletion.percent}%</strong>
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {categoriesToDisplay.map((cat) => {
+                const prog = overallCompletion.categoriesProgress[cat];
+                const label = cat === 'general' ? 'General Tutor' : cat === 'qawmi_madrasa' ? 'Qawmi Madrasa' : 'Alia Madrasa';
+                return (
+                  <span key={cat} className="px-2.5 py-1 rounded-full bg-white border border-blue-200 text-blue-950 font-bold text-[11px]">
+                    {label}: {prog.percent}%
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+
+          {categoriesToDisplay.length === 0 ? (
+            <p className="text-xs text-slate-500 italic">টিউটর এখনও কোনো ক্যাটাগরি সিভি নির্বাচন করেননি।</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {categoriesToDisplay.map((cat) => {
+                const prog = overallCompletion.categoriesProgress[cat];
+                if (cat === 'general') {
+                  const g = getCategoryCvData(tutor, 'general');
+                  return (
+                    <div key={cat} className="p-4 rounded-xl bg-white border border-blue-200 space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span className="font-bold text-sm text-blue-950">🎓 General Tutor CV</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${prog.percent === 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>
+                          Completion: {prog.percent}% ({prog.completedCount}/{prog.totalRequired})
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-700">
+                        <p><strong>University / Institution:</strong> {g.institution || '—'} ({g.department || '—'})</p>
+                        <p><strong>Program / Year:</strong> {[g.programDegree, g.currentYearSemester].filter(Boolean).join(' · ') || 'Optional / Not provided'}</p>
+                        <p><strong>HSC:</strong> {g.hsc?.schoolOrCollege || '—'} (GPA {g.hsc?.gpa || '—'}, {g.hsc?.passingYear || '—'})</p>
+                        <p><strong>SSC:</strong> {g.ssc?.schoolOrCollege || '—'} (GPA {g.ssc?.gpa || '—'}, {g.ssc?.passingYear || '—'})</p>
+                        <p><strong>Mediums:</strong> {g.preferredMediums?.join(', ') || '—'}</p>
+                        <p><strong>Classes:</strong> {g.preferredClasses?.join(', ') || '—'}</p>
+                        <p><strong>Subjects:</strong> {g.preferredSubjects?.join(', ') || '—'}</p>
+                        <p><strong>Experience & Salary:</strong> {g.teachingExperienceYears || 0} yrs · ৳{g.expectedSalary || 0}/mo</p>
+                        <p className="sm:col-span-2"><strong>Preferred Areas:</strong> {g.preferredAreas?.join(', ') || '—'}</p>
+                      </div>
+                      {prog.missing.length > 0 && (
+                        <p className="text-[11px] text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                          <strong>Missing Required:</strong> {prog.missing.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
+
+                if (cat === 'qawmi_madrasa') {
+                  const q = getCategoryCvData(tutor, 'qawmi_madrasa');
+                  return (
+                    <div key={cat} className="p-4 rounded-xl bg-white border border-amber-300 space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <span className="font-bold text-sm text-amber-950">📖 Qawmi Madrasa Tutor CV</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${prog.percent === 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>
+                          Completion: {prog.percent}% ({prog.completedCount}/{prog.totalRequired})
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-700">
+                        <p><strong>Madrasa / Jamiah:</strong> {q.madrasaName || '—'}</p>
+                        <p><strong>Education Level / Sanad:</strong> {q.educationLevel || '—'}</p>
+                        <p><strong>Board & Result:</strong> {q.madrasaBoard || '—'} · {q.examDivisionOrResult || '—'} {q.passingYear ? `(${q.passingYear})` : ''}</p>
+                        <p><strong>Hifz & Tajweed:</strong> {q.isHafiz ? 'Hafiz-e-Quran ✓' : 'Non-Hafiz'} · {q.tajweedQiratSkill || '—'}</p>
+                        <p><strong>Quran & Arabic Skills:</strong> {q.quranArabicSkills || '—'}</p>
+                        <p><strong>Qawmi Subjects:</strong> {q.qawmiSubjects?.join(', ') || '—'}</p>
+                        <p><strong>Experience & Salary:</strong> {q.teachingExperienceYears || 0} yrs · ৳{q.expectedSalary || 0}/mo</p>
+                        <p><strong>Tuition Preferences:</strong> {q.tuitionPreferences || '—'}</p>
+                        <p className="sm:col-span-2"><strong>Preferred Areas:</strong> {q.preferredAreas?.join(', ') || '—'}</p>
+                      </div>
+                      {prog.missing.length > 0 && (
+                        <p className="text-[11px] text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                          <strong>Missing Required:</strong> {prog.missing.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  );
+                }
+
+                const a = getCategoryCvData(tutor, 'alia_madrasa');
+                return (
+                  <div key={cat} className="p-4 rounded-xl bg-white border border-emerald-300 space-y-2">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                      <span className="font-bold text-sm text-emerald-950">🕌 Alia Madrasa Tutor CV</span>
+                      <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${prog.percent === 100 ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-900'}`}>
+                        Completion: {prog.percent}% ({prog.completedCount}/{prog.totalRequired})
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-700">
+                      <p><strong>Alia Madrasa Name:</strong> {a.madrasaName || '—'}</p>
+                      <p><strong>Level & Qualification:</strong> {a.educationLevel || '—'} · {a.highestDegree || '—'}</p>
+                      <p><strong>Board, Year & Result:</strong> {a.boardName || '—'} · {a.examYear || '—'} · {a.examResult || '—'}</p>
+                      <p><strong>Teaching Subjects:</strong> {a.teachingSubjects?.join(', ') || '—'}</p>
+                      <p><strong>Experience & Salary:</strong> {a.teachingExperienceYears || 0} yrs · ৳{a.expectedSalary || 0}/mo</p>
+                      <p><strong>Tuition Preferences:</strong> {a.tuitionPreferences || '—'}</p>
+                      <p className="sm:col-span-2"><strong>Preferred Areas:</strong> {a.preferredAreas?.join(', ') || '—'}</p>
+                    </div>
+                    {prog.missing.length > 0 && (
+                      <p className="text-[11px] text-rose-700 bg-rose-50 p-2 rounded-lg border border-rose-200">
+                        <strong>Missing Required:</strong> {prog.missing.join(', ')}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         {/* Uploaded Documents Grid */}

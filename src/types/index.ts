@@ -16,6 +16,14 @@ export interface User {
   adminNotes?: string;
   createdAt: string;
   passwordHash?: string;
+  passwordSalt?: string;
+  firebaseUid?: string;
+  authEmail?: string;
+  authProvider?: 'firebase_email' | 'firebase_phone_mapped' | 'salted_hash_pending_console' | 'legacy';
+  firebaseAuthSynced?: boolean;
+  studentInfo?: string;
+  preferredMedium?: string;
+  bio?: string;
   adminRoleLevel?: AdminRoleLevel;
   lastActiveAt?: string;
   adminPinHash?: string;
@@ -44,6 +52,78 @@ export interface MadrasaEducationDetails {
   currentKhidmatOrInstitution?: string; // বর্তমান খেদমত / প্রতিষ্ঠান
 }
 
+export interface GeneralTutorCvData {
+  institution: string;
+  department: string;
+  programDegree?: string;
+  currentYearSemester?: string;
+  ssc: EducationEntry;
+  hsc: EducationEntry;
+  preferredMediums: string[];
+  preferredClasses: string[];
+  preferredSubjects: string[];
+  teachingExperienceYears: number;
+  preferredAreas: string[];
+  expectedSalary: number;
+  teachingMethod?: string;
+  homeTuition?: boolean;
+  onlineTuition?: boolean;
+  coachingTuition?: boolean;
+  availableDays?: string[];
+  availableTime?: string;
+  preferredStudentGender?: 'any' | 'male' | 'female';
+  updatedAt?: string;
+}
+
+export interface QawmiTutorCvData {
+  madrasaName: string;
+  educationLevel: string;
+  madrasaBoard: string;
+  examDivisionOrResult: string;
+  passingYear?: string;
+  isHafiz: boolean;
+  hifzDetails?: string;
+  tajweedQiratSkill: string;
+  quranArabicSkills: string;
+  qawmiSubjects: string[];
+  teachingExperienceYears: number;
+  preferredAreas: string[];
+  expectedSalary?: number;
+  tuitionPreferences?: string;
+  homeTuition?: boolean;
+  onlineTuition?: boolean;
+  availableDays?: string[];
+  availableTime?: string;
+  updatedAt?: string;
+}
+
+export interface AliaTutorCvData {
+  madrasaName: string;
+  educationLevel: string;
+  highestDegree: string;
+  boardName: string;
+  examYear: string;
+  examResult: string;
+  dakhilInfo?: EducationEntry;
+  alimInfo?: EducationEntry;
+  teachingSubjects: string[];
+  teachingExperienceYears: number;
+  preferredAreas: string[];
+  expectedSalary?: number;
+  tuitionPreferences?: string;
+  homeTuition?: boolean;
+  onlineTuition?: boolean;
+  availableDays?: string[];
+  availableTime?: string;
+  updatedAt?: string;
+}
+
+export interface TutorCategoryCvs {
+  general?: GeneralTutorCvData;
+  qawmi_madrasa?: QawmiTutorCvData;
+  alia_madrasa?: AliaTutorCvData;
+}
+
 export interface TutorProfile {
   id: string;
   userId: string;
@@ -60,8 +140,11 @@ export interface TutorProfile {
   preferredAreas: string[];
   aboutMe: string;
 
-  // Tutor Stream / Category (General, Alia Madrasa, Qawmi Madrasa)
+  // Tutor Stream / Multi-Category CVs (General, Qawmi Madrasa, Alia Madrasa)
   tutorCategory?: TutorCategoryType;
+  selectedCategories?: TutorCategoryType[];
+  categoryCvs?: TutorCategoryCvs;
+  categoryCompletion?: Partial<Record<TutorCategoryType, number>>;
   madrasaDetails?: MadrasaEducationDetails;
 
   // Education

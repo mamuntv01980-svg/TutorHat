@@ -2,6 +2,11 @@ import {
   User,
   AdminRoleLevel,
   TutorProfile,
+  TutorCategoryType,
+  GeneralTutorCvData,
+  QawmiTutorCvData,
+  AliaTutorCvData,
+  TutorCategoryCvs,
   TuitionRequest,
   TuitionJob,
   TuitionJobStatus,
@@ -28,7 +33,7 @@ import heroImg from '../assets/images/hero_bangladesh_tutoring_1791378378802.jpg
 import tutorProfileImg from '../assets/images/tutor_graduate_profile_1791378392899.jpg';
 import guardianStudyImg from '../assets/images/guardian_student_study_1791378404986.jpg';
 
-import { db, testConnection, uploadTutorPhoto } from './firebase';
+import { db, testConnection, uploadTutorPhoto, uploadProfilePhoto } from './firebase';
 import { 
   collection, 
   doc, 
@@ -181,58 +186,335 @@ export interface StoreState {
   _freshCleanV10?: boolean;
 }
 
-export function calculateCvCompletion(tutor?: Partial<TutorProfile> | null): { percent: number; missing: string[] } {
+export const TUTOR_CATEGORY_ORDER: TutorCategoryType[] = ['general', 'qawmi_madrasa', 'alia_madrasa'];
+
+export function getTutorSelectedCategories(tutor?: Partial<TutorProfile> | null): TutorCategoryType[] {
+  if (!tutor) return [];
+  if (Array.isArray(tutor.selectedCategories)) {
+    const valid = tutor.selectedCategories.filter(
+      (c): c is TutorCategoryType => c === 'general' || c === 'qawmi_madrasa' || c === 'alia_madrasa'
+    );
+    return Array.from(new Set(valid));
+  }
+
+  // Legacy single-category support only if the profile already contains legacy CV/category data
+  const hasLegacyCvData = Boolean(
+    tutor.university?.trim() ||
+    tutor.department?.trim() ||
+    tutor.ssc?.schoolOrCollege?.trim() ||
+    tutor.hsc?.schoolOrCollege?.trim() ||
+    tutor.madrasaDetails?.highestSanadOrDegree?.trim() ||
+    tutor.madrasaDetails?.currentKhidmatOrInstitution?.trim() ||
+    (Array.isArray(tutor.preferredSubjects) && tutor.preferredSubjects.length > 0) ||
+    (Array.isArray(tutor.preferredClasses) && tutor.preferredClasses.length > 0) ||
+    (tutor.expectedSalary || 0) > 0
+  );
+
+  if (tutor.tutorCategory && (hasLegacyCvData || tutor.verificationStatus !== 'draft')) {
+    return [tutor.tutorCategory];
+  }
+  if (hasLegacyCvData) {
+    return ['general'];
+  }
+  return [];
+}
+
+export function getCategoryCvData(
+  tutor: Partial<TutorProfile> | null | undefined,
+  category: 'general'
+): GeneralTutorCvData;
+export function getCategoryCvData(
+  tutor: Partial<TutorProfile> | null | undefined,
+  category: 'qawmi_madrasa'
+): QawmiTutorCvData;
+export function getCategoryCvData(
+  tutor: Partial<TutorProfile> | null | undefined,
+  category: 'alia_madrasa'
+): AliaTutorCvData;
+export function getCategoryCvData(
+  tutor: Partial<TutorProfile> | null | undefined,
+  category: TutorCategoryType
+): GeneralTutorCvData | QawmiTutorCvData | AliaTutorCvData;
+export function getCategoryCvData(
+  tutor: Partial<TutorProfile> | null | undefined,
+  category: TutorCategoryType
+): GeneralTutorCvData | QawmiTutorCvData | AliaTutorCvData {
+  const existing = tutor?.categoryCvs?.[category];
+  if (category === 'general') {
+    const g = existing as GeneralTutorCvData | undefined;
+    const isLegacyGeneral = !g && (tutor?.tutorCategory === 'general' || !tutor?.tutorCategory);
+    return {
+      institution: g?.institution ?? (isLegacyGeneral ? tutor?.university || tutor?.institution || '' : ''),
+      department: g?.department ?? (isLegacyGeneral ? tutor?.department || '' : ''),
+      programDegree: g?.programDegree ?? (isLegacyGeneral ? tutor?.programDegree || '' : ''),
+      currentYearSemester: g?.currentYearSemester ?? (isLegacyGeneral ? tutor?.currentYearSemester || '' : ''),
+      ssc: g?.ssc ?? (isLegacyGeneral && tutor?.ssc ? tutor.ssc : { schoolOrCollege: '', board: 'Dhaka', gpa: '', passingYear: '' }),
+      hsc: g?.hsc ?? (isLegacyGeneral && tutor?.hsc ? tutor.hsc : { schoolOrCollege: '', board: 'Dhaka', gpa: '', passingYear: '' }),
+      preferredMediums: Array.isArray(g?.preferredMediums) ? g.preferredMediums : (isLegacyGeneral && Array.isArray(tutor?.preferredMediums) ? tutor.preferredMediums : []),
+      preferredClasses: Array.isArray(g?.preferredClasses) ? g.preferredClasses : (isLegacyGeneral && Array.isArray(tutor?.preferredClasses) ? tutor.preferredClasses : []),
+      preferredSubjects: Array.isArray(g?.preferredSubjects) ? g.preferredSubjects : (isLegacyGeneral && Array.isArray(tutor?.preferredSubjects) ? tutor.preferredSubjects : []),
+      teachingExperienceYears: g?.teachingExperienceYears ?? (isLegacyGeneral ? (tutor?.teachingExperienceYears || 0) : 0),
+      preferredAreas: Array.isArray(g?.preferredAreas) ? g.preferredAreas : (isLegacyGeneral && Array.isArray(tutor?.preferredAreas) ? tutor.preferredAreas : []),
+      expectedSalary: g?.expectedSalary ?? (isLegacyGeneral ? (tutor?.expectedSalary || 0) : 0),
+      teachingMethod: g?.teachingMethod ?? (isLegacyGeneral ? tutor?.teachingMethod || '' : ''),
+      homeTuition: g?.homeTuition ?? (isLegacyGeneral ? tutor?.homeTuition ?? false : false),
+      onlineTuition: g?.onlineTuition ?? (isLegacyGeneral ? tutor?.onlineTeaching ?? false : false),
+      coachingTuition: g?.coachingTuition ?? (isLegacyGeneral ? tutor?.coachingGroupTuition ?? false : false),
+      availableDays: Array.isArray(g?.availableDays) ? g.availableDays : (isLegacyGeneral && Array.isArray(tutor?.availableDays) ? tutor.availableDays : []),
+      availableTime: g?.availableTime ?? (isLegacyGeneral ? tutor?.availableTime || '' : ''),
+      preferredStudentGender: g?.preferredStudentGender ?? (isLegacyGeneral ? tutor?.preferredStudentGender || 'any' : 'any'),
+      updatedAt: g?.updatedAt
+    };
+  }
+
+  if (category === 'qawmi_madrasa') {
+    const q = existing as QawmiTutorCvData | undefined;
+    const isLegacyQawmi = !q && tutor?.tutorCategory === 'qawmi_madrasa';
+    return {
+      madrasaName: q?.madrasaName ?? (isLegacyQawmi ? (tutor?.madrasaDetails?.currentKhidmatOrInstitution || tutor?.university || '') : ''),
+      educationLevel: q?.educationLevel ?? (isLegacyQawmi ? (tutor?.madrasaDetails?.highestSanadOrDegree || tutor?.programDegree || '') : ''),
+      madrasaBoard: q?.madrasaBoard ?? (isLegacyQawmi ? (tutor?.madrasaDetails?.madrasaBoard || '') : ''),
+      examDivisionOrResult: q?.examDivisionOrResult ?? (isLegacyQawmi ? (tutor?.madrasaDetails?.sanadDivisionOrGpa || '') : ''),
+      passingYear: q?.passingYear ?? (isLegacyQawmi ? (tutor?.madrasaDetails?.sanadPassingYear || '') : ''),
+      isHafiz: q?.isHafiz ?? (isLegacyQawmi ? Boolean(tutor?.madrasaDetails?.isHafiz) : false),
+      hifzDetails: q?.hifzDetails ?? '',
+      tajweedQiratSkill: q?.tajweedQiratSkill ?? (isLegacyQawmi ? (tutor?.madrasaDetails?.qiratTajweedCertificate || '') : ''),
+      quranArabicSkills: q?.quranArabicSkills ?? (isLegacyQawmi ? (tutor?.madrasaDetails?.specializationDept || tutor?.department || '') : ''),
+      qawmiSubjects: Array.isArray(q?.qawmiSubjects) ? q.qawmiSubjects : (isLegacyQawmi && Array.isArray(tutor?.preferredSubjects) ? tutor.preferredSubjects : []),
+      teachingExperienceYears: q?.teachingExperienceYears ?? (isLegacyQawmi ? (tutor?.teachingExperienceYears || 0) : 0),
+      preferredAreas: Array.isArray(q?.preferredAreas) ? q.preferredAreas : (isLegacyQawmi && Array.isArray(tutor?.preferredAreas) ? tutor.preferredAreas : []),
+      expectedSalary: q?.expectedSalary ?? (isLegacyQawmi ? (tutor?.expectedSalary || 0) : 0),
+      tuitionPreferences: q?.tuitionPreferences ?? (isLegacyQawmi ? (tutor?.availableTime || tutor?.teachingMethod || '') : ''),
+      homeTuition: q?.homeTuition ?? (isLegacyQawmi ? tutor?.homeTuition ?? false : false),
+      onlineTuition: q?.onlineTuition ?? (isLegacyQawmi ? tutor?.onlineTeaching ?? false : false),
+      availableDays: Array.isArray(q?.availableDays) ? q.availableDays : (isLegacyQawmi && Array.isArray(tutor?.availableDays) ? tutor.availableDays : []),
+      availableTime: q?.availableTime ?? (isLegacyQawmi ? tutor?.availableTime || '' : ''),
+      updatedAt: q?.updatedAt
+    };
+  }
+
+  const a = existing as AliaTutorCvData | undefined;
+  const isLegacyAlia = !a && tutor?.tutorCategory === 'alia_madrasa';
+  return {
+    madrasaName: a?.madrasaName ?? (isLegacyAlia ? (tutor?.madrasaDetails?.currentKhidmatOrInstitution || tutor?.university || '') : ''),
+    educationLevel: a?.educationLevel ?? (isLegacyAlia ? (tutor?.madrasaDetails?.highestSanadOrDegree || '') : ''),
+    highestDegree: a?.highestDegree ?? (isLegacyAlia ? (tutor?.madrasaDetails?.highestSanadOrDegree || tutor?.programDegree || '') : ''),
+    boardName: a?.boardName ?? (isLegacyAlia ? (tutor?.madrasaDetails?.madrasaBoard || '') : ''),
+    examYear: a?.examYear ?? (isLegacyAlia ? (tutor?.madrasaDetails?.sanadPassingYear || tutor?.hsc?.passingYear || '') : ''),
+    examResult: a?.examResult ?? (isLegacyAlia ? (tutor?.madrasaDetails?.sanadDivisionOrGpa || tutor?.hsc?.gpa || '') : ''),
+    dakhilInfo: a?.dakhilInfo ?? (isLegacyAlia && tutor?.ssc ? tutor.ssc : { schoolOrCollege: '', board: 'Madrasa', gpa: '', passingYear: '' }),
+    alimInfo: a?.alimInfo ?? (isLegacyAlia && tutor?.hsc ? tutor.hsc : { schoolOrCollege: '', board: 'Madrasa', gpa: '', passingYear: '' }),
+    teachingSubjects: Array.isArray(a?.teachingSubjects) ? a.teachingSubjects : (isLegacyAlia && Array.isArray(tutor?.preferredSubjects) ? tutor.preferredSubjects : []),
+    teachingExperienceYears: a?.teachingExperienceYears ?? (isLegacyAlia ? (tutor?.teachingExperienceYears || 0) : 0),
+    preferredAreas: Array.isArray(a?.preferredAreas) ? a.preferredAreas : (isLegacyAlia && Array.isArray(tutor?.preferredAreas) ? tutor.preferredAreas : []),
+    expectedSalary: a?.expectedSalary ?? (isLegacyAlia ? (tutor?.expectedSalary || 0) : 0),
+    tuitionPreferences: a?.tuitionPreferences ?? (isLegacyAlia ? (tutor?.availableTime || tutor?.teachingMethod || '') : ''),
+    homeTuition: a?.homeTuition ?? (isLegacyAlia ? tutor?.homeTuition ?? false : false),
+    onlineTuition: a?.onlineTuition ?? (isLegacyAlia ? tutor?.onlineTeaching ?? false : false),
+    availableDays: Array.isArray(a?.availableDays) ? a.availableDays : (isLegacyAlia && Array.isArray(tutor?.availableDays) ? tutor.availableDays : []),
+    availableTime: a?.availableTime ?? (isLegacyAlia ? tutor?.availableTime || '' : ''),
+    updatedAt: a?.updatedAt
+  };
+}
+
+export interface CategoryCvCompletionResult {
+  category: TutorCategoryType;
+  percent: number;
+  missing: string[];
+  completedCount: number;
+  totalRequired: number;
+}
+
+export function calculateCategoryCvCompletion(
+  tutor: Partial<TutorProfile> | null | undefined,
+  category: TutorCategoryType
+): CategoryCvCompletionResult {
   if (!tutor) {
-    return { percent: 0, missing: ['Profile Data'] };
+    return { category, percent: 0, missing: ['Profile Data'], completedCount: 0, totalRequired: 1 };
+  }
+
+  let checks: { label: string; ok: boolean }[] = [];
+
+  if (category === 'general') {
+    const g = getCategoryCvData(tutor, 'general');
+    checks = [
+      { label: 'Institution / University Name', ok: !!g.institution?.trim() },
+      { label: 'Department / Major', ok: !!g.department?.trim() },
+      { label: 'SSC Examination Details (School, GPA, Year)', ok: !!g.ssc?.schoolOrCollege?.trim() && !!g.ssc?.gpa?.trim() && !!g.ssc?.passingYear?.trim() },
+      { label: 'HSC Examination Details (College, GPA, Year)', ok: !!g.hsc?.schoolOrCollege?.trim() && !!g.hsc?.gpa?.trim() && !!g.hsc?.passingYear?.trim() },
+      { label: 'Mediums (Bangla / English Medium / English Version)', ok: Array.isArray(g.preferredMediums) && g.preferredMediums.length > 0 },
+      { label: 'Class Levels', ok: Array.isArray(g.preferredClasses) && g.preferredClasses.length > 0 },
+      { label: 'Subjects', ok: Array.isArray(g.preferredSubjects) && g.preferredSubjects.length > 0 },
+      { label: 'Teaching Experience (Years)', ok: (g.teachingExperienceYears || 0) > 0 },
+      { label: 'Preferred Tuition Areas', ok: Array.isArray(g.preferredAreas) && g.preferredAreas.length > 0 },
+      { label: 'Expected Monthly Salary', ok: (g.expectedSalary || 0) > 0 }
+    ];
+  } else if (category === 'qawmi_madrasa') {
+    const q = getCategoryCvData(tutor, 'qawmi_madrasa');
+    checks = [
+      { label: 'Qawmi Madrasa / Jamiah Name', ok: !!q.madrasaName?.trim() },
+      { label: 'Education Level (e.g. Dawra-e-Hadith / Fazilat)', ok: !!q.educationLevel?.trim() },
+      { label: 'Madrasa Board & Exam Result / Division', ok: !!q.madrasaBoard?.trim() && !!q.examDivisionOrResult?.trim() },
+      { label: 'Hifz / Tajweed & Qirat Skills', ok: Boolean(q.isHafiz) || !!q.tajweedQiratSkill?.trim() },
+      { label: 'Quran & Arabic Mastery Details', ok: !!q.quranArabicSkills?.trim() },
+      { label: 'Qawmi Subjects', ok: Array.isArray(q.qawmiSubjects) && q.qawmiSubjects.length > 0 },
+      { label: 'Teaching Experience (Years)', ok: (q.teachingExperienceYears || 0) > 0 },
+      { label: 'Preferred Teaching Areas', ok: Array.isArray(q.preferredAreas) && q.preferredAreas.length > 0 },
+      { label: 'Expected Salary / Tuition Preferences', ok: (q.expectedSalary || 0) > 0 || !!q.tuitionPreferences?.trim() }
+    ];
+  } else {
+    const a = getCategoryCvData(tutor, 'alia_madrasa');
+    checks = [
+      { label: 'Alia Madrasa Name', ok: !!a.madrasaName?.trim() },
+      { label: 'Education Level', ok: !!a.educationLevel?.trim() },
+      { label: 'Qualification (Dakhil / Alim / Fazil / Kamil)', ok: !!a.highestDegree?.trim() },
+      { label: 'Madrasa / Islamic Arabic Board', ok: !!a.boardName?.trim() },
+      { label: 'Examination Year & Results', ok: !!a.examYear?.trim() && !!a.examResult?.trim() },
+      { label: 'Teaching Subjects', ok: Array.isArray(a.teachingSubjects) && a.teachingSubjects.length > 0 },
+      { label: 'Teaching Experience (Years)', ok: (a.teachingExperienceYears || 0) > 0 },
+      { label: 'Preferred Tuition Areas', ok: Array.isArray(a.preferredAreas) && a.preferredAreas.length > 0 },
+      { label: 'Expected Salary / Tuition Preferences', ok: (a.expectedSalary || 0) > 0 || !!a.tuitionPreferences?.trim() }
+    ];
+  }
+
+  const completedCount = checks.filter(c => c.ok).length;
+  const totalRequired = checks.length;
+  const missing = checks.filter(c => !c.ok).map(c => c.label);
+  const rawPct = totalRequired > 0 ? Math.round((completedCount / totalRequired) * 100) : 0;
+  // Guarantee 100% ONLY when every single required field is complete
+  const percent = completedCount === totalRequired ? 100 : Math.min(99, rawPct);
+
+  return {
+    category,
+    percent,
+    missing,
+    completedCount,
+    totalRequired
+  };
+}
+
+export interface OverallTutorCompletionResult {
+  percent: number;
+  missing: string[];
+  basicPercent: number;
+  basicMissing: string[];
+  selectedCategories: TutorCategoryType[];
+  categoriesProgress: Record<TutorCategoryType, CategoryCvCompletionResult>;
+}
+
+export function calculateOverallTutorProfileCompletion(
+  tutor?: Partial<TutorProfile> | null
+): OverallTutorCompletionResult {
+  const emptyProgress: Record<TutorCategoryType, CategoryCvCompletionResult> = {
+    general: calculateCategoryCvCompletion(tutor, 'general'),
+    qawmi_madrasa: calculateCategoryCvCompletion(tutor, 'qawmi_madrasa'),
+    alia_madrasa: calculateCategoryCvCompletion(tutor, 'alia_madrasa')
+  };
+
+  if (!tutor) {
+    return {
+      percent: 0,
+      missing: ['Profile Data'],
+      basicPercent: 0,
+      basicMissing: ['Profile Data'],
+      selectedCategories: [],
+      categoriesProgress: emptyProgress
+    };
+  }
+
+  const cleanName = tutor.fullName?.trim() || '';
+  const hasRealName = Boolean(cleanName && cleanName !== 'New User');
+
+  const basicChecks = [
+    { label: 'Profile Photo', ok: !!tutor.photo?.trim() },
+    { label: 'Full Name', ok: hasRealName },
+    { label: 'Mobile, Gender, District & Present Area', ok: !!tutor.gender && !!tutor.phone?.trim() && !!tutor.district?.trim() && !!tutor.area?.trim() },
+    { label: 'About Me Bio (min 20 chars)', ok: (tutor.aboutMe?.trim().length || 0) >= 20 }
+  ];
+
+  const basicDone = basicChecks.filter(c => c.ok).length;
+  const basicTotal = basicChecks.length;
+  const basicMissing = basicChecks.filter(c => !c.ok).map(c => c.label);
+  const basicPercent = basicDone === basicTotal ? 100 : Math.min(99, Math.round((basicDone / basicTotal) * 100));
+
+  const selectedCategories = getTutorSelectedCategories(tutor);
+
+  let totalDone = basicDone;
+  let totalReq = basicTotal;
+  const allMissing: string[] = [...basicMissing];
+
+  if (selectedCategories.length === 0) {
+    // At least one category must be selected & completed before overall can reach 100%
+    totalReq += 1;
+    allMissing.push('Select at least one Tutor Category (General / Qawmi / Alia)');
+  } else {
+    const catNameMap: Record<TutorCategoryType, string> = {
+      general: 'General CV',
+      qawmi_madrasa: 'Qawmi CV',
+      alia_madrasa: 'Alia CV'
+    };
+    for (const cat of selectedCategories) {
+      const catProg = emptyProgress[cat];
+      totalDone += catProg.completedCount;
+      totalReq += catProg.totalRequired;
+      for (const m of catProg.missing) {
+        allMissing.push(`[${catNameMap[cat]}] ${m}`);
+      }
+    }
+  }
+
+  const rawOverall = totalReq > 0 ? Math.round((totalDone / totalReq) * 100) : 0;
+  const percent = totalDone === totalReq ? 100 : Math.min(99, rawOverall);
+
+  return {
+    percent,
+    missing: allMissing,
+    basicPercent,
+    basicMissing,
+    selectedCategories,
+    categoriesProgress: emptyProgress
+  };
+}
+
+export function calculateCvCompletion(tutor?: Partial<TutorProfile> | null): { percent: number; missing: string[] } {
+  const overall = calculateOverallTutorProfileCompletion(tutor);
+  return {
+    percent: overall.percent,
+    missing: overall.missing
+  };
+}
+
+export function calculateGuardianCompletion(user?: Partial<User> | null): { percent: number; missing: string[] } {
+  if (!user) {
+    return { percent: 0, missing: ['Account Data'] };
   }
   const missing: string[] = [];
   let score = 0;
 
-  const isQawmi = tutor.tutorCategory === 'qawmi_madrasa';
-  const isAlia = tutor.tutorCategory === 'alia_madrasa';
+  const cleanName = user.name?.trim() || '';
+  const hasRealName = Boolean(cleanName && cleanName !== 'New User');
 
   const weights = [
-    { field: 'fullName', name: 'Full Name', weight: 10, check: () => !!tutor.fullName?.trim() },
-    { field: 'gender', name: 'Gender', weight: 5, check: () => !!tutor.gender },
-    { field: 'phone', name: 'Mobile Number', weight: 10, check: () => !!tutor.phone?.trim() },
-    { field: 'area', name: 'Current Area', weight: 5, check: () => !!tutor.area?.trim() },
-    { field: 'aboutMe', name: 'About Me Bio', weight: 10, check: () => (tutor.aboutMe?.length || 0) > 20 },
-    
-    // Academic checks adapting to category:
+    { field: 'avatar', name: 'Profile Photo', weight: 20, check: () => !!user.avatar?.trim() },
+    { field: 'name', name: 'Full Name', weight: 20, check: () => hasRealName },
     {
-      field: 'academicInstitution',
-      name: isQawmi ? 'Madrasa / Jamiah Name' : 'University / College Name',
-      weight: 15,
-      check: () => !!tutor.university?.trim() || !!tutor.madrasaDetails?.currentKhidmatOrInstitution?.trim()
+      field: 'address',
+      name: 'District & Present Address',
+      weight: 20,
+      check: () => !!user.district?.trim() && !!user.location?.trim()
     },
     {
-      field: 'academicDegree',
-      name: isQawmi ? 'Sanad / Department (e.g. Dawra-e-Hadith/Ifta)' : 'Department / Discipline',
-      weight: 10,
-      check: () => !!tutor.department?.trim() || !!tutor.madrasaDetails?.highestSanadOrDegree?.trim()
+      field: 'contact',
+      name: 'Mobile Number & Gmail',
+      weight: 20,
+      check: () => !!user.phone?.trim() && !!user.email?.trim()
     },
     {
-      field: 'secondaryRecords',
-      name: isQawmi ? 'Sanad / Board Details' : (isAlia ? 'Dakhil / SSC Record' : 'SSC Records'),
-      weight: 5,
-      check: () => isQawmi 
-        ? (!!tutor.madrasaDetails?.madrasaBoard || (!!tutor.ssc?.schoolOrCollege && !!tutor.ssc?.gpa))
-        : (!!tutor.ssc?.schoolOrCollege && !!tutor.ssc?.gpa)
-    },
-    {
-      field: 'higherRecords',
-      name: isQawmi ? 'Specialization (Hifz/Qirat/Adab/Sanad)' : (isAlia ? 'Alim / HSC Record' : 'HSC Records'),
-      weight: 5,
-      check: () => isQawmi
-        ? (!!tutor.madrasaDetails?.highestSanadOrDegree || !!tutor.madrasaDetails?.isHafiz || (!!tutor.hsc?.schoolOrCollege && !!tutor.hsc?.gpa))
-        : (!!tutor.hsc?.schoolOrCollege && !!tutor.hsc?.gpa)
-    },
-
-    { field: 'preferredClasses', name: 'Preferred Classes / Learner Levels', weight: 5, check: () => (tutor.preferredClasses?.length || 0) > 0 },
-    { field: 'preferredSubjects', name: 'Preferred Subjects', weight: 10, check: () => (tutor.preferredSubjects?.length || 0) > 0 },
-    { field: 'preferredAreas', name: 'Preferred Teaching Areas', weight: 5, check: () => (tutor.preferredAreas?.length || 0) > 0 },
-    { field: 'expectedSalary', name: 'Expected Salary', weight: 5, check: () => (tutor.expectedSalary || 0) > 0 },
-    { field: 'teachingExperienceYears', name: 'Teaching Experience', weight: 5, check: () => typeof tutor.teachingExperienceYears === 'number' }
+      field: 'studentBio',
+      name: 'Student Class, Medium & Notes',
+      weight: 20,
+      check: () => !!user.studentInfo?.trim() || !!user.preferredMedium?.trim() || !!user.bio?.trim()
+    }
   ];
 
   for (const item of weights) {
@@ -336,12 +618,15 @@ class Store {
           return {
             ...data,
             id: d.id || data.id,
+            preferredAreas: Array.isArray(data.preferredAreas) ? data.preferredAreas : [],
             preferredSubjects: Array.isArray(data.preferredSubjects) ? data.preferredSubjects : [],
             preferredClasses: Array.isArray(data.preferredClasses) ? data.preferredClasses : [],
             preferredMediums: Array.isArray(data.preferredMediums) ? data.preferredMediums : [],
-            preferredAreas: Array.isArray(data.preferredAreas) ? data.preferredAreas : [],
             categories: Array.isArray(data.categories) ? data.categories : [],
             availableDays: Array.isArray(data.availableDays) ? data.availableDays : [],
+            selectedCategories: Array.isArray(data.selectedCategories) ? data.selectedCategories : undefined,
+            categoryCvs: data.categoryCvs && typeof data.categoryCvs === 'object' ? data.categoryCvs : undefined,
+            categoryCompletion: data.categoryCompletion && typeof data.categoryCompletion === 'object' ? data.categoryCompletion : undefined,
             customSubjects: Array.isArray(data.customSubjects) ? data.customSubjects : [],
             customClasses: Array.isArray(data.customClasses) ? data.customClasses : [],
             customMediums: Array.isArray(data.customMediums) ? data.customMediums : []
@@ -393,7 +678,13 @@ class Store {
 
       // 5. Live Users
       onSnapshot(collection(db, 'users'), (snapshot) => {
-        const firestoreUsers = snapshot.docs.map(d => d.data() as User);
+        const firestoreUsers = snapshot.docs.map(d => {
+          const data = d.data() as any;
+          return {
+            ...data,
+            id: data.id || d.id
+          } as User;
+        });
         const hasAdmin = firestoreUsers.some(u => u.role === 'admin');
         this.firestoreSynced.users = true;
         this.state.users = hasAdmin ? firestoreUsers : [INITIAL_USERS[0], ...firestoreUsers];
@@ -573,10 +864,13 @@ class Store {
             users: finalUsers,
             tutors: cleanTutors.map((t: TutorProfile) => ({
               ...t,
+              preferredAreas: Array.isArray(t.preferredAreas) ? t.preferredAreas : [],
               preferredSubjects: Array.isArray(t.preferredSubjects) ? t.preferredSubjects : [],
               preferredClasses: Array.isArray(t.preferredClasses) ? t.preferredClasses : [],
               preferredMediums: Array.isArray(t.preferredMediums) ? t.preferredMediums : [],
-              availableDays: Array.isArray(t.availableDays) ? t.availableDays : []
+              availableDays: Array.isArray(t.availableDays) ? t.availableDays : [],
+              selectedCategories: Array.isArray(t.selectedCategories) ? t.selectedCategories : undefined,
+              categoryCvs: t.categoryCvs && typeof t.categoryCvs === 'object' ? t.categoryCvs : undefined
             })),
             requests: (Array.isArray(parsed.requests) ? parsed.requests : []).map((r: TuitionRequest) => ({
               ...r,
@@ -700,10 +994,18 @@ class Store {
 
   // Users & Auth
   public createUser(userData: Omit<User, 'id' | 'createdAt'>): User {
+    // Hard security block: public registration flow can never create an admin role
+    const safeRole: User['role'] = userData.role === 'tutor' ? 'tutor' : 'guardian';
+    if (userData.role === 'admin') {
+      throw new Error('Unauthorized role assignment: admin accounts cannot be self-registered.');
+    }
+
     const id = `user_${Date.now()}`;
-    const referralCode = `${userData.name.split(' ')[0].toUpperCase()}-TH${Math.floor(10 + Math.random() * 90)}`;
+    const namePrefix = (userData.name || '').trim().split(' ')[0].replace(/[^A-Za-z0-9]/g, '').toUpperCase() || 'TH';
+    const referralCode = `${namePrefix}-TH${Math.floor(10 + Math.random() * 90)}`;
     const newUser: User = {
       ...userData,
+      role: safeRole,
       id,
       status: 'active',
       referralCode,
@@ -711,19 +1013,19 @@ class Store {
     };
     this.state.users = [...this.state.users, newUser];
 
-    if (userData.role === 'tutor') {
+    if (safeRole === 'tutor') {
       const tutorId = `tut_${Date.now()}`;
-      const newTutor: TutorProfile = {
+      const baseTutor: TutorProfile = {
         id: tutorId,
         userId: id,
-        fullName: userData.name,
+        fullName: userData.name || '',
         photo: '',
         gender: userData.gender === 'female' ? 'female' : 'male',
-        phone: userData.phone,
-        email: userData.email,
-        currentAddress: userData.location,
+        phone: userData.phone || '',
+        email: userData.email || '',
+        currentAddress: userData.location || '',
         permanentAddress: '',
-        district: userData.district || 'Dhaka',
+        district: userData.district || '',
         area: '',
         preferredAreas: [],
         aboutMe: '',
@@ -742,31 +1044,35 @@ class Store {
         preferredMediums: [],
         categories: [],
         onlineTeaching: false,
-        homeTuition: true,
+        homeTuition: false,
         coachingGroupTuition: false,
         availableDays: [],
         availableTime: '',
-        expectedSalary: 5000,
+        expectedSalary: 0,
         preferredStudentGender: 'any',
         preferredClassLevel: '',
-        verificationStatus: 'pending',
-        completionPercentage: 20,
+        selectedCategories: [],
+        categoryCvs: {},
+        categoryCompletion: {},
+        verificationStatus: 'draft',
+        completionPercentage: 0,
         rating: 5.0,
         totalReviews: 0
       };
-      this.state.tutors = [newTutor, ...this.state.tutors];
+      baseTutor.completionPercentage = calculateCvCompletion(baseTutor).percent;
+      this.state.tutors = [baseTutor, ...this.state.tutors];
 
       fetch('/api/tutors', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newTutor)
+        body: JSON.stringify(baseTutor)
       }).catch(() => {});
 
       // Central Firestore Real-Time Sync for Tutor
-      this.saveDocToFirestore('tutors', newTutor.id, newTutor);
+      this.saveDocToFirestore('tutors', baseTutor.id, baseTutor);
     }
 
-    this.logActivity('USER_REGISTERED', `Created account ${newUser.name} as ${newUser.role}`);
+    this.logActivity('USER_REGISTERED', `Created account ${newUser.name || newUser.email || newUser.phone || newUser.id} as ${newUser.role}`);
     this.saveState();
 
     // Central Firestore Real-Time Sync for User
@@ -785,13 +1091,18 @@ class Store {
     let updatedUser: User | undefined;
     this.state.users = this.state.users.map(u => {
       if (u.id === userId) {
-        updatedUser = { ...u, ...updates };
+        // Prevent escalating a non-admin account into an admin via profile update
+        const safeUpdates: Partial<User> = { ...updates };
+        if (u.role !== 'admin' && safeUpdates.role === 'admin') {
+          delete safeUpdates.role;
+        }
+        updatedUser = { ...u, ...safeUpdates };
         return updatedUser;
       }
       return u;
     });
     if (updatedUser) {
-      this.logActivity('USER_UPDATED', `Updated user details for ${updatedUser.name} (${userId})`);
+      this.logActivity('USER_UPDATED', `Updated user details for ${updatedUser.name || updatedUser.id} (${userId})`);
       this.saveState();
       this.saveDocToFirestore('users', userId, updatedUser);
     }
@@ -800,9 +1111,29 @@ class Store {
 
   public findUserByPhoneOrEmail(identifier: string): User | undefined {
     const clean = identifier.trim().toLowerCase();
-    return this.state.users.find(u => 
-      u.email.toLowerCase() === clean || u.phone.replace(/[^0-9]/g, '') === clean.replace(/[^0-9]/g, '')
-    );
+    if (!clean) return undefined;
+
+    const normalizeDigits = (val: string): string => {
+      const d = (val || '').replace(/[^0-9]/g, '');
+      if (d.startsWith('8801') && d.length === 13) return d.slice(2);
+      if (d.startsWith('1') && d.length === 10) return `0${d}`;
+      return d;
+    };
+
+    const cleanDigits = normalizeDigits(clean);
+    const isEmailQuery = clean.includes('@');
+
+    return this.state.users.find(u => {
+      if (u.email && u.email.trim().toLowerCase() === clean) return true;
+      if (u.authEmail && u.authEmail.trim().toLowerCase() === clean) return true;
+      if (!isEmailQuery && cleanDigits.length >= 10) {
+        const userDigits = normalizeDigits(u.phone || '');
+        if (userDigits.length >= 10 && userDigits === cleanDigits) {
+          return true;
+        }
+      }
+      return false;
+    });
   }
 
   public getGuardians(): User[] {
@@ -973,11 +1304,24 @@ class Store {
   }
 
   public updateTutorProfile(tutorId: string, updates: Partial<TutorProfile>) {
+    // Strip any accidental sensitive auth fields so passwords/hashes never enter Tutor CV documents
+    const safeUpdates: Record<string, any> = { ...updates };
+    delete safeUpdates.password;
+    delete safeUpdates.passwordHash;
+    delete safeUpdates.passwordSalt;
+    delete safeUpdates.adminPinHash;
+    delete safeUpdates.adminPinSalt;
+
     this.state.tutors = this.state.tutors.map(t => {
       if (t.id === tutorId) {
-        const merged = { ...t, ...updates };
-        const calc = calculateCvCompletion(merged);
-        merged.completionPercentage = calc.percent;
+        const merged: TutorProfile = { ...t, ...(safeUpdates as Partial<TutorProfile>) };
+        const overall = calculateOverallTutorProfileCompletion(merged);
+        merged.completionPercentage = overall.percent;
+        merged.categoryCompletion = {
+          general: overall.categoriesProgress.general.percent,
+          qawmi_madrasa: overall.categoriesProgress.qawmi_madrasa.percent,
+          alia_madrasa: overall.categoriesProgress.alia_madrasa.percent
+        };
         return merged;
       }
       return t;
@@ -986,6 +1330,24 @@ class Store {
 
     const currentTutor = this.getTutorById(tutorId);
     if (currentTutor) {
+      // Sync basic profile fields onto linked User record without elevating role
+      if (currentTutor.userId) {
+        const linkedUser = this.getUserById(currentTutor.userId);
+        if (linkedUser && linkedUser.role !== 'admin') {
+          this.updateUser(linkedUser.id, {
+            name: currentTutor.fullName || linkedUser.name,
+            phone: currentTutor.phone || linkedUser.phone,
+            email: currentTutor.email || linkedUser.email,
+            district: currentTutor.district || linkedUser.district,
+            location: currentTutor.area
+              ? `${currentTutor.area}${currentTutor.district ? `, ${currentTutor.district}` : ''}`
+              : (currentTutor.currentAddress || linkedUser.location),
+            avatar: currentTutor.photo !== undefined ? currentTutor.photo : linkedUser.avatar,
+            gender: currentTutor.gender || linkedUser.gender
+          });
+        }
+      }
+
       // 1. Central Firestore Real-Time Sync
       this.saveDocToFirestore('tutors', tutorId, currentTutor);
 
@@ -996,6 +1358,173 @@ class Store {
         body: JSON.stringify(currentTutor)
       }).catch(() => {});
     }
+  }
+
+  public toggleTutorCategory(tutorId: string, category: TutorCategoryType, enabled: boolean): TutorProfile | undefined {
+    const tutor = this.getTutorById(tutorId);
+    if (!tutor) return undefined;
+
+    const currentSelected = getTutorSelectedCategories(tutor);
+    const nextSelected = enabled
+      ? Array.from(new Set([...currentSelected, category]))
+      : currentSelected.filter(c => c !== category);
+
+    // Preserve any existing CV data in categoryCvs[category] when toggling
+    const nextPrimary: TutorCategoryType = nextSelected.includes(tutor.tutorCategory || 'general')
+      ? (tutor.tutorCategory || 'general')
+      : (nextSelected[0] || 'general');
+
+    this.updateTutorProfile(tutorId, {
+      selectedCategories: nextSelected,
+      tutorCategory: nextPrimary
+    });
+
+    return this.getTutorById(tutorId);
+  }
+
+  public saveCategoryCv(
+    tutorId: string,
+    category: TutorCategoryType,
+    categoryData: GeneralTutorCvData | QawmiTutorCvData | AliaTutorCvData,
+    basicUpdates?: Partial<TutorProfile>
+  ): TutorProfile | undefined {
+    const tutor = this.getTutorById(tutorId);
+    if (!tutor) return undefined;
+
+    const currentSelected = getTutorSelectedCategories(tutor);
+    const nextSelected = Array.from(new Set([...currentSelected, category]));
+    const nextCategoryCvs: TutorCategoryCvs = {
+      ...(tutor.categoryCvs || {}),
+      [category]: {
+        ...categoryData,
+        updatedAt: new Date().toISOString()
+      }
+    };
+
+    // Build synchronized summary fields across all selected categories so FindTutor / Job Matching remain unified
+    const mergedSubjects = new Set<string>();
+    const mergedAreas = new Set<string>();
+    const mergedMediums = new Set<string>();
+    const mergedClasses = new Set<string>();
+    let maxExp = 0;
+    let repSalary = 0;
+    let anyHome = false;
+    let anyOnline = false;
+
+    const catsToSummarize = nextSelected.length > 0 ? nextSelected : [category];
+    for (const cat of catsToSummarize) {
+      const cv = cat === category ? categoryData : (nextCategoryCvs[cat] || getCategoryCvData(tutor, cat));
+      if (cat === 'general') {
+        const g = cv as GeneralTutorCvData;
+        (g.preferredSubjects || []).forEach(s => mergedSubjects.add(s));
+        (g.preferredAreas || []).forEach(a => mergedAreas.add(a));
+        (g.preferredMediums || []).forEach(m => mergedMediums.add(m));
+        (g.preferredClasses || []).forEach(c => mergedClasses.add(c));
+        maxExp = Math.max(maxExp, Number(g.teachingExperienceYears || 0));
+        if ((g.expectedSalary || 0) > 0 && repSalary === 0) repSalary = Number(g.expectedSalary);
+        if (g.homeTuition) anyHome = true;
+        if (g.onlineTuition) anyOnline = true;
+      } else if (cat === 'qawmi_madrasa') {
+        const q = cv as QawmiTutorCvData;
+        (q.qawmiSubjects || []).forEach(s => mergedSubjects.add(s));
+        (q.preferredAreas || []).forEach(a => mergedAreas.add(a));
+        mergedMediums.add('Quran & Arabic Learning');
+        if (q.isHafiz || q.tajweedQiratSkill) mergedMediums.add('Hifz & Tajweed');
+        maxExp = Math.max(maxExp, Number(q.teachingExperienceYears || 0));
+        if ((q.expectedSalary || 0) > 0 && repSalary === 0) repSalary = Number(q.expectedSalary);
+        if (q.homeTuition) anyHome = true;
+        if (q.onlineTuition) anyOnline = true;
+      } else {
+        const al = cv as AliaTutorCvData;
+        (al.teachingSubjects || []).forEach(s => mergedSubjects.add(s));
+        (al.preferredAreas || []).forEach(a => mergedAreas.add(a));
+        mergedMediums.add('Madrasa / Islamic Curriculum');
+        maxExp = Math.max(maxExp, Number(al.teachingExperienceYears || 0));
+        if ((al.expectedSalary || 0) > 0 && repSalary === 0) repSalary = Number(al.expectedSalary);
+        if (al.homeTuition) anyHome = true;
+        if (al.onlineTuition) anyOnline = true;
+      }
+    }
+
+    const genCv = nextCategoryCvs.general;
+    const qawCv = nextCategoryCvs.qawmi_madrasa;
+    const aliCv = nextCategoryCvs.alia_madrasa;
+
+    const primaryCategory = tutor.tutorCategory && nextSelected.includes(tutor.tutorCategory)
+      ? tutor.tutorCategory
+      : category;
+
+    const summaryUniversity =
+      (category === 'general' ? (categoryData as GeneralTutorCvData).institution : '') ||
+      genCv?.institution ||
+      (category === 'alia_madrasa' ? (categoryData as AliaTutorCvData).madrasaName : aliCv?.madrasaName) ||
+      (category === 'qawmi_madrasa' ? (categoryData as QawmiTutorCvData).madrasaName : qawCv?.madrasaName) ||
+      tutor.university ||
+      '';
+
+    const summaryDepartment =
+      (category === 'general' ? (categoryData as GeneralTutorCvData).department : '') ||
+      genCv?.department ||
+      (category === 'alia_madrasa' ? (categoryData as AliaTutorCvData).highestDegree : aliCv?.highestDegree) ||
+      (category === 'qawmi_madrasa' ? (categoryData as QawmiTutorCvData).educationLevel : qawCv?.educationLevel) ||
+      tutor.department ||
+      '';
+
+    const madrasaSource = category === 'qawmi_madrasa'
+      ? (categoryData as QawmiTutorCvData)
+      : qawCv;
+    const aliaSource = category === 'alia_madrasa'
+      ? (categoryData as AliaTutorCvData)
+      : aliCv;
+
+    const updatedMadrasaDetails = madrasaSource
+      ? {
+          category: 'qawmi_madrasa' as TutorCategoryType,
+          isHafiz: Boolean(madrasaSource.isHafiz),
+          qiratTajweedCertificate: madrasaSource.tajweedQiratSkill || '',
+          madrasaBoard: madrasaSource.madrasaBoard || '',
+          highestSanadOrDegree: madrasaSource.educationLevel || '',
+          sanadPassingYear: madrasaSource.passingYear || '',
+          sanadDivisionOrGpa: madrasaSource.examDivisionOrResult || '',
+          specializationDept: madrasaSource.quranArabicSkills || '',
+          currentKhidmatOrInstitution: madrasaSource.madrasaName || ''
+        }
+      : aliaSource
+      ? {
+          category: 'alia_madrasa' as TutorCategoryType,
+          madrasaBoard: aliaSource.boardName || '',
+          highestSanadOrDegree: aliaSource.highestDegree || aliaSource.educationLevel || '',
+          sanadPassingYear: aliaSource.examYear || '',
+          sanadDivisionOrGpa: aliaSource.examResult || '',
+          currentKhidmatOrInstitution: aliaSource.madrasaName || ''
+        }
+      : tutor.madrasaDetails;
+
+    this.updateTutorProfile(tutorId, {
+      ...(basicUpdates || {}),
+      selectedCategories: nextSelected,
+      tutorCategory: primaryCategory,
+      categoryCvs: nextCategoryCvs,
+      university: summaryUniversity,
+      institution: summaryUniversity,
+      department: summaryDepartment,
+      programDegree: genCv?.programDegree || aliaSource?.highestDegree || madrasaSource?.educationLevel || tutor.programDegree,
+      currentYearSemester: genCv?.currentYearSemester || tutor.currentYearSemester,
+      ssc: genCv?.ssc || aliaSource?.dakhilInfo || tutor.ssc,
+      hsc: genCv?.hsc || aliaSource?.alimInfo || tutor.hsc,
+      madrasaDetails: updatedMadrasaDetails,
+      preferredSubjects: Array.from(mergedSubjects),
+      preferredAreas: Array.from(mergedAreas),
+      preferredMediums: Array.from(mergedMediums),
+      preferredClasses: Array.from(mergedClasses),
+      teachingExperienceYears: maxExp || tutor.teachingExperienceYears || 0,
+      expectedSalary: repSalary || tutor.expectedSalary || 0,
+      homeTuition: anyHome || tutor.homeTuition,
+      onlineTeaching: anyOnline || tutor.onlineTeaching
+    });
+
+    this.logActivity('TUTOR_CATEGORY_CV_SAVED', `Saved ${category} CV for tutor ${tutor.fullName || tutorId}`);
+    return this.getTutorById(tutorId);
   }
 
   // Dedicated Tutor Profile Photo management with Cloud Storage
@@ -1012,25 +1541,42 @@ class Store {
     this.updateTutorProfile(tutorId, { photo: '' });
   }
 
+  // Dedicated Guardian Profile Photo management with Cloud Storage
+  public async updateGuardianPhoto(userId: string, photoDataUrlOrUrl: string): Promise<string> {
+    let finalUrl = photoDataUrlOrUrl;
+    if (photoDataUrlOrUrl && photoDataUrlOrUrl.startsWith('data:')) {
+      finalUrl = await uploadProfilePhoto('guardian_photos', userId, photoDataUrlOrUrl);
+    }
+    this.updateUser(userId, { avatar: finalUrl });
+    return finalUrl;
+  }
+
+  public removeGuardianPhoto(userId: string) {
+    this.updateUser(userId, { avatar: '' });
+  }
+
   public submitTutorForVerification(tutorId: string) {
     const tutor = this.getTutorById(tutorId);
     if (!tutor) return;
-    const calc = calculateCvCompletion(tutor);
+    const overall = calculateOverallTutorProfileCompletion(tutor);
+    const catsLabel = overall.selectedCategories.length > 0
+      ? overall.selectedCategories.join(', ')
+      : (tutor.tutorCategory || 'general');
 
     this.updateTutorProfile(tutorId, {
       verificationStatus: 'pending',
       verificationSubmittedDate: new Date().toISOString(),
-      completionPercentage: calc.percent
+      completionPercentage: overall.percent
     });
 
     this.addNotification({
       userId: 'user_admin_01',
       title: 'নতুন টিউটর সিভি আবেদন (New Tutor CV)',
-      message: `${tutor.fullName} (${tutor.university || tutor.institution || 'টিউটর'}) তার সিভি পূরণ করে অনুমোদনের জন্য পাঠিয়েছেন। সম্পন্ন: ${calc.percent}%`,
+      message: `${tutor.fullName || tutor.phone || 'নতুন টিউটর'} (${catsLabel}) তার সিভি অনুমোদনের জন্য পাঠিয়েছেন। সামগ্রিক সম্পন্ন: ${overall.percent}%`,
       type: 'verification'
     });
 
-    this.logActivity('TUTOR_CV_SUBMITTED', `Tutor ${tutor.fullName} submitted CV for verification (${calc.percent}% complete)`);
+    this.logActivity('TUTOR_CV_SUBMITTED', `Tutor ${tutor.fullName} submitted CV (${catsLabel}) for verification (${overall.percent}% complete)`);
     this.syncWithServer().catch(() => {});
   }
 

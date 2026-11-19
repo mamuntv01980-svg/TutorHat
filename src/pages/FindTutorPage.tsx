@@ -28,6 +28,7 @@ import { TutorVerificationBadge } from '../components/common/TutorVerificationBa
 import { BookDemoModal } from '../components/demo/BookDemoModal';
 import { ChatBoxModal } from '../components/chat/ChatBoxModal';
 import { TutorProfile } from '../types';
+import { getTutorSelectedCategories } from '../services/store';
 
 export const FindTutorPage: React.FC = () => {
   const { storeState, navigateTo, language, isShortlisted, toggleShortlist, settings } = useApp();
@@ -80,9 +81,12 @@ export const FindTutorPage: React.FC = () => {
         if (!matchName && !matchUni && !matchSub && !matchArea) return false;
       }
 
-      // Category filter (General, Alia Madrasa, Qawmi Madrasa)
-      if (selectedCategory !== 'all' && (tutor.tutorCategory || 'general') !== selectedCategory) {
-        return false;
+      // Category filter (General, Alia Madrasa, Qawmi Madrasa - supports multi-category tutors)
+      if (selectedCategory !== 'all') {
+        const cats = getTutorSelectedCategories(tutor);
+        if (cats.length > 0 ? !cats.includes(selectedCategory) : (tutor.tutorCategory || 'general') !== selectedCategory) {
+          return false;
+        }
       }
 
       // District
@@ -135,6 +139,8 @@ export const FindTutorPage: React.FC = () => {
     storeState.tutors, 
     storeState.settings.requireTutorVerificationToPublish,
     searchTerm, 
+    selectedCategory,
+    onlyVerified,
     selectedDistrict, 
     selectedArea, 
     selectedMedium, 
@@ -546,21 +552,33 @@ export const FindTutorPage: React.FC = () => {
                               </h3>
                             </div>
                             
-                            {/* Category Pill */}
+                            {/* Category Pills */}
                             <div className="flex items-center gap-1.5 flex-wrap mt-1">
-                              {tutor.tutorCategory === 'qawmi_madrasa' ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                                  📖 কওমি মাদ্রাসা
-                                </span>
-                              ) : tutor.tutorCategory === 'alia_madrasa' ? (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
-                                  🕌 আলিয়া মাদ্রাসা
-                                </span>
-                              ) : (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-200">
-                                  🎓 জেনারেল টিউটর
-                                </span>
-                              )}
+                              {(() => {
+                                const cats = getTutorSelectedCategories(tutor);
+                                const displayCats = cats.length > 0 ? cats : [tutor.tutorCategory || 'general'];
+                                return displayCats.map((cat) => {
+                                  if (cat === 'qawmi_madrasa') {
+                                    return (
+                                      <span key={cat} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                                        📖 কওমি মাদ্রাসা
+                                      </span>
+                                    );
+                                  }
+                                  if (cat === 'alia_madrasa') {
+                                    return (
+                                      <span key={cat} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                        🕌 আলিয়া মাদ্রাসা
+                                      </span>
+                                    );
+                                  }
+                                  return (
+                                    <span key={cat} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-200">
+                                      🎓 জেনারেল টিউটর
+                                    </span>
+                                  );
+                                });
+                              })()}
 
                               {tutor.madrasaDetails?.isHafiz && (
                                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-900 border border-teal-200">

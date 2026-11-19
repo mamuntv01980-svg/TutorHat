@@ -11,53 +11,28 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: false,
+        manifest: false,
         includeAssets: [
           'favicon-32x32.png',
           'apple-touch-icon.png',
           'pwa-192x192.png',
           'pwa-512x512.png',
           'pwa-maskable-512x512.png',
-          'icon.svg'
+          'icon.svg',
+          'icon-admin.svg',
+          'manifest.json',
+          'manifest-admin.json'
         ],
-        manifest: {
-          id: '/',
-          name: 'TutorHat – গৃহশিক্ষক ও টিউশন প্ল্যাটফর্ম',
-          short_name: 'TutorHat',
-          description: 'বাংলাদেশের বিশ্বস্ত গৃহশিক্ষক ও টিউশন খোঁজার আধুনিক প্ল্যাটফর্ম',
-          theme_color: '#1e3a8a',
-          background_color: '#ffffff',
-          display: 'standalone',
-          orientation: 'portrait',
-          start_url: '/',
-          scope: '/',
-          icons: [
-            {
-              src: '/pwa-192x192.png',
-              sizes: '192x192',
-              type: 'image/png',
-              purpose: 'any'
-            },
-            {
-              src: '/pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'any'
-            },
-            {
-              src: '/pwa-maskable-512x512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'maskable'
-            }
-          ],
-          categories: ['education', 'productivity']
-        },
         workbox: {
           maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}']
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,json}'],
+          navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/api\//],
+          cleanupOutdatedCaches: true
         },
         devOptions: {
-          enabled: true
+          enabled: false
         }
       })
     ],

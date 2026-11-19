@@ -126,11 +126,14 @@ export async function compressImage(file: File, maxWidth = 600, quality = 0.82):
   });
 }
 
-// Upload tutor profile image to Firebase Cloud Storage with resilient base64 fallback
-export async function uploadTutorPhoto(tutorId: string, compressedDataUrl: string): Promise<string> {
+// Upload user/tutor/guardian profile image to Firebase Cloud Storage with resilient base64 fallback
+export async function uploadProfilePhoto(
+  folder: 'tutor_photos' | 'guardian_photos',
+  ownerId: string,
+  compressedDataUrl: string
+): Promise<string> {
   try {
-    // Attempt Firebase Cloud Storage upload
-    const storageRef = ref(storage, `tutor_photos/${tutorId}_${Date.now()}.webp`);
+    const storageRef = ref(storage, `${folder}/${ownerId}_${Date.now()}.webp`);
     await uploadString(storageRef, compressedDataUrl, 'data_url', {
       contentType: 'image/webp'
     });
@@ -138,8 +141,11 @@ export async function uploadTutorPhoto(tutorId: string, compressedDataUrl: strin
     return downloadUrl;
   } catch (storageErr) {
     console.warn('[Firebase Storage] Falling back to direct cloud-synced document image:', storageErr);
-    // If Cloud Storage rules/CORS has issue, return compressed data URL directly
-    // which syncs inside the Firestore document (<80KB, well under 1MB Firestore limit)
     return compressedDataUrl;
   }
+}
+
+// Upload tutor profile image to Firebase Cloud Storage with resilient base64 fallback
+export async function uploadTutorPhoto(tutorId: string, compressedDataUrl: string): Promise<string> {
+  return uploadProfilePhoto('tutor_photos', tutorId, compressedDataUrl);
 }

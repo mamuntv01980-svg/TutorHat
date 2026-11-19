@@ -59,7 +59,7 @@ import {
   Bell
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
-import { store } from '../../services/store';
+import { store, calculateOverallTutorProfileCompletion, getTutorSelectedCategories } from '../../services/store';
 import {
   isAdminSessionValid,
   clearAdminSession,
@@ -97,7 +97,7 @@ import { StudentProgressReportModal } from '../../components/progress/StudentPro
 import { AdminInstallModal } from '../../components/admin/AdminInstallModal';
 
 export const AdminDashboard: React.FC = () => {
-  const { storeState, settings, currentUser, loginAs, logout, language, navigateTo } = useApp();
+  const { storeState, settings, currentUser, isAdminAuthenticated, refreshAdminSession, logout, language, navigateTo } = useApp();
 
   // PWA Standalone App Installation
   const [installModalOpen, setInstallModalOpen] = useState(false);
@@ -459,12 +459,12 @@ export const AdminDashboard: React.FC = () => {
   };
 
   // High-Security Admin Authentication Barrier
-  if (!currentUser || currentUser.role !== 'admin' || !isAdminSessionValid()) {
+  if (!currentUser || currentUser.role !== 'admin' || (!isAdminAuthenticated || !isAdminSessionValid())) {
     return (
       <div className="min-h-screen bg-slate-900/10 py-12 px-4 flex items-center justify-center">
         <AdminAuthBarrier
-          onSuccess={() => {
-            loginAs('admin', 'user_admin_01');
+          onSuccess={(verifiedAdminId) => {
+            refreshAdminSession(verifiedAdminId);
           }}
           onCancel={() => {
             navigateTo('home');
@@ -1015,7 +1015,11 @@ export const AdminDashboard: React.FC = () => {
   const handleAdminLogout = () => {
     clearAdminSession();
     logout();
-    navigateTo('home');
+    if (isStandaloneApp) {
+      navigateTo('admin-dashboard');
+    } else {
+      navigateTo('home');
+    }
   };
 
   // Statistics overview for Top Bar
@@ -2062,20 +2066,46 @@ export const AdminDashboard: React.FC = () => {
                         </span>
                       )}
 
-                      {/* Category Badge */}
-                      {tutor.tutorCategory === 'qawmi_madrasa' ? (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                          📖 কওমি মাদ্রাসা {tutor.madrasaDetails?.highestSanadOrDegree ? `(${tutor.madrasaDetails.highestSanadOrDegree})` : ''}
-                        </span>
-                      ) : tutor.tutorCategory === 'alia_madrasa' ? (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
-                          🕌 আলিয়া মাদ্রাসা {tutor.madrasaDetails?.highestSanadOrDegree ? `(${tutor.madrasaDetails.highestSanadOrDegree})` : ''}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-200">
-                          🎓 জেনারেল টিউটর
-                        </span>
-                      )}
+                      {/* Multi-Category Badges & Completion */}
+                      {(() => {
+                        const selCats = getTutorSelectedCategories(tutor);
+                        const overallProg = calculateOverallTutorProfileCompletion(tutor);
+                        return (
+                          <>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-900 border border-slate-300">
+                              Overall: {overallProg.percent}%
+                            </span>
+                            {selCats.length === 0 ? (
+                              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                                No Category Selected
+                              </span>
+                            ) : (
+                              selCats.map((cat) => {
+                                const cProg = overallProg.categoriesProgress[cat];
+                                if (cat === 'qawmi_madrasa') {
+                                  return (
+                                    <span key={cat} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                                      📖 কওমি মাদ্রাসা: {cProg.percent}%
+                                    </span>
+                                  );
+                                }
+                                if (cat === 'alia_madrasa') {
+                                  return (
+                                    <span key={cat} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-900 border border-emerald-300">
+                                      🕌 আলিয়া মাদ্রাসা: {cProg.percent}%
+                                    </span>
+                                  );
+                                }
+                                return (
+                                  <span key={cat} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900 border border-blue-200">
+                                    🎓 জেনারেল টিউটর: {cProg.percent}%
+                                  </span>
+                                );
+                              })
+                            )}
+                          </>
+                        );
+                      })()}
 
                       {tutor.madrasaDetails?.isHafiz && (
                         <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-teal-100 text-teal-900 border border-teal-200">
@@ -2607,9 +2637,26 @@ export const AdminDashboard: React.FC = () => {
                             {tutor.verificationStatus === 'verified' ? '✓ ভেরিফাইড' : '⏳ সিভি অনুমোদন অপেক্ষমাণ'}
                           </span>
 
-                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900">
-                            সিভি সম্পন্ন: {tutor.completionPercentage || 60}%
-                          </span>
+                          {(() => {
+                            const selCats = getTutorSelectedCategories(tutor);
+                            const overallProg = calculateOverallTutorProfileCompletion(tutor);
+                            return (
+                              <>
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-900">
+                                  সামগ্রিক সিভি: {overallProg.percent}%
+                                </span>
+                                {selCats.map((cat) => {
+                                  const cp = overallProg.categoriesProgress[cat];
+                                  const label = cat === 'general' ? 'General' : cat === 'qawmi_madrasa' ? 'Qawmi' : 'Alia';
+                                  return (
+                                    <span key={cat} className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200">
+                                      {label}: {cp.percent}%
+                                    </span>
+                                  );
+                                })}
+                              </>
+                            );
+                          })()}
                         </div>
 
                         {/* Phone & Direct Contact Links */}

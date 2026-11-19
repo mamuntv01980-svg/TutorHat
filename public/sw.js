@@ -1,4 +1,4 @@
-const CACHE_NAME = 'tutorhat-cache-v2';
+const CACHE_NAME = 'tutorhat-cache-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -63,7 +63,7 @@ self.addEventListener('fetch', (event) => {
         return caches.match(event.request).then((cached) => {
           if (cached) return cached;
           if (event.request.mode === 'navigate') {
-            return caches.match('/');
+            return caches.match('/index.html').then((idx) => idx || caches.match('/'));
           }
           return new Response('Network error', { status: 408, headers: { 'Content-Type': 'text/plain' } });
         });

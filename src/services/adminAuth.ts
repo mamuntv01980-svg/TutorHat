@@ -323,31 +323,63 @@ export function createAdminSession(adminId: string, method: 'pin' | 'biometric' 
 }
 
 /**
+ * Retrieves the active, non-expired admin session across sessionStorage and localStorage
+ * and synchronizes both storages so standalone PWA reopen & refresh preserve auth state.
+ */
+export function getAdminSession(): AdminSessionData | null {
+  try {
+    const candidates: AdminSessionData[] = [];
+    const storages: (Storage | null)[] = [
+      typeof sessionStorage !== 'undefined' ? sessionStorage : null,
+      typeof localStorage !== 'undefined' ? localStorage : null
+    ];
+
+    for (const storage of storages) {
+      if (!storage) continue;
+      try {
+        const raw = storage.getItem(SESSION_STORAGE_KEY);
+        if (!raw) continue;
+        const data = JSON.parse(raw) as AdminSessionData;
+        const now = Date.now();
+        if (data && data.token && (!data.expiresAt || data.expiresAt > now)) {
+          candidates.push(data);
+        }
+      } catch {}
+    }
+
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    candidates.sort((a, b) => (b.authenticatedAt || 0) - (a.authenticatedAt || 0));
+    const activeSession = candidates[0];
+
+    try {
+      const serialized = JSON.stringify(activeSession);
+      if (typeof sessionStorage !== 'undefined' && !sessionStorage.getItem(SESSION_STORAGE_KEY)) {
+        sessionStorage.setItem(SESSION_STORAGE_KEY, serialized);
+      }
+      if (typeof localStorage !== 'undefined' && !localStorage.getItem(SESSION_STORAGE_KEY)) {
+        localStorage.setItem(SESSION_STORAGE_KEY, serialized);
+      }
+    } catch {}
+
+    return activeSession;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Checks if current admin session is valid and active (checks both sessionStorage & localStorage)
  */
 export function isAdminSessionValid(): boolean {
-  try {
-    let raw: string | null = null;
-    try {
-      raw = sessionStorage.getItem(SESSION_STORAGE_KEY);
-    } catch {}
-    if (!raw) {
-      try {
-        raw = localStorage.getItem(SESSION_STORAGE_KEY);
-      } catch {}
-    }
-    if (!raw) return false;
-
-    const data: AdminSessionData = JSON.parse(raw);
-    const now = Date.now();
-    if (data.expiresAt && data.expiresAt < now) {
-      clearAdminSession();
-      return false;
-    }
-    return Boolean(data.token);
-  } catch {
+  const session = getAdminSession();
+  if (!session) {
+    clearAdminSession();
     return false;
   }
+  return true;
 }
 
 /**
